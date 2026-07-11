@@ -15,6 +15,8 @@ class Infant extends Model
         'birth_date',
         'birth_weight',
         'birth_height',
+        'blood_type',
+        'photo_path',
         'facility',
         'notes',
     ];
@@ -41,5 +43,10 @@ class Infant extends Model
     public function vaccineRecords(): HasMany
     {
         return $this->hasMany(InfantVaccineRecord::class)->orderBy('due_date')->orderBy('id');
+    }
+
+    public function healthAlerts(): HasMany
+    {
+        return $this->hasMany(ChildHealthAlert::class)->orderByDesc('created_at')->orderByDesc('id');
     }
 }

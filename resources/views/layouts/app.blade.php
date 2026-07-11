@@ -435,6 +435,7 @@
         }
 
         .portal-avatar {
+            position: relative;
             display: inline-grid;
             width: 48px;
             height: 48px;
@@ -446,6 +447,50 @@
             border-radius: 999px;
             font-size: 14px;
             font-weight: 900;
+            overflow: hidden;
+        }
+
+        .portal-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .portal-avatar-upload-form {
+            margin: 0;
+            flex: 0 0 auto;
+        }
+
+        .portal-avatar-upload {
+            position: relative;
+            display: inline-grid;
+            cursor: pointer;
+        }
+
+        .portal-avatar-upload input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .portal-avatar-action {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            display: grid;
+            width: 24px;
+            height: 24px;
+            place-items: center;
+            color: #ffffff;
+            background: var(--inay-pink);
+            border: 2px solid #ffffff;
+            border-radius: 999px;
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.22);
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1;
         }
 
         body.portal-staff .portal-avatar {
@@ -5447,6 +5492,41 @@
                 width: 100%;
             }
         }
+
+        .photo-crop-modal[hidden] { display: none; }
+        .photo-crop-modal { position: fixed; inset: 0; z-index: 140; display: flex; align-items: center; justify-content: center; padding: 18px; }
+        .photo-crop-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(4px); }
+        .photo-crop-dialog { position: relative; width: min(650px, calc(100vw - 24px)); max-height: 88vh; overflow: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28); }
+        .photo-crop-header, .photo-crop-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px 26px; border-bottom: 1px solid #e2e8f0; }
+        .photo-crop-footer { justify-content: flex-end; border-top: 1px solid #e2e8f0; border-bottom: 0; }
+        .photo-crop-title { margin: 0; color: #071127; font-size: 22px; font-weight: 900; }
+        .photo-crop-subtitle { margin: 6px 0 0; color: #52627d; font-size: 14px; font-weight: 600; }
+        .photo-crop-close { display: grid; width: 38px; height: 38px; place-items: center; color: #52627d; background: #ffffff; border: 0; border-radius: 999px; cursor: pointer; }
+        .photo-crop-body { display: grid; gap: 18px; padding: 22px 26px 20px; justify-items: center; }
+        .photo-crop-frame { position: relative; width: 220px; height: 220px; overflow: hidden; background: #f6f0ff; border: 4px solid #8b5cf6; border-radius: 999px; touch-action: none; cursor: grab; }
+        .photo-crop-frame.is-empty { display: grid; place-items: center; border: 2px dashed #c4b5fd; color: #7c3aed; cursor: default; }
+        .photo-crop-frame:active { cursor: grabbing; }
+        .photo-crop-frame img { position: absolute; left: 50%; top: 50%; max-width: none; user-select: none; -webkit-user-drag: none; transform-origin: center; }
+        .photo-crop-hint { margin: 0; color: #334155; font-size: 13px; font-weight: 700; text-align: center; }
+        .photo-crop-controls { display: grid; width: 100%; gap: 14px; }
+        .photo-crop-slider-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 10px; align-items: center; padding: 16px; background: #f8fafc; border: 1px solid #dbe5f1; border-radius: 8px; }
+        .photo-crop-slider { width: 100%; accent-color: var(--inay-pink); }
+        .photo-crop-icon-button, .photo-crop-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid #d5e0ee; border-radius: 8px; background: #ffffff; color: #10213f; font-weight: 900; cursor: pointer; }
+        .photo-crop-icon-button svg, .photo-crop-action svg, .photo-crop-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .photo-crop-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .photo-crop-dropzone { display: grid; width: 100%; min-height: 110px; place-items: center; padding: 18px; color: #7c3aed; background: #f8fbff; border: 2px dashed #f9a8d4; border-radius: 8px; cursor: pointer; text-align: center; }
+        .photo-crop-dropzone strong { display: block; margin-top: 8px; color: #071127; font-size: 14px; }
+        .photo-crop-dropzone span { display: block; margin-top: 6px; color: #52627d; font-size: 12px; font-weight: 700; }
+        .photo-crop-error { justify-self: stretch; padding: 10px 12px; color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; font-size: 13px; font-weight: 800; }
+        .photo-crop-save { color: #ffffff; background: #7c2dff; border-color: #7c2dff; padding: 0 20px; }
+        .photo-crop-cancel { padding: 0 20px; }
+        body.has-photo-crop { overflow: hidden; }
+        @media (max-width: 680px) {
+            .photo-crop-header, .photo-crop-body, .photo-crop-footer { padding-right: 18px; padding-left: 18px; }
+            .photo-crop-steps { grid-template-columns: 1fr; }
+            .photo-crop-footer { align-items: stretch; flex-direction: column; }
+            .photo-crop-action { width: 100%; }
+        }
     </style>
     @stack('styles')
 </head>
@@ -5467,6 +5547,7 @@
     $portalInitials = $portalInitials ?: 'IN';
     $motherRecord = $mother ?? null;
     $staffRecord = $staff ?? null;
+    $portalPhotoUrl = $motherRecord?->profile_photo_path ? asset('storage/'.$motherRecord->profile_photo_path) : null;
     $pregnancyStatus = $motherRecord->pregnancy_status ?? null;
     $pregnancyLabel = match ($pregnancyStatus) {
         'pregnant' => 'Pregnant',
@@ -5510,6 +5591,7 @@
         'user' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21a7 7 0 0 0-14 0"/><circle cx="12" cy="7" r="4"/></svg>',
         'settings' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5h.1a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1Z"/></svg>',
         'shield' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>',
+        'search' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
     ];
 
     $motherNavItems = [
@@ -5565,7 +5647,13 @@
                     </button>
 
                     <div class="portal-header-profile">
-                        <span class="portal-avatar">{{ $portalInitials }}</span>
+                        <span class="portal-avatar">
+                            @if ($portalPhotoUrl)
+                                <img src="{{ $portalPhotoUrl }}" alt="{{ $portalName }}">
+                            @else
+                                {{ $portalInitials }}
+                            @endif
+                        </span>
                         <div class="portal-header-copy">
                             <div class="portal-header-name">{{ $portalName }}</div>
                             <span class="portal-role-badge">{{ $portalRoleLabel }}</span>
@@ -5619,7 +5707,21 @@
                 @if ($isMotherPortal)
                     <section class="portal-profile-card" aria-label="Mother profile summary">
                         <div class="portal-profile-row">
-                            <span class="portal-avatar">{{ $portalInitials }}</span>
+                            <form class="portal-avatar-upload-form" method="POST" action="{{ route('mother.profile-photo.update') }}" enctype="multipart/form-data">
+                                @csrf
+                                @method('PATCH')
+                                <label class="portal-avatar-upload" aria-label="Upload mother profile photo">
+                                    <span class="portal-avatar">
+                                        @if ($portalPhotoUrl)
+                                            <img src="{{ $portalPhotoUrl }}" alt="{{ $portalName }}">
+                                        @else
+                                            {{ $portalInitials }}
+                                        @endif
+                                    </span>
+                                    <span class="portal-avatar-action" aria-hidden="true">+</span>
+                                    <input type="file" name="profile_photo" accept="image/png,image/jpeg,image/webp" data-photo-crop data-photo-auto-submit="true" data-photo-title="Upload Mother Profile Photo">
+                                </label>
+                            </form>
                             <div>
                                 <p class="portal-profile-name">{{ $portalName }}</p>
                                 <div class="portal-status-line">
@@ -5686,7 +5788,255 @@
 
         @yield('content')
     </main>
+    @if ($hasPortalShell)
+        <div class="photo-crop-modal" data-photo-crop-modal hidden>
+            <div class="photo-crop-backdrop" data-photo-crop-cancel></div>
+            <section class="photo-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="photo-crop-title">
+                <header class="photo-crop-header">
+                    <div>
+                        <h2 class="photo-crop-title" id="photo-crop-title" data-photo-crop-title>Upload Profile Photo</h2>
+                        <p class="photo-crop-subtitle">Choose a clear photo, then drag and zoom to position it.</p>
+                    </div>
+                    <button class="photo-crop-close" type="button" data-photo-crop-cancel aria-label="Close upload photo modal">
+                        {!! $portalIconSvgs['x'] !!}
+                    </button>
+                </header>
+                <div class="photo-crop-body">
+                    <div class="photo-crop-frame is-empty" data-photo-crop-frame>
+                        <span data-photo-crop-empty>{!! $portalIconSvgs['user'] !!}</span>
+                        <img data-photo-crop-image alt="" hidden>
+                    </div>
+                    <p class="photo-crop-hint" data-photo-crop-hint>Drag the photo to reposition it inside the circle.</p>
+                    <div class="photo-crop-controls">
+                        <div class="photo-crop-slider-row">
+                            <button class="photo-crop-icon-button" type="button" data-photo-crop-zoom-step="-0.1" aria-label="Zoom out">{!! $portalIconSvgs['search'] ?? $portalIconSvgs['x'] !!}</button>
+                            <input class="photo-crop-slider" type="range" min="1" max="3" step="0.01" value="1" data-photo-crop-zoom aria-label="Photo zoom">
+                            <button class="photo-crop-icon-button" type="button" data-photo-crop-zoom-step="0.1" aria-label="Zoom in">{!! $portalIconSvgs['search'] ?? $portalIconSvgs['x'] !!}</button>
+                        </div>
+                        <div class="photo-crop-steps">
+                            <button class="photo-crop-action" type="button" data-photo-crop-zoom-step="-0.1">{!! $portalIconSvgs['search'] ?? $portalIconSvgs['x'] !!} Zoom Out</button>
+                            <button class="photo-crop-action" type="button" data-photo-crop-reset>Reset Position</button>
+                            <button class="photo-crop-action" type="button" data-photo-crop-zoom-step="0.1">{!! $portalIconSvgs['search'] ?? $portalIconSvgs['x'] !!} Zoom In</button>
+                        </div>
+                        <button class="photo-crop-dropzone" type="button" data-photo-crop-choose>
+                            {!! $portalIconSvgs['menu'] !!}
+                            <strong data-photo-crop-choose-text>Choose another photo</strong>
+                            <span>JPG, JPEG, PNG, or WEBP, up to 4 MB</span>
+                        </button>
+                        <div class="photo-crop-error" data-photo-crop-error hidden></div>
+                    </div>
+                </div>
+                <footer class="photo-crop-footer">
+                    <button class="photo-crop-action photo-crop-cancel" type="button" data-photo-crop-cancel>Cancel</button>
+                    <button class="photo-crop-action photo-crop-save" type="button" data-photo-crop-save>Save Photo</button>
+                </footer>
+            </section>
+        </div>
+    @endif
     @stack('scripts')
+    @if ($hasPortalShell)
+        <script>
+            (() => {
+                const modal = document.querySelector('[data-photo-crop-modal]');
+                if (!modal || !window.FileReader) return;
+
+                const frame = modal.querySelector('[data-photo-crop-frame]');
+                const image = modal.querySelector('[data-photo-crop-image]');
+                const empty = modal.querySelector('[data-photo-crop-empty]');
+                const title = modal.querySelector('[data-photo-crop-title]');
+                const zoomInput = modal.querySelector('[data-photo-crop-zoom]');
+                const errorBox = modal.querySelector('[data-photo-crop-error]');
+                const chooseText = modal.querySelector('[data-photo-crop-choose-text]');
+                const frameSize = 220;
+                const outputSize = 512;
+                let state = null;
+                let drag = null;
+
+                const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+                const setError = (message = '') => {
+                    errorBox.textContent = message;
+                    errorBox.hidden = message === '';
+                };
+                const closeModal = () => {
+                    if (state?.objectUrl) URL.revokeObjectURL(state.objectUrl);
+                    if (state?.input && !state.saved) state.input.value = '';
+                    state = null;
+                    drag = null;
+                    image.hidden = true;
+                    image.removeAttribute('src');
+                    empty.hidden = false;
+                    frame.classList.add('is-empty');
+                    modal.hidden = true;
+                    document.body.classList.remove('has-photo-crop');
+                    setError();
+                };
+                const clampOffsets = () => {
+                    if (!state) return;
+                    const maxX = Math.max(0, ((state.baseWidth * state.zoom) - frameSize) / 2);
+                    const maxY = Math.max(0, ((state.baseHeight * state.zoom) - frameSize) / 2);
+                    state.offsetX = clamp(state.offsetX, -maxX, maxX);
+                    state.offsetY = clamp(state.offsetY, -maxY, maxY);
+                };
+                const render = () => {
+                    if (!state) return;
+                    clampOffsets();
+                    image.style.width = `${state.baseWidth}px`;
+                    image.style.height = `${state.baseHeight}px`;
+                    image.style.transform = `translate(calc(-50% + ${state.offsetX}px), calc(-50% + ${state.offsetY}px)) scale(${state.zoom})`;
+                    zoomInput.value = state.zoom;
+                };
+                const resetPosition = () => {
+                    if (!state) return;
+                    state.zoom = 1;
+                    state.offsetX = 0;
+                    state.offsetY = 0;
+                    render();
+                };
+                const loadFile = (input, file) => {
+                    if (!file) return;
+                    if (!file.type.startsWith('image/')) {
+                        input.value = '';
+                        setError('Please choose an image file.');
+                        return;
+                    }
+                    if (file.size > 4 * 1024 * 1024) {
+                        input.value = '';
+                        setError('The photo must be 4 MB or smaller.');
+                        return;
+                    }
+
+                    const objectUrl = URL.createObjectURL(file);
+                    const probe = new Image();
+                    probe.onload = () => {
+                        if (state?.objectUrl) URL.revokeObjectURL(state.objectUrl);
+                        const aspect = probe.naturalWidth / Math.max(1, probe.naturalHeight);
+                        const baseWidth = aspect >= 1 ? frameSize * aspect : frameSize;
+                        const baseHeight = aspect >= 1 ? frameSize : frameSize / aspect;
+                        state = {
+                            input,
+                            file,
+                            objectUrl,
+                            naturalWidth: probe.naturalWidth,
+                            naturalHeight: probe.naturalHeight,
+                            baseWidth,
+                            baseHeight,
+                            zoom: 1,
+                            offsetX: 0,
+                            offsetY: 0,
+                            saved: false,
+                        };
+                        title.textContent = input.dataset.photoTitle || 'Upload Profile Photo';
+                        chooseText.textContent = file.name ? 'Choose another photo' : 'Choose a photo';
+                        image.src = objectUrl;
+                        image.hidden = false;
+                        empty.hidden = true;
+                        frame.classList.remove('is-empty');
+                        modal.hidden = false;
+                        document.body.classList.add('has-photo-crop');
+                        setError();
+                        render();
+                    };
+                    probe.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        input.value = '';
+                        setError('Unable to read this image.');
+                    };
+                    probe.src = objectUrl;
+                };
+                const assignCroppedFile = async () => {
+                    if (!state) return;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = outputSize;
+                    canvas.height = outputSize;
+                    const context = canvas.getContext('2d');
+                    const sourceImage = new Image();
+                    sourceImage.src = state.objectUrl;
+                    await sourceImage.decode();
+                    clampOffsets();
+
+                    const scaledWidth = state.baseWidth * state.zoom;
+                    const scaledHeight = state.baseHeight * state.zoom;
+                    const left = ((frameSize - scaledWidth) / 2) + state.offsetX;
+                    const top = ((frameSize - scaledHeight) / 2) + state.offsetY;
+                    const scale = scaledWidth / state.naturalWidth;
+                    const sourceX = Math.max(0, -left / scale);
+                    const sourceY = Math.max(0, -top / scale);
+                    const sourceWidth = Math.min(state.naturalWidth - sourceX, frameSize / scale);
+                    const sourceHeight = Math.min(state.naturalHeight - sourceY, frameSize / scale);
+
+                    context.drawImage(sourceImage, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, outputSize, outputSize);
+                    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.92));
+                    if (!blob) throw new Error('Unable to prepare this photo.');
+
+                    const croppedFile = new File([blob], 'profile-photo.png', { type: 'image/png' });
+                    const transfer = new DataTransfer();
+                    transfer.items.add(croppedFile);
+                    state.input.files = transfer.files;
+                    state.saved = true;
+
+                    const shouldSubmit = state.input.dataset.photoAutoSubmit === 'true';
+                    const form = state.input.form;
+                    closeModal();
+                    if (shouldSubmit && form) form.submit();
+                };
+
+                document.querySelectorAll('input[type="file"][data-photo-crop]').forEach((input) => {
+                    input.addEventListener('change', () => loadFile(input, input.files?.[0]));
+                });
+
+                modal.querySelectorAll('[data-photo-crop-cancel]').forEach((button) => button.addEventListener('click', closeModal));
+                modal.querySelector('[data-photo-crop-save]')?.addEventListener('click', async () => {
+                    try {
+                        await assignCroppedFile();
+                    } catch (error) {
+                        setError(error.message || 'Unable to save this photo.');
+                    }
+                });
+                modal.querySelector('[data-photo-crop-reset]')?.addEventListener('click', resetPosition);
+                modal.querySelector('[data-photo-crop-choose]')?.addEventListener('click', () => {
+                    if (!state?.input) return;
+                    state.input.value = '';
+                    state.input.click();
+                });
+                modal.querySelectorAll('[data-photo-crop-zoom-step]').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        if (!state) return;
+                        state.zoom = clamp(state.zoom + Number(button.dataset.photoCropZoomStep || 0), 1, 3);
+                        render();
+                    });
+                });
+                zoomInput.addEventListener('input', () => {
+                    if (!state) return;
+                    state.zoom = Number(zoomInput.value);
+                    render();
+                });
+                frame.addEventListener('pointerdown', (event) => {
+                    if (!state) return;
+                    drag = { x: event.clientX, y: event.clientY, offsetX: state.offsetX, offsetY: state.offsetY };
+                    frame.setPointerCapture(event.pointerId);
+                });
+                frame.addEventListener('pointermove', (event) => {
+                    if (!state || !drag) return;
+                    state.offsetX = drag.offsetX + (event.clientX - drag.x);
+                    state.offsetY = drag.offsetY + (event.clientY - drag.y);
+                    render();
+                });
+                frame.addEventListener('pointerup', () => { drag = null; });
+                frame.addEventListener('pointercancel', () => { drag = null; });
+                modal.addEventListener('dragover', (event) => {
+                    event.preventDefault();
+                });
+                modal.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    if (!state?.input) return;
+                    loadFile(state.input, event.dataTransfer?.files?.[0]);
+                });
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && !modal.hidden) closeModal();
+                });
+            })();
+        </script>
+    @endif
 </body>
 </html>
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\InayKaalamanUpload;
+use App\Models\Infant;
 use App\Models\MaternalMonitoringRecord;
 use App\Models\Mother;
 use App\Models\ProgramStaff;
@@ -153,6 +154,67 @@ class MotherPortalFeatureTest extends TestCase
             ->assertSee('1 saved upload');
     }
 
+    public function test_mother_can_update_child_profile_and_photo(): void
+    {
+        Storage::fake('public');
+
+        $mother = $this->createMother('child-profile-update@example.test');
+        $infant = Infant::create([
+            'mother_id' => $mother->id,
+            'full_name' => 'Baby One',
+            'sex' => 'female',
+            'birth_date' => '2026-07-01',
+        ]);
+
+        $this->withMotherSession($mother)
+            ->patch('/child-health/children/'.$infant->id, [
+                'full_name' => 'Baby Updated',
+                'sex' => 'female',
+                'birth_date' => '2026-07-01',
+                'birth_weight' => 3.1,
+                'birth_height' => 49,
+                'blood_type' => 'O+',
+            ])
+            ->assertRedirect('/child-health?child='.$infant->id);
+
+        $this->assertDatabaseHas('infants', [
+            'id' => $infant->id,
+            'full_name' => 'Baby Updated',
+            'blood_type' => 'O+',
+        ]);
+        $infant->refresh();
+        $this->assertNull($infant->birth_weight);
+        $this->assertNull($infant->birth_height);
+
+        $this->withMotherSession($mother)
+            ->patch('/child-health/children/'.$infant->id.'/photo', [
+                'child_photo' => $this->fakePng('baby-profile.png'),
+            ])
+            ->assertRedirect('/child-health?child='.$infant->id);
+
+        $infant->refresh();
+        $this->assertNotNull($infant->photo_path);
+        Storage::disk('public')->assertExists($infant->photo_path);
+    }
+
+    public function test_mother_can_upload_sidebar_profile_photo(): void
+    {
+        Storage::fake('public');
+
+        $mother = $this->createMother('mother-profile-photo@example.test');
+
+        $this->withMotherSession($mother)
+            ->from('/child-health')
+            ->patch('/mother/profile-photo', [
+                'profile_photo' => $this->fakePng('mother-profile.png'),
+            ])
+            ->assertRedirect('/child-health');
+
+        $mother->refresh();
+        $this->assertNotNull($mother->profile_photo_path);
+        Storage::disk('public')->assertExists($mother->profile_photo_path);
+    }
+
     private function createMother(string $email): Mother
     {
         return Mother::create([
@@ -175,5 +237,12 @@ class MotherPortalFeatureTest extends TestCase
             'auth_name' => $mother->full_name,
             'auth_email' => $mother->email,
         ]);
+    }
+
+    private function fakePng(string $name): UploadedFile
+    {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=');
+
+        return UploadedFile::fake()->createWithContent($name, $png);
     }
 }

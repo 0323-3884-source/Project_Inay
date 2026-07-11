@@ -19,6 +19,7 @@ class Mother extends Model
         'age',
         'blood_type',
         'pregnancy_status',
+        'profile_photo_path',
         'location_latitude',
         'location_longitude',
         'location_accuracy',

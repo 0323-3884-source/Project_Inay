@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminStatisticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\CallController;
@@ -14,6 +16,14 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
+Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.store');
+Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+Route::middleware('admin.auth')->group(function () {
+    Route::get('/admin', fn () => redirect()->route('admin.statistics'))->name('admin.dashboard');
+    Route::get('/admin/statistics', AdminStatisticsController::class)->name('admin.statistics');
+});
+
 Route::get('/register/mother', [AuthController::class, 'showMotherRegister'])->name('mother.register');
 Route::post('/register/mother', [AuthController::class, 'registerMother'])->name('mother.register.store');
 
@@ -26,6 +36,9 @@ Route::get('/mother/dashboard', [AuthController::class, 'motherDashboard'])->nam
 Route::get('/maternal-monitoring', [AuthController::class, 'maternalMonitoring'])->name('maternal-monitoring');
 Route::get('/child-health', [AuthController::class, 'childHealth'])->name('child-health');
 Route::post('/child-health/children', [AuthController::class, 'storeMotherChild'])->name('child-health.children.store');
+Route::patch('/child-health/children/{infant}', [AuthController::class, 'updateMotherChild'])->name('child-health.children.update');
+Route::patch('/child-health/children/{infant}/photo', [AuthController::class, 'updateMotherChildPhoto'])->name('child-health.children.photo.update');
+Route::patch('/mother/profile-photo', [AuthController::class, 'updateMotherProfilePhoto'])->name('mother.profile-photo.update');
 Route::get('/inay-kaalaman', [AuthController::class, 'inayKaalaman'])->name('inay-kaalaman');
 Route::get('/health-services', [AuthController::class, 'healthServices'])->name('health-services');
 Route::get('/mother/consultation', [ConsultationController::class, 'mother'])->name('mother.consultation');
@@ -46,8 +59,16 @@ Route::patch('/staff/clinic-schedule/{appointment}', [AppointmentController::cla
 Route::patch('/staff/clinic-schedule/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('staff.clinic-schedule.cancel');
 Route::patch('/staff/clinic-schedule/{appointment}/complete', [AppointmentController::class, 'complete'])->name('staff.clinic-schedule.complete');
 Route::post('/staff/neonatal-vaccines/infants', [AuthController::class, 'storeStaffInfant'])->name('staff.neonatal.infants.store');
+Route::patch('/staff/neonatal-vaccines/infants/{infant}', [AuthController::class, 'updateStaffInfant'])->name('staff.neonatal.infants.update');
+Route::patch('/staff/neonatal-vaccines/infants/{infant}/photo', [AuthController::class, 'updateStaffInfantPhoto'])->name('staff.neonatal.infants.photo.update');
 Route::post('/staff/neonatal-vaccines/infants/{infant}/growth', [AuthController::class, 'storeStaffInfantGrowth'])->name('staff.neonatal.growth.store');
+Route::patch('/staff/neonatal-vaccines/growth/{growth}', [AuthController::class, 'updateStaffInfantGrowth'])->name('staff.neonatal.growth.update');
+Route::delete('/staff/neonatal-vaccines/growth/{growth}', [AuthController::class, 'deleteStaffInfantGrowth'])->name('staff.neonatal.growth.delete');
+Route::post('/staff/neonatal-vaccines/infants/{infant}/vaccines', [AuthController::class, 'storeStaffInfantVaccine'])->name('staff.neonatal.vaccines.store');
 Route::post('/staff/neonatal-vaccines/vaccines/{vaccine}', [AuthController::class, 'updateStaffInfantVaccine'])->name('staff.neonatal.vaccines.update');
+Route::patch('/staff/neonatal-vaccines/vaccines/{vaccine}/cancel', [AuthController::class, 'cancelStaffInfantVaccine'])->name('staff.neonatal.vaccines.cancel');
+Route::post('/staff/neonatal-vaccines/infants/{infant}/alerts', [AuthController::class, 'storeStaffChildAlert'])->name('staff.neonatal.alerts.store');
+Route::patch('/staff/neonatal-vaccines/alerts/{alert}/resolve', [AuthController::class, 'resolveStaffChildAlert'])->name('staff.neonatal.alerts.resolve');
 Route::post('/staff/mothers', [AuthController::class, 'storeStaffMothers'])->name('staff.mothers.store');
 Route::get('/staff/mothers/{mother}', [AuthController::class, 'staffMotherCasefile'])->name('staff.mothers.show');
 

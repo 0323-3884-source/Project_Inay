@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Mother;
 use App\Models\InayKaalamanUpload;
+use App\Models\ChildHealthAlert;
 use App\Models\InfantVaccineRecord;
 use App\Models\InfantGrowthRecord;
 use App\Models\Infant;
@@ -17,6 +18,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -258,6 +260,7 @@ class AuthController extends Controller
         $mother = Mother::with([
             'infants.growthRecords.recorder',
             'infants.vaccineRecords.recorder',
+            'infants.healthAlerts.creator',
         ])->find($request->session()->get('auth_id'));
 
         if (! $mother) {
@@ -267,13 +270,21 @@ class AuthController extends Controller
         }
 
         $selectedChildId = (int) $request->query('child', 0);
-        $selectedChild = $selectedChildId > 0
-            ? $mother->infants->firstWhere('id', $selectedChildId)
-            : null;
+        $childAccessDenied = false;
+        $childAccessMessage = null;
+        $selectedChild = null;
 
-        $selectedChild ??= $mother->infants->first();
+        if ($selectedChildId > 0) {
+            $selectedChild = $mother->infants->firstWhere('id', $selectedChildId);
+            $childAccessDenied = ! $selectedChild;
+            $childAccessMessage = $childAccessDenied
+                ? 'The selected child profile is not available for your account.'
+                : null;
+        } else {
+            $selectedChild = $mother->infants->first();
+        }
 
-        return view('modules.child-health', compact('mother', 'selectedChild'));
+        return view('modules.child-health', compact('mother', 'selectedChild', 'childAccessDenied', 'childAccessMessage'));
     }
 
     public function storeMotherChild(Request $request): JsonResponse|RedirectResponse
@@ -298,6 +309,8 @@ class AuthController extends Controller
             'full_name' => ['required', 'string', 'max:255'],
             'sex' => ['required', Rule::in(['female', 'male', 'other', 'unspecified'])],
             'birth_date' => ['required', 'date', 'before_or_equal:today'],
+            'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
+            'child_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $birthDate = Carbon::parse($validated['birth_date'])->startOfDay();
@@ -316,11 +329,15 @@ class AuthController extends Controller
                 : back()->withErrors(['full_name' => $message])->withInput();
         }
 
+        $photoPath = $request->file('child_photo')?->store('child-photos', 'public');
+
         $infant = Infant::create([
             'mother_id' => $mother->id,
             'full_name' => trim($validated['full_name']),
             'sex' => $sex,
             'birth_date' => $birthDate->toDateString(),
+            'blood_type' => $validated['blood_type'] ?? null,
+            'photo_path' => $photoPath,
             'facility' => $mother->barangay ? 'RHU - '.$mother->barangay : null,
         ]);
 
@@ -340,6 +357,124 @@ class AuthController extends Controller
 
         return redirect()->route('child-health', ['child' => $infant->id])->with('status', 'Child profile saved.');
     }
+
+    public function updateMotherChild(Request $request, Infant $infant): RedirectResponse
+    {
+        if ($request->session()->get('auth_role') !== 'mother') {
+            return redirect()->route('login')->with('status', 'Please login as Mother first.');
+        }
+
+        $mother = Mother::find($request->session()->get('auth_id'));
+
+        if (! $mother) {
+            $this->clearLoginSession($request);
+
+            return redirect()->route('login')->with('status', 'Please login again.');
+        }
+
+        if ((int) $infant->mother_id !== (int) $mother->id) {
+            return redirect()->route('child-health')->with('status', 'You cannot update this child profile.');
+        }
+
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'sex' => ['required', Rule::in(['female', 'male', 'other', 'unspecified'])],
+            'birth_date' => ['required', 'date', 'before_or_equal:today'],
+            'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
+        ]);
+
+        $birthDate = Carbon::parse($validated['birth_date'])->startOfDay();
+        $sex = $validated['sex'] === 'unspecified' ? 'other' : $validated['sex'];
+        $duplicate = Infant::where('mother_id', $mother->id)
+            ->whereRaw('LOWER(full_name) = ?', [Str::lower(trim($validated['full_name']))])
+            ->whereDate('birth_date', $birthDate->toDateString())
+            ->whereKeyNot($infant->id)
+            ->first();
+
+        if ($duplicate) {
+            return back()
+                ->withInput()
+                ->withErrors(['full_name' => 'This child profile already exists.']);
+        }
+
+        $infant->update([
+            'full_name' => trim($validated['full_name']),
+            'sex' => $sex,
+            'birth_date' => $birthDate->toDateString(),
+            'blood_type' => $validated['blood_type'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('child-health', ['child' => $infant->id])
+            ->with('status', 'Child profile updated.');
+    }
+
+    public function updateMotherChildPhoto(Request $request, Infant $infant): RedirectResponse
+    {
+        if ($request->session()->get('auth_role') !== 'mother') {
+            return redirect()->route('login')->with('status', 'Please login as Mother first.');
+        }
+
+        $mother = Mother::find($request->session()->get('auth_id'));
+
+        if (! $mother) {
+            $this->clearLoginSession($request);
+
+            return redirect()->route('login')->with('status', 'Please login again.');
+        }
+
+        if ((int) $infant->mother_id !== (int) $mother->id) {
+            return redirect()->route('child-health')->with('status', 'You cannot update this child photo.');
+        }
+
+        $validated = $request->validate([
+            'child_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $oldPhotoPath = $infant->photo_path;
+        $newPhotoPath = $validated['child_photo']->store('child-photos', 'public');
+
+        $infant->update(['photo_path' => $newPhotoPath]);
+
+        if ($oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
+
+        return redirect()
+            ->route('child-health', ['child' => $infant->id])
+            ->with('status', 'Child profile photo updated.');
+    }
+
+    public function updateMotherProfilePhoto(Request $request): RedirectResponse
+    {
+        if ($request->session()->get('auth_role') !== 'mother') {
+            return redirect()->route('login')->with('status', 'Please login as Mother first.');
+        }
+
+        $mother = Mother::find($request->session()->get('auth_id'));
+
+        if (! $mother) {
+            $this->clearLoginSession($request);
+
+            return redirect()->route('login')->with('status', 'Please login again.');
+        }
+
+        $validated = $request->validate([
+            'profile_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $oldPhotoPath = $mother->profile_photo_path;
+        $newPhotoPath = $validated['profile_photo']->store('mother-profile-photos', 'public');
+
+        $mother->update(['profile_photo_path' => $newPhotoPath]);
+
+        if ($oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
+
+        return back()->with('status', 'Profile photo updated.');
+    }
+
     public function inayKaalaman(Request $request): View|RedirectResponse
     {
         if ($request->session()->get('auth_role') !== 'mother') {
@@ -780,39 +915,47 @@ class AuthController extends Controller
         $mothers = Mother::query()
             ->whereIn('id', $assignedMotherIds)
             ->with([
-                'maternalMonitoringRecords' => fn ($query) => $query->orderByDesc('recorded_at')->orderByDesc('created_at'),
-                'infants.growthRecords.recorder',
-                'infants.vaccineRecords.recorder',
+                'infants' => fn ($query) => $query->orderBy('birth_date')->orderBy('full_name'),
             ])
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get();
 
-        $selectedMother = null;
-        $selectedMotherId = (int) $request->query('mother', 0);
+        $children = Infant::with([
+                'mother',
+                'growthRecords.recorder',
+                'vaccineRecords.recorder',
+                'healthAlerts.creator',
+            ])
+            ->whereIn('mother_id', $assignedMotherIds)
+            ->orderBy('full_name')
+            ->get();
 
-        if ($selectedMotherId > 0) {
-            $selectedMother = $mothers->firstWhere('id', $selectedMotherId);
+        $selectedChildId = (int) $request->query('child', 0);
+        $selectedInfant = null;
+        $childAccessDenied = false;
+
+        if ($selectedChildId > 0) {
+            $selectedInfant = $children->firstWhere('id', $selectedChildId);
+            $childAccessDenied = ! $selectedInfant;
+        } else {
+            $selectedInfant = $children->first();
         }
 
-        $selectedMother ??= $mothers->first();
-
-        $allInfants = Infant::with(['growthRecords', 'vaccineRecords'])
-            ->whereIn('mother_id', $assignedMotherIds)
-            ->get();
-        $allVaccines = InfantVaccineRecord::whereIn('infant_id', $allInfants->pluck('id'))->get();
+        $allVaccines = $children->flatMap->vaccineRecords;
+        $activeAlerts = $children->flatMap->healthAlerts->where('status', 'active');
         $today = Carbon::today();
 
         $neonatalStats = [
-            'linked_infants' => $allInfants->count(),
+            'linked_infants' => $children->count(),
             'vaccines_completed' => $allVaccines->where('status', 'completed')->count(),
-            'upcoming_vaccines' => $allVaccines->filter(fn (InfantVaccineRecord $record): bool => $record->status !== 'completed' && $record->due_date && $record->due_date->greaterThanOrEqualTo($today))->count(),
-            'overdue_vaccines' => $allVaccines->filter(fn (InfantVaccineRecord $record): bool => $record->status !== 'completed' && $record->due_date && $record->due_date->isBefore($today))->count(),
-            'high_risk_children' => $allInfants->filter(fn (Infant $infant): bool => $this->infantGrowthAssessment($infant)['severity'] === 'critical')->count(),
-            'pending_followups' => $allInfants->filter(fn (Infant $infant): bool => $this->infantGrowthAssessment($infant)['severity'] !== 'normal')->count(),
+            'upcoming_vaccines' => $allVaccines->filter(fn (InfantVaccineRecord $record): bool => in_array($record->status, ['upcoming', 'overdue'], true) && $record->due_date && $record->due_date->greaterThanOrEqualTo($today))->count(),
+            'overdue_vaccines' => $allVaccines->filter(fn (InfantVaccineRecord $record): bool => $record->status === 'overdue' || ($record->status === 'upcoming' && $record->due_date && $record->due_date->isBefore($today)))->count(),
+            'active_alerts' => $activeAlerts->count(),
+            'pending_followups' => $children->filter(fn (Infant $infant): bool => $this->infantGrowthAssessment($infant)['severity'] !== 'normal')->count(),
         ];
 
-        return view('modules.staff-neonatal-vaccines', compact('staff', 'mothers', 'selectedMother', 'neonatalStats'));
+        return view('modules.staff-neonatal-vaccines', compact('staff', 'mothers', 'children', 'selectedInfant', 'childAccessDenied', 'neonatalStats'));
     }
 
     public function storeStaffInfant(Request $request): RedirectResponse
@@ -830,6 +973,8 @@ class AuthController extends Controller
             'birth_date' => ['required', 'date', 'before_or_equal:today'],
             'birth_weight' => ['nullable', 'numeric', 'between:0.5,12'],
             'birth_height' => ['nullable', 'numeric', 'between:20,80'],
+            'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
+            'child_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'facility' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -840,18 +985,32 @@ class AuthController extends Controller
             return redirect()->route('staff.neonatal')->with('status', 'Add this mother to your casefiles before onboarding an infant.');
         }
 
+        $birthDate = Carbon::parse($validated['birth_date'])->startOfDay();
+        $duplicate = Infant::where('mother_id', $mother->id)
+            ->whereRaw('LOWER(full_name) = ?', [Str::lower(trim($validated['full_name']))])
+            ->whereDate('birth_date', $birthDate->toDateString())
+            ->first();
+
+        if ($duplicate) {
+            return redirect()
+                ->route('staff.neonatal', ['child' => $duplicate->id])
+                ->withErrors(['full_name' => 'This child profile already exists for the selected mother.']);
+        }
+
+        $photoPath = $request->file('child_photo')?->store('child-photos', 'public');
+
         $infant = Infant::create([
             'mother_id' => $mother->id,
-            'full_name' => $validated['full_name'],
+            'full_name' => trim($validated['full_name']),
             'sex' => $validated['sex'],
-            'birth_date' => $validated['birth_date'],
+            'birth_date' => $birthDate->toDateString(),
             'birth_weight' => $validated['birth_weight'] ?? null,
             'birth_height' => $validated['birth_height'] ?? null,
+            'blood_type' => $validated['blood_type'] ?? null,
+            'photo_path' => $photoPath,
             'facility' => $validated['facility'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ]);
-
-        $birthDate = Carbon::parse($validated['birth_date'])->startOfDay();
 
         if (! empty($validated['birth_weight']) && ! empty($validated['birth_height'])) {
             InfantGrowthRecord::firstOrCreate(
@@ -869,8 +1028,91 @@ class AuthController extends Controller
         $this->createInfantVaccineSchedule($infant, $birthDate, $staff);
 
         return redirect()
-            ->route('staff.neonatal', ['mother' => $mother->id])
-            ->with('status', 'Infant profile registered successfully.');
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Child profile registered successfully.');
+    }
+
+    public function updateStaffInfant(Request $request, Infant $infant): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+
+        if (! $staff || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot update this child profile.');
+        }
+
+        $validated = $request->validate([
+            'mother_id' => ['required', 'integer', 'exists:mothers,id'],
+            'full_name' => ['required', 'string', 'max:255'],
+            'sex' => ['required', Rule::in(['female', 'male', 'other'])],
+            'birth_date' => ['required', 'date', 'before_or_equal:today'],
+            'birth_weight' => ['nullable', 'numeric', 'between:0.5,12'],
+            'birth_height' => ['nullable', 'numeric', 'between:20,80'],
+            'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
+            'facility' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $mother = Mother::findOrFail($validated['mother_id']);
+
+        if (! $this->casefileForStaffMother($staff, $mother)) {
+            return redirect()->route('staff.neonatal', ['child' => $infant->id])
+                ->with('status', 'You can only assign children to mothers in your casefiles.');
+        }
+
+        $birthDate = Carbon::parse($validated['birth_date'])->startOfDay();
+        $duplicate = Infant::where('mother_id', $mother->id)
+            ->whereRaw('LOWER(full_name) = ?', [Str::lower(trim($validated['full_name']))])
+            ->whereDate('birth_date', $birthDate->toDateString())
+            ->whereKeyNot($infant->id)
+            ->first();
+
+        if ($duplicate) {
+            return back()
+                ->withInput()
+                ->withErrors(['full_name' => 'This child profile already exists for the selected mother.']);
+        }
+
+        $infant->update([
+            'mother_id' => $mother->id,
+            'full_name' => trim($validated['full_name']),
+            'sex' => $validated['sex'],
+            'birth_date' => $birthDate->toDateString(),
+            'birth_weight' => $validated['birth_weight'] ?? null,
+            'birth_height' => $validated['birth_height'] ?? null,
+            'blood_type' => $validated['blood_type'] ?? null,
+            'facility' => $validated['facility'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Child profile updated.');
+    }
+
+    public function updateStaffInfantPhoto(Request $request, Infant $infant): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+
+        if (! $staff || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot update this child photo.');
+        }
+
+        $validated = $request->validate([
+            'child_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $oldPhotoPath = $infant->photo_path;
+        $newPhotoPath = $validated['child_photo']->store('child-photos', 'public');
+
+        $infant->update(['photo_path' => $newPhotoPath]);
+
+        if ($oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Child profile photo updated.');
     }
 
     public function storeStaffInfantGrowth(Request $request, Infant $infant): RedirectResponse
@@ -913,8 +1155,129 @@ class AuthController extends Controller
         ]);
 
         return redirect()
-            ->route('staff.neonatal', ['mother' => $infant->mother_id])
+            ->route('staff.neonatal', ['child' => $infant->id])
             ->with('status', 'Growth record saved.');
+    }
+
+    public function updateStaffInfantGrowth(Request $request, InfantGrowthRecord $growth): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        $infant = $growth->infant;
+
+        if (! $staff || ! $infant || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot update this growth record.');
+        }
+
+        $validated = $request->validate([
+            'measured_at' => ['required', 'date', 'before_or_equal:today'],
+            'age_months' => ['required', 'integer', 'between:0,60'],
+            'weight' => ['required', 'numeric', 'between:0.5,50'],
+            'height' => ['required', 'numeric', 'between:20,130'],
+            'head_circumference' => ['nullable', 'numeric', 'between:20,70'],
+            'temperature' => ['nullable', 'numeric', 'between:34,43'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $date = Carbon::parse($validated['measured_at'])->toDateString();
+        $duplicate = InfantGrowthRecord::where('infant_id', $infant->id)
+            ->whereDate('measured_at', $date)
+            ->whereKeyNot($growth->id)
+            ->exists();
+
+        if ($duplicate) {
+            return back()
+                ->withInput()
+                ->withErrors(['measured_at' => 'Another growth measurement already exists for this date.']);
+        }
+
+        $growth->update([
+            'recorded_by_staff_id' => $staff->id,
+            'measured_at' => $date,
+            'age_months' => (int) $validated['age_months'],
+            'weight' => (float) $validated['weight'],
+            'height' => (float) $validated['height'],
+            'head_circumference' => $validated['head_circumference'] ?? null,
+            'temperature' => $validated['temperature'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Growth record updated.');
+    }
+
+    public function deleteStaffInfantGrowth(Request $request, InfantGrowthRecord $growth): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        $infant = $growth->infant;
+
+        if (! $staff || ! $infant || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot delete this growth record.');
+        }
+
+        $growth->delete();
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Growth record deleted.');
+    }
+
+    public function storeStaffInfantVaccine(Request $request, Infant $infant): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+
+        if (! $staff || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot update this child record.');
+        }
+
+        $validated = $request->validate([
+            'vaccine_group' => ['required', 'string', 'max:120'],
+            'vaccine_name' => ['required', 'string', 'max:255'],
+            'dose_label' => ['required', 'string', 'max:120'],
+            'due_date' => ['nullable', 'date'],
+            'status' => ['required', Rule::in(['upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
+            'administered_at' => ['nullable', 'date', 'before_or_equal:today'],
+            'facility' => ['nullable', 'string', 'max:255'],
+            'lot_number' => ['nullable', 'string', 'max:120'],
+            'vaccinator' => ['nullable', 'string', 'max:255'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($validated['status'] === 'completed' && empty($validated['administered_at'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['administered_at' => 'Administration date is required when marking a vaccine completed.']);
+        }
+
+        $duplicate = InfantVaccineRecord::where('infant_id', $infant->id)
+            ->whereRaw('LOWER(vaccine_name) = ?', [Str::lower(trim($validated['vaccine_name']))])
+            ->whereRaw('LOWER(dose_label) = ?', [Str::lower(trim($validated['dose_label']))])
+            ->exists();
+
+        if ($duplicate) {
+            return back()
+                ->withInput()
+                ->withErrors(['vaccine_name' => 'This vaccine dose already exists for this child.']);
+        }
+
+        InfantVaccineRecord::create([
+            'infant_id' => $infant->id,
+            'recorded_by_staff_id' => $staff->id,
+            'vaccine_group' => trim($validated['vaccine_group']),
+            'vaccine_name' => trim($validated['vaccine_name']),
+            'dose_label' => trim($validated['dose_label']),
+            'due_date' => $validated['due_date'] ?? null,
+            'status' => $validated['status'],
+            'administered_at' => $validated['administered_at'] ?? null,
+            'facility' => $validated['facility'] ?? null,
+            'lot_number' => $validated['lot_number'] ?? null,
+            'vaccinator' => $validated['vaccinator'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Vaccine schedule saved.');
     }
 
     public function updateStaffInfantVaccine(Request $request, InfantVaccineRecord $vaccine): RedirectResponse
@@ -927,7 +1290,7 @@ class AuthController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['upcoming', 'completed', 'deferred', 'missed'])],
+            'status' => ['required', Rule::in(['upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
             'administered_at' => ['nullable', 'date', 'before_or_equal:today'],
             'facility' => ['nullable', 'string', 'max:255'],
             'lot_number' => ['nullable', 'string', 'max:120'],
@@ -952,8 +1315,75 @@ class AuthController extends Controller
         ]);
 
         return redirect()
-            ->route('staff.neonatal', ['mother' => $infant->mother_id])
+            ->route('staff.neonatal', ['child' => $infant->id])
             ->with('status', 'Vaccine surveillance updated.');
+    }
+
+    public function cancelStaffInfantVaccine(Request $request, InfantVaccineRecord $vaccine): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        $infant = $vaccine->infant;
+
+        if (! $staff || ! $infant || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot cancel this vaccine record.');
+        }
+
+        $vaccine->update([
+            'recorded_by_staff_id' => $staff->id,
+            'status' => 'cancelled',
+            'remarks' => $request->filled('remarks') ? Str::limit((string) $request->input('remarks'), 2000, '') : $vaccine->remarks,
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Vaccine record cancelled.');
+    }
+
+    public function storeStaffChildAlert(Request $request, Infant $infant): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+
+        if (! $staff || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot update this child record.');
+        }
+
+        $validated = $request->validate([
+            'alert_type' => ['required', Rule::in(['follow_up_needed', 'nutrition', 'vaccine', 'clinical_review', 'other'])],
+            'title' => ['required', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        ChildHealthAlert::create([
+            'infant_id' => $infant->id,
+            'created_by_staff_id' => $staff->id,
+            'alert_type' => $validated['alert_type'],
+            'title' => trim($validated['title']),
+            'notes' => $validated['notes'] ?? null,
+            'status' => 'active',
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Child health alert added.');
+    }
+
+    public function resolveStaffChildAlert(Request $request, ChildHealthAlert $alert): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        $infant = $alert->infant;
+
+        if (! $staff || ! $infant || ! $this->staffCanAccessInfant($staff, $infant)) {
+            return redirect()->route('staff.neonatal')->with('status', 'You cannot resolve this child alert.');
+        }
+
+        $alert->update([
+            'status' => 'resolved',
+            'resolved_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Child health alert resolved.');
     }
     public function logout(Request $request): RedirectResponse
     {
@@ -1209,7 +1639,7 @@ class AuthController extends Controller
                     'dose_label' => $item['dose'],
                 ],
                 [
-                    'recorded_by_staff_id' => $staff->id,
+                    'recorded_by_staff_id' => $staff?->id,
                     'vaccine_group' => $item['group'],
                     'due_date' => $item['due_date'],
                     'status' => 'upcoming',
@@ -1446,4 +1876,3 @@ class AuthController extends Controller
         return $staffId;
     }
 }
-
