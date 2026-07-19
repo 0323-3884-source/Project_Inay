@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesConsultations;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Support\AppNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -128,6 +129,24 @@ class MessageController extends Controller
                 'last_message_id' => $message->id,
                 'last_message_at' => $message->created_at,
             ])->save();
+
+            $conversation->loadMissing(['mother', 'programStaff']);
+            $senderName = $this->participantName($conversation, $participant['id'], $participant['role']);
+            $fallback = $attachment ? 'Sent an attachment.' : 'Sent a new consultation message.';
+
+            AppNotificationService::create(
+                (int) $receiver['id'],
+                $receiver['role'],
+                'consultation_message',
+                'New consultation message',
+                $senderName.': '.AppNotificationService::preview($body, $fallback),
+                [
+                    'conversation_id' => $conversation->id,
+                    'url' => $receiver['role'] === Message::ROLE_MOTHER
+                        ? route('mother.consultation', ['conversation' => $conversation->id])
+                        : route('staff.consultation', ['conversation' => $conversation->id]),
+                ]
+            );
         } catch (\Throwable $exception) {
             report($exception);
 

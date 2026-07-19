@@ -8,6 +8,12 @@
     $selectedRole = old('role', 'mother');
 @endphp
 
+@push('styles')
+    <style>
+        .auth-inline-status { margin: 0 0 18px; color: #704814; background: #fff8e1; border-color: #e8c56d; font-size: 13px; line-height: 1.45; }
+    </style>
+@endpush
+
 @section('content')
     <header class="auth-header">
         <span class="auth-mark" aria-hidden="true">
@@ -66,9 +72,13 @@
                 <span class="field-error">{{ $message }}</span>
             @enderror
 
+            @if (session('status'))
+                <div class="alert auth-inline-status">{{ session('status') }}</div>
+            @endif
+
             <div class="auth-field">
-                <label class="auth-label" for="email">Email Address</label>
-                <input class="auth-input" id="email" type="email" name="email" value="{{ old('email') }}" placeholder="maria.santos@inayhealth.org" required autofocus>
+                <label class="auth-label" for="email">Email Address / Admin Username</label>
+                <input class="auth-input" id="email" type="text" name="email" value="{{ old('email') }}" placeholder="maria.santos@inayhealth.org or admin" autocomplete="username" inputmode="email" required autofocus>
                 @error('email')
                     <span class="field-error">{{ $message }}</span>
                 @enderror
@@ -101,11 +111,22 @@
         const roleButtons = document.querySelectorAll('[data-role]');
         const loginSubmitLabel = document.querySelector('#loginSubmit span');
         const registerLink = document.getElementById('registerLink');
+        const loginIdentifier = document.getElementById('email');
+
+        const refreshSubmitLabel = () => {
+            const activeRole = document.querySelector('[data-role].is-active');
+
+            if (loginIdentifier.value.trim().toLowerCase() === 'admin') {
+                loginSubmitLabel.textContent = 'Login as Admin';
+                return;
+            }
+
+            loginSubmitLabel.textContent = activeRole ? activeRole.dataset.buttonLabel : 'Login';
+        };
 
         roleButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 roleInput.value = button.dataset.role;
-                loginSubmitLabel.textContent = button.dataset.buttonLabel;
                 registerLink.href = button.dataset.registerUrl;
 
                 roleButtons.forEach((item) => {
@@ -113,7 +134,12 @@
                     item.classList.toggle('is-active', isActive);
                     item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
                 });
+
+                refreshSubmitLabel();
             });
         });
+
+        loginIdentifier.addEventListener('input', refreshSubmitLabel);
+        refreshSubmitLabel();
     </script>
 @endsection

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Mother;
 use App\Models\ProgramStaff;
+use App\Models\StaffMotherCasefile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -94,6 +95,50 @@ class SeparatedRoleAuthTest extends TestCase
         ])
             ->assertRedirect('/staff/dashboard')
             ->assertSessionHas('auth_role', 'staff');
+    }
+
+    public function test_staff_shell_does_not_use_mother_profile_photo_when_same_email_casefile_is_open(): void
+    {
+        $email = 'shared-profile@example.test';
+
+        $mother = Mother::create([
+            'first_name' => 'Lina',
+            'middle_name' => null,
+            'last_name' => 'Reyes',
+            'email' => $email,
+            'password' => Hash::make('motherpass123'),
+            'barangay' => 'San Pablo',
+            'contact_number' => '09172222222',
+            'is_4ps_beneficiary' => false,
+            'profile_photo_path' => 'mother-profile-photos/mother-only.png',
+        ]);
+
+        $staff = ProgramStaff::create([
+            'first_name' => 'Ana',
+            'middle_name' => null,
+            'last_name' => 'Cruz',
+            'email' => $email,
+            'password' => Hash::make('staffpass123'),
+            'staff_id' => 'STAFF-SHELL',
+            'position' => 'Coordinator',
+            'contact_number' => '09173333333',
+        ]);
+
+        StaffMotherCasefile::create([
+            'staff_id' => $staff->id,
+            'mother_id' => $mother->id,
+        ]);
+
+        $this->withSession([
+            'auth_role' => 'staff',
+            'auth_id' => $staff->id,
+            'auth_name' => $staff->full_name,
+            'auth_email' => $staff->email,
+        ])
+            ->get(route('staff.mothers.show', $mother))
+            ->assertOk()
+            ->assertSee($staff->full_name)
+            ->assertDontSee('mother-profile-photos/mother-only.png');
     }
 
     public function test_screenshot_style_registration_payloads_create_records(): void

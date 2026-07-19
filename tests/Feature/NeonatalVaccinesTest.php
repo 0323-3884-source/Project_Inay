@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Infant;
+use App\Models\InfantGrowthRecord;
 use App\Models\Mother;
 use App\Models\ProgramStaff;
 use App\Models\StaffMotherCasefile;
@@ -134,6 +135,92 @@ class NeonatalVaccinesTest extends TestCase
         $infant->refresh();
         $this->assertNotNull($infant->photo_path);
         Storage::disk('public')->assertExists($infant->photo_path);
+    }
+
+    public function test_staff_can_edit_growth_history_from_neonatal_growth_table(): void
+    {
+        $staff = ProgramStaff::create([
+            'first_name' => 'Miguel',
+            'last_name' => 'Ponce Isles',
+            'email' => 'staff-growth-edit@example.test',
+            'password' => Hash::make('password123'),
+            'staff_id' => 'STAFF-GROWTH-EDIT',
+            'position' => 'Program Staff',
+            'contact_number' => '09990001111',
+        ]);
+
+        $mother = Mother::create([
+            'first_name' => 'Maria',
+            'last_name' => 'Reyes',
+            'email' => 'mother-growth-edit@example.test',
+            'password' => Hash::make('password123'),
+            'barangay' => 'Concepcion',
+            'contact_number' => '09923245009',
+            'age' => 21,
+            'blood_type' => 'Unknown',
+            'pregnancy_status' => 'not_pregnant',
+            'is_4ps_beneficiary' => false,
+        ]);
+
+        StaffMotherCasefile::create([
+            'staff_id' => $staff->id,
+            'mother_id' => $mother->id,
+        ]);
+
+        $infant = Infant::create([
+            'mother_id' => $mother->id,
+            'full_name' => 'Baby Reyes',
+            'sex' => 'female',
+            'birth_date' => '2026-06-10',
+        ]);
+
+        $growth = InfantGrowthRecord::create([
+            'infant_id' => $infant->id,
+            'recorded_by_staff_id' => $staff->id,
+            'measured_at' => '2026-07-14',
+            'age_months' => 1,
+            'weight' => 5.10,
+            'height' => 53.00,
+            'head_circumference' => 35.00,
+            'temperature' => 36.7,
+            'remarks' => 'Initial measurement.',
+        ]);
+
+        $session = [
+            'auth_role' => 'staff',
+            'auth_id' => $staff->id,
+            'auth_name' => $staff->full_name,
+            'auth_email' => $staff->email,
+        ];
+
+        $this->withSession($session)
+            ->get('/staff/neonatal-vaccines?child='.$infant->id)
+            ->assertOk()
+            ->assertSeeInOrder(['Recorded By', 'Edit Growth'], false)
+            ->assertSee('data-neo-growth', false)
+            ->assertSee(route('staff.neonatal.growth.update', $growth), false);
+
+        $this->withSession($session)
+            ->patch(route('staff.neonatal.growth.update', $growth), [
+                'measured_at' => '2026-07-15',
+                'age_months' => 1,
+                'weight' => 5.45,
+                'height' => 54.2,
+                'head_circumference' => 35.8,
+                'temperature' => 36.9,
+                'remarks' => 'Updated from growth history.',
+            ])
+            ->assertRedirect('/staff/neonatal-vaccines?child='.$infant->id);
+
+        $this->assertDatabaseHas('infant_growth_records', [
+            'id' => $growth->id,
+            'recorded_by_staff_id' => $staff->id,
+            'measured_at' => '2026-07-15 00:00:00',
+            'age_months' => 1,
+            'remarks' => 'Updated from growth history.',
+        ]);
+
+        $this->assertSame('5.45', $growth->fresh()->weight);
     }
 
     private function fakePng(string $name): UploadedFile

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mother;
+use App\Models\InayKaalamanProgress;
 use App\Models\InayKaalamanUpload;
+use App\Models\AdminUser;
 use App\Models\ChildHealthAlert;
+use App\Models\EducationalContent;
 use App\Models\InfantVaccineRecord;
 use App\Models\InfantGrowthRecord;
 use App\Models\Infant;
@@ -141,8 +144,16 @@ class AuthController extends Controller
             $request->merge(['staff_id' => $this->generateStaffId()]);
         }
 
+        if (! $request->filled('role') && $request->filled('position')) {
+            $request->merge(['role' => $request->input('position')]);
+        }
+
+        if (! $request->filled('role')) {
+            $request->merge(['role' => 'Program Staff']);
+        }
+
         if (! $request->filled('position')) {
-            $request->merge(['position' => 'Program Staff']);
+            $request->merge(['position' => $request->input('role', 'Program Staff')]);
         }
 
         if (! $request->filled('contact_number')) {
@@ -158,9 +169,13 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8'],
             'staff_id' => ['required', 'string', 'max:255', 'unique:program_staff,staff_id'],
             'position' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'string', 'max:80'],
             'contact_number' => ['required', 'string', 'max:30'],
+            'healthcare_worker_id_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'privacy_policy' => ['accepted'],
         ]);
+
+        $idPhotoPath = $request->file('healthcare_worker_id_photo')?->store('healthcare-worker-ids', 'public');
 
         ProgramStaff::create([
             'first_name' => $validated['first_name'],
@@ -170,24 +185,37 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'staff_id' => $validated['staff_id'],
             'position' => $validated['position'],
+            'role' => $validated['role'],
             'contact_number' => $validated['contact_number'],
+            'healthcare_worker_id_photo_path' => $idPhotoPath,
+            'approval_status' => 'pending',
         ]);
 
         return redirect()
             ->route('login')
-            ->with('status', 'Program staff account created. Select Program Staff to login.');
+            ->with('status', 'Program staff account submitted for admin approval. Please wait for the confirmation email before logging in.');
     }
 
     public function login(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'role' => ['required', Rule::in(['mother', 'staff'])],
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
+        $identifier = trim($validated['email']);
+
+        if ($adminRedirect = $this->attemptAdminLoginFromSharedForm($request, $identifier, $validated['password'])) {
+            return $adminRedirect;
+        }
+
+        if (! filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $this->throwLoginError();
+        }
+
         if ($validated['role'] === 'mother') {
-            $mother = Mother::where('email', $validated['email'])->first();
+            $mother = Mother::where('email', $identifier)->first();
 
             if (! $mother || ! Hash::check($validated['password'], $mother->password)) {
                 $this->throwLoginError();
@@ -198,10 +226,22 @@ class AuthController extends Controller
             return redirect()->route('mother.dashboard');
         }
 
-        $staff = ProgramStaff::where('email', $validated['email'])->first();
+        $staff = ProgramStaff::where('email', $identifier)->first();
 
         if (! $staff || ! Hash::check($validated['password'], $staff->password)) {
             $this->throwLoginError();
+        }
+
+        if ($staff->approval_status === 'pending') {
+            throw ValidationException::withMessages([
+                'email' => 'Your Program Staff account is waiting for admin approval. Please wait for the confirmation email before logging in.',
+            ]);
+        }
+
+        if ($staff->approval_status === 'rejected') {
+            throw ValidationException::withMessages([
+                'email' => 'Your Program Staff registration was not approved. Please contact the administrator for assistance.',
+            ]);
         }
 
         $this->startLoginSession($request, 'staff', $staff->id, $staff->full_name, $staff->email);
@@ -494,7 +534,30 @@ class AuthController extends Controller
             ->get()
             ->groupBy('month');
 
-        return view('modules.inay-kaalaman', compact('mother', 'kaalamanUploads'));
+        $kaalamanProgressRecords = InayKaalamanProgress::where('mother_id', $mother->id)->get();
+
+        $publishedEducationalContents = EducationalContent::published()
+            ->orderBy('stage_key')
+            ->orderBy('month')
+            ->orderBy('display_order')
+            ->orderBy('title')
+            ->get();
+
+        $publishedEducationalContentByStage = $publishedEducationalContents->groupBy('stage_key');
+        $publishedEducationalContentByMonth = $publishedEducationalContents
+            ->filter(fn (EducationalContent $content) => $content->month !== null)
+            ->groupBy('month');
+        $kaalamanMonthlyProgress = $this->inayKaalamanProgressSummary($mother, $kaalamanUploads, $kaalamanProgressRecords);
+        $kaalamanOverallProgress = $kaalamanMonthlyProgress['overall'];
+
+        return view('modules.inay-kaalaman', compact(
+            'mother',
+            'kaalamanUploads',
+            'kaalamanMonthlyProgress',
+            'kaalamanOverallProgress',
+            'publishedEducationalContentByStage',
+            'publishedEducationalContentByMonth',
+        ));
     }
 
     public function inayKaalamanVideos(Request $request, int $month): View|RedirectResponse
@@ -539,7 +602,7 @@ class AuthController extends Controller
             'Maternal Care',
             '1. Review the monthly learning guide.',
             '2. Watch all educational videos.',
-            '3. Complete checkup and prescription records.',
+            '3. Upload prenatal records and receipts.',
             '4. Upload prenatal records or receipts.',
             '5. Contact your Program Staff for urgent warning signs.',
         ]);
@@ -548,6 +611,32 @@ class AuthController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="inay-kaalaman-month-'.$month.'-checklist.pdf"',
         ]);
+    }
+
+    public function deleteInayKaalamanRecord(Request $request, InayKaalamanUpload $upload): RedirectResponse
+    {
+        if ($request->session()->get('auth_role') !== 'mother') {
+            return redirect()->route('login')->with('status', 'Please login as Mother first.');
+        }
+
+        $mother = Mother::find($request->session()->get('auth_id'));
+
+        if (! $mother) {
+            $this->clearLoginSession($request);
+
+            return redirect()->route('login')->with('status', 'Please login again.');
+        }
+
+        if ((int) $upload->mother_id !== (int) $mother->id) {
+            abort(403);
+        }
+
+        Storage::disk('public')->delete($upload->path);
+        $upload->delete();
+
+        return redirect()
+            ->route('inay-kaalaman')
+            ->with('status', 'Prenatal record deleted.');
     }
 
     public function uploadInayKaalamanRecord(Request $request): RedirectResponse
@@ -566,11 +655,25 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'month' => ['required', 'integer', 'between:1,10'],
-            'record_type' => ['required', Rule::in(['Checkup Records', 'Prescription', 'Receipts'])],
+            'record_type' => ['required', Rule::in(['Prenatal Records and Receipts', 'Checkup Records', 'Prescription', 'Receipts', 'Certificate', 'Other Documents'])],
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ]);
 
         $document = $validated['document'];
+
+        $duplicateUpload = InayKaalamanUpload::where('mother_id', $mother->id)
+            ->where('month', $validated['month'])
+            ->where('record_type', $validated['record_type'])
+            ->where('original_name', $document->getClientOriginalName())
+            ->where('size', $document->getSize() ?: 0)
+            ->exists();
+
+        if ($duplicateUpload) {
+            return redirect()
+                ->route('inay-kaalaman')
+                ->with('status', 'This document was already uploaded for the selected month.');
+        }
+
         $path = $document->store('inay-kaalaman-records', 'public');
 
         InayKaalamanUpload::create([
@@ -586,6 +689,80 @@ class AuthController extends Controller
         return redirect()
             ->route('inay-kaalaman')
             ->with('status', 'Prenatal record uploaded successfully.');
+    }
+
+    public function saveInayKaalamanProgress(Request $request): JsonResponse
+    {
+        if ($request->session()->get('auth_role') !== 'mother') {
+            return response()->json(['message' => 'Please login as Mother first.'], 401);
+        }
+
+        $mother = Mother::find($request->session()->get('auth_id'));
+
+        if (! $mother) {
+            $this->clearLoginSession($request);
+
+            return response()->json(['message' => 'Please login again.'], 401);
+        }
+
+        $validated = $request->validate([
+            'month' => ['required', 'integer', 'between:1,10'],
+            'activity_type' => ['required', Rule::in(['reading', 'video', 'infographic'])],
+            'item_key' => ['required', 'string', 'max:160'],
+            'item_title' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', Rule::in(['in_progress', 'read', 'watched', 'reviewed'])],
+        ]);
+
+        $finalStatuses = [
+            'reading' => 'read',
+            'video' => 'watched',
+            'infographic' => 'reviewed',
+        ];
+
+        $activityType = $validated['activity_type'];
+        $requestedStatus = $validated['status'];
+
+        if ($requestedStatus !== 'in_progress' && $requestedStatus !== $finalStatuses[$activityType]) {
+            return response()->json(['message' => 'Invalid progress status for this activity.'], 422);
+        }
+
+        $progress = InayKaalamanProgress::firstOrNew([
+            'mother_id' => $mother->id,
+            'month' => (int) $validated['month'],
+            'activity_type' => $activityType,
+            'item_key' => $validated['item_key'],
+        ]);
+
+        $isAlreadyComplete = $progress->exists && $progress->status === $finalStatuses[$activityType];
+        $nextStatus = $isAlreadyComplete ? $progress->status : $requestedStatus;
+        $now = now();
+
+        $progress->fill([
+            'item_title' => $validated['item_title'] ?? $progress->item_title,
+            'status' => $nextStatus,
+            'started_at' => $progress->started_at ?: $now,
+            'completed_at' => $nextStatus === $finalStatuses[$activityType]
+                ? ($progress->completed_at ?: $now)
+                : $progress->completed_at,
+        ]);
+        $progress->save();
+
+        $uploads = InayKaalamanUpload::where('mother_id', $mother->id)->latest()->get()->groupBy('month');
+        $progressRecords = InayKaalamanProgress::where('mother_id', $mother->id)->get();
+        $summary = $this->inayKaalamanProgressSummary($mother, $uploads, $progressRecords);
+
+        return response()->json([
+            'message' => 'INAY Kaalaman progress saved.',
+            'progress' => [
+                'month' => $progress->month,
+                'activity_type' => $progress->activity_type,
+                'item_key' => $progress->item_key,
+                'status' => $progress->status,
+                'completed_at' => $progress->completed_at?->toISOString(),
+            ],
+            'month_summary' => $summary['months'][$progress->month] ?? null,
+            'overall' => $summary['overall'],
+        ]);
     }
 
     public function healthServices(Request $request): View|RedirectResponse
@@ -770,9 +947,24 @@ class AuthController extends Controller
             ->get();
         $latestRecord = $records->first();
         $uploads = InayKaalamanUpload::where('mother_id', $mother->id)->latest()->get();
+        $kaalamanProgressRecords = InayKaalamanProgress::where('mother_id', $mother->id)->get();
+        $kaalamanMonthlyProgress = $this->inayKaalamanProgressSummary($mother, $uploads->groupBy('month'), $kaalamanProgressRecords);
+        $kaalamanOverallProgress = $kaalamanMonthlyProgress['overall'];
+        $careCompletion = $this->careCompletionPercentage($records, $kaalamanOverallProgress);
         $maternalVitalsPayload = $this->maternalVitalsPayload($mother);
 
-        return view('modules.staff-mother-casefile', compact('staff', 'mother', 'casefile', 'records', 'latestRecord', 'uploads', 'maternalVitalsPayload'));
+        return view('modules.staff-mother-casefile', compact(
+            'staff',
+            'mother',
+            'casefile',
+            'records',
+            'latestRecord',
+            'uploads',
+            'kaalamanMonthlyProgress',
+            'kaalamanOverallProgress',
+            'careCompletion',
+            'maternalVitalsPayload',
+        ));
     }
 
     public function getStaffMaternalVitals(Request $request, Mother $mother): JsonResponse
@@ -1396,6 +1588,11 @@ class AuthController extends Controller
     private function startLoginSession(Request $request, string $role, int $id, string $name, string $email): void
     {
         $request->session()->regenerate();
+        $request->session()->forget([
+            'admin_authenticated',
+            'admin_id',
+            'admin_username',
+        ]);
         $request->session()->put([
             'auth_role' => $role,
             'auth_id' => $id,
@@ -1411,7 +1608,47 @@ class AuthController extends Controller
             'auth_id',
             'auth_name',
             'auth_email',
+            'admin_authenticated',
+            'admin_id',
+            'admin_username',
         ]);
+    }
+
+    private function attemptAdminLoginFromSharedForm(Request $request, string $identifier, string $password): ?RedirectResponse
+    {
+        $admin = AdminUser::query()
+            ->whereRaw('LOWER(username) = ?', [Str::lower($identifier)])
+            ->first();
+
+        if (! $admin) {
+            return null;
+        }
+
+        if (! Hash::check($password, $admin->password)) {
+            $this->throwLoginError();
+        }
+
+        $this->startAdminSession($request, $admin);
+
+        return redirect()->route('admin.statistics');
+    }
+
+    private function startAdminSession(Request $request, AdminUser $admin): void
+    {
+        $request->session()->regenerate();
+        $request->session()->forget([
+            'auth_role',
+            'auth_id',
+            'auth_name',
+            'auth_email',
+        ]);
+        $request->session()->put([
+            'admin_authenticated' => true,
+            'admin_id' => $admin->id,
+            'admin_username' => $admin->username,
+        ]);
+
+        $admin->forceFill(['last_login_at' => now()])->save();
     }
 
     private function staffFromRequest(Request $request): ?ProgramStaff
@@ -1721,6 +1958,10 @@ class AuthController extends Controller
     }
     private function redirectForCurrentRole(Request $request): ?RedirectResponse
     {
+        if ($request->session()->get('admin_authenticated') === true) {
+            return redirect()->route('admin.statistics');
+        }
+
         return match ($request->session()->get('auth_role')) {
             'mother' => redirect()->route('mother.dashboard'),
             'staff' => redirect()->route('staff.dashboard'),
@@ -1817,6 +2058,180 @@ class AuthController extends Controller
             'time' => $time,
             'url' => "https://www.youtube.com/results?search_query={$query}",
         ];
+    }
+
+    private function inayKaalamanProgressSummary(Mother $mother, mixed $uploadsByMonth, mixed $progressRecords): array
+    {
+        $progressByMonth = collect($progressRecords)->groupBy('month');
+        $uploadsByMonth = collect($uploadsByMonth);
+        $monthDefinitions = $this->inayKaalamanVideoMonths();
+        $requiredDocumentTypes = ['Prenatal Records and Receipts'];
+        $months = [];
+        $overallCompleted = 0;
+        $overallRequired = 0;
+        $completedMonths = 0;
+        $totalUploads = 0;
+
+        foreach ($monthDefinitions as $month => $definition) {
+            $monthProgress = collect($progressByMonth->get($month, []));
+            $monthUploads = collect($uploadsByMonth->get($month, []));
+            $totalUploads += $monthUploads->count();
+
+            $readingRecord = $monthProgress->first(fn ($record) => $record->activity_type === 'reading');
+            $readingStatus = $this->kaalamanActivityStatus($readingRecord, 'reading');
+            $readingComplete = $readingStatus['status'] === 'read';
+
+            $videos = collect($definition['videos'])->values()->map(function (array $video, int $index) use ($month, $monthProgress): array {
+                $itemKey = "month-{$month}-video-{$index}";
+                $record = $monthProgress->first(fn ($progress) => $progress->activity_type === 'video' && $progress->item_key === $itemKey);
+                $status = $this->kaalamanActivityStatus($record, 'video');
+
+                return [
+                    'key' => $itemKey,
+                    'title' => $video['title'],
+                    'tag' => $video['tag'],
+                    'time' => $video['time'],
+                    'status' => $status['status'],
+                    'label' => $status['label'],
+                    'completed_at' => $status['completed_at'],
+                ];
+            })->all();
+
+            $watchedVideos = collect($videos)->where('status', 'watched')->count();
+            $infographicKey = "month-{$month}-infographic";
+            $infographicRecord = $monthProgress->first(fn ($record) => $record->activity_type === 'infographic' && $record->item_key === $infographicKey);
+            $infographicStatus = $this->kaalamanActivityStatus($infographicRecord, 'infographic');
+            $infographicComplete = $infographicStatus['status'] === 'reviewed';
+
+            $documentStatus = collect($requiredDocumentTypes)->map(function (string $type) use ($monthUploads): array {
+                $upload = $type === 'Prenatal Records and Receipts'
+                    ? $monthUploads->first(fn ($item) => $this->isPrenatalRecordUpload((string) $item->record_type))
+                    : $monthUploads->first(fn ($item) => strcasecmp($item->record_type, $type) === 0);
+
+                return [
+                    'type' => $type,
+                    'label' => $this->kaalamanDocumentLabel($type),
+                    'uploaded' => (bool) $upload,
+                    'filename' => $upload?->original_name,
+                    'uploaded_at' => $upload?->created_at?->format('M j, Y'),
+                ];
+            })->all();
+
+            $uploadedRequiredDocuments = collect($documentStatus)->where('uploaded', true)->count();
+            $uploadedDocuments = $monthUploads->map(fn ($upload): array => [
+                'type' => $upload->record_type,
+                'label' => $this->kaalamanDocumentLabel($upload->record_type),
+                'filename' => $upload->original_name,
+                'uploaded_at' => $upload->created_at?->format('M j, Y'),
+            ])->values()->all();
+
+            $requiredCount = 1 + count($videos) + 1 + count($requiredDocumentTypes);
+            $completedCount = ($readingComplete ? 1 : 0) + $watchedVideos + ($infographicComplete ? 1 : 0) + $uploadedRequiredDocuments;
+            $percentage = $requiredCount > 0 ? (int) round($completedCount / $requiredCount * 100) : 0;
+            $status = $completedCount === 0 ? 'Not Started' : ($completedCount >= $requiredCount ? 'Completed' : 'In Progress');
+
+            $overallCompleted += $completedCount;
+            $overallRequired += $requiredCount;
+
+            if ($status === 'Completed') {
+                $completedMonths++;
+            }
+
+            $months[$month] = [
+                'month' => $month,
+                'title' => $definition['title'],
+                'weeks' => $definition['weeks'],
+                'trimester' => $this->kaalamanTrimesterLabel($month),
+                'reading' => $readingStatus,
+                'videos' => $videos,
+                'watched_videos' => $watchedVideos,
+                'total_videos' => count($videos),
+                'infographic' => $infographicStatus,
+                'documents' => $documentStatus,
+                'uploaded_documents' => $uploadedDocuments,
+                'uploaded_required_documents' => $uploadedRequiredDocuments,
+                'required_documents' => count($requiredDocumentTypes),
+                'completed_count' => $completedCount,
+                'required_count' => $requiredCount,
+                'percentage' => $percentage,
+                'status' => $status,
+                'is_complete' => $status === 'Completed',
+            ];
+        }
+
+        return [
+            'months' => $months,
+            'overall' => [
+                'completed_months' => $completedMonths,
+                'total_months' => count($monthDefinitions),
+                'completed_required' => $overallCompleted,
+                'total_required' => $overallRequired,
+                'pending_required' => max(0, $overallRequired - $overallCompleted),
+                'percentage' => $overallRequired > 0 ? (int) round($overallCompleted / $overallRequired * 100) : 0,
+                'files_uploaded' => $totalUploads,
+            ],
+        ];
+    }
+
+    private function kaalamanActivityStatus(?InayKaalamanProgress $record, string $activityType): array
+    {
+        $status = $record?->status ?? 'not_started';
+
+        $label = match ($status) {
+            'read' => 'Read',
+            'watched' => 'Watched',
+            'reviewed' => 'Reviewed',
+            'in_progress' => $activityType === 'reading' ? 'Reading in Progress...' : 'In Progress',
+            default => 'Not Started',
+        };
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'completed_at' => $record?->completed_at?->format('M j, Y, g:i A'),
+        ];
+    }
+
+    private function kaalamanDocumentLabel(string $type): string
+    {
+        return [
+            'Prenatal Records and Receipts' => 'Prenatal Records and Receipts',
+            'Checkup Records' => 'Prenatal Records and Receipts',
+            'Prescription' => 'Prenatal Records and Receipts',
+            'Receipts' => 'Prenatal Records and Receipts',
+            'Certificate' => 'Certificate',
+            'Other Documents' => 'Other Supporting Document',
+        ][$type] ?? $type;
+    }
+
+    private function isPrenatalRecordUpload(string $type): bool
+    {
+        return in_array($type, [
+            'Prenatal Records and Receipts',
+            'Checkup Records',
+            'Prescription',
+            'Receipts',
+        ], true);
+    }
+
+    private function kaalamanTrimesterLabel(int $month): string
+    {
+        return match (true) {
+            $month <= 3 => 'First Trimester',
+            $month <= 6 => 'Second Trimester',
+            $month <= 9 => 'Third Trimester',
+            default => 'Labor & Delivery',
+        };
+    }
+
+    private function careCompletionPercentage(mixed $records, array $kaalamanOverallProgress): int
+    {
+        $monitoringRequired = 8;
+        $monitoringCompleted = min(collect($records)->count(), $monitoringRequired);
+        $required = $monitoringRequired + (int) ($kaalamanOverallProgress['total_required'] ?? 0);
+        $completed = $monitoringCompleted + (int) ($kaalamanOverallProgress['completed_required'] ?? 0);
+
+        return $required > 0 ? (int) round($completed / $required * 100) : 0;
     }
 
     private function buildSimplePdf(array $lines): string

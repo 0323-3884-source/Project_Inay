@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MaternalMonitoringRecord;
 use App\Models\Mother;
+use App\Models\ProgramStaff;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AdminStatisticsController extends Controller
@@ -37,23 +40,43 @@ class AdminStatisticsController extends Controller
             ->filter(fn (Mother $mother): bool => strtolower((string) ($latestRiskRecords[$mother->id]?->risk_level ?? '')) === 'low')
             ->count();
         $barangaysRepresented = $mothers
-            ->pluck('barangay')
-            ->filter()
+            ->map(fn (Mother $mother): string => $this->normalizeBarangay($mother->barangay))
+            ->filter(fn (string $barangay): bool => $barangay !== 'Unspecified')
             ->unique()
             ->count();
         $fourPsPercentage = $totalMothers > 0 ? round(($total4ps / $totalMothers) * 100, 1) : 0;
+        $staffIdentityStats = [
+            'total' => ProgramStaff::count(),
+            'account_pending' => ProgramStaff::where('approval_status', 'pending')->count(),
+            'account_approved' => ProgramStaff::where('approval_status', 'approved')->count(),
+            'account_rejected' => ProgramStaff::where('approval_status', 'rejected')->count(),
+            'verified' => ProgramStaff::whereNotNull('healthcare_worker_id_verified_at')->count(),
+            'pending' => ProgramStaff::whereNotNull('healthcare_worker_id_photo_path')
+                ->whereNull('healthcare_worker_id_verified_at')
+                ->count(),
+            'missing' => ProgramStaff::whereNull('healthcare_worker_id_photo_path')->count(),
+            'complete_profiles' => ProgramStaff::whereNotNull('contact_number')
+                ->where(function ($query): void {
+                    $query->whereNotNull('role')->orWhereNotNull('position');
+                })
+                ->count(),
+        ];
 
-        $pregnantByBarangay = Mother::query()
-            ->where('pregnancy_status', 'pregnant')
-            ->selectRaw('barangay, COUNT(*) as total')
-            ->groupBy('barangay')
-            ->orderByDesc('total')
-            ->orderBy('barangay')
-            ->get()
-            ->map(fn ($row): array => [
-                'barangay' => $row->barangay ?: 'Unspecified',
-                'total' => (int) $row->total,
-            ])
+        $pregnantByBarangay = $pregnantMothers
+            ->groupBy(fn (Mother $mother): string => $this->normalizeBarangay($mother->barangay))
+            ->map(function (Collection $rows, string $barangay) use ($activePregnancies): array {
+                $total = $rows->count();
+                $fourPs = $rows->where('is_4ps_beneficiary', true)->count();
+
+                return [
+                    'barangay' => $barangay,
+                    'total' => $total,
+                    'percentage' => $activePregnancies > 0 ? round(($total / $activePregnancies) * 100, 1) : 0,
+                    'total_4ps' => $fourPs,
+                    'total_non_4ps' => max(0, $total - $fourPs),
+                ];
+            })
+            ->sort(fn (array $left, array $right): int => ($right['total'] <=> $left['total']) ?: strcmp($left['barangay'], $right['barangay']))
             ->values();
 
         $topBarangays = $pregnantByBarangay->take(8)->values();
@@ -91,6 +114,9 @@ class AdminStatisticsController extends Controller
                 ['title' => 'Barangays Represented', 'count' => $barangaysRepresented, 'icon' => 'map'],
                 ['title' => 'High-Risk Pregnancies', 'count' => $highRiskPregnancies, 'icon' => 'alert'],
                 ['title' => 'Active Pregnancies', 'count' => $activePregnancies, 'icon' => 'activity'],
+                ['title' => 'Program Staff', 'count' => $staffIdentityStats['total'], 'icon' => 'users'],
+                ['title' => 'Pending Staff Approval', 'count' => $staffIdentityStats['account_pending'], 'icon' => 'alert'],
+                ['title' => 'Verified Staff IDs', 'count' => $staffIdentityStats['verified'], 'icon' => 'shield'],
             ],
             'pregnantByBarangay' => $pregnantByBarangay,
             'topBarangays' => $topBarangays,
@@ -111,6 +137,27 @@ class AdminStatisticsController extends Controller
                 'high_risk' => $highRiskPregnancies,
                 'low_risk' => $lowRiskPregnancies,
             ],
+            'staffIdentityStats' => $staffIdentityStats,
         ]);
+    }
+
+    private function normalizeBarangay(?string $barangay): string
+    {
+        $barangay = trim((string) $barangay);
+
+        if ($barangay === '') {
+            return 'Unspecified';
+        }
+
+        $barangay = preg_replace('/^barangay\s+/i', '', $barangay) ?? $barangay;
+        $barangay = preg_replace('/\s+/', ' ', $barangay) ?? $barangay;
+        $barangay = Str::of($barangay)
+            ->replaceMatches('/\bSta\.?\b/i', 'Santa')
+            ->replaceMatches('/\bSto\.?\b/i', 'Santo')
+            ->replaceMatches('/\bSt\.?\b/i', 'Santa')
+            ->title()
+            ->toString();
+
+        return trim($barangay) ?: 'Unspecified';
     }
 }

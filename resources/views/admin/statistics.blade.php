@@ -11,6 +11,7 @@
         .admin-bar-fill { width: 100%; min-height: 8px; border-radius: 8px 8px 0 0; background: linear-gradient(180deg, #10b981 0%, #00856a 100%); box-shadow: 0 8px 18px rgba(0, 133, 106, 0.16); transition: height .2s ease; }
         .admin-bar-label { display: grid; gap: 4px; color: #64748b; font-size: 11px; font-weight: 800; line-height: 1.25; }
         .admin-bar-label strong { color: #071127; font-size: 13px; }
+        .admin-bar-label em { color: #00856a; font-size: 11px; font-style: normal; font-weight: 900; }
         .admin-donut-wrap { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: center; min-height: 250px; }
         .admin-donut { position: relative; display: grid; width: 210px; height: 210px; place-items: center; border-radius: 999px; }
         .admin-donut::after { content: ""; position: absolute; inset: 35px; background: #ffffff; border-radius: inherit; box-shadow: inset 0 0 0 1px #e2e8f0; }
@@ -26,17 +27,26 @@
         .admin-pregnancy-tile { padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
         .admin-pregnancy-tile span { display: block; color: #64748b; font-size: 11px; font-weight: 900; text-transform: uppercase; }
         .admin-pregnancy-tile strong { display: block; margin-top: 10px; font-size: 27px; line-height: 1; font-weight: 900; }
-        .admin-line-chart { width: 100%; min-height: 300px; }
-        .admin-line-chart svg { display: block; width: 100%; height: 300px; stroke-width: 1.8; }
-        .admin-line-chart .grid { stroke: #dbeafe; stroke-dasharray: 5 7; }
-        .admin-line-chart .axis { stroke: #b8c7dc; }
-        .admin-line-chart .line { fill: none; stroke: #00856a; stroke-width: 2.3; }
-        .admin-line-chart .dot { fill: #ffffff; stroke: #ec008c; stroke-width: 2.2; }
-        .admin-line-chart .label { fill: #64748b; font-size: 3.2px; font-weight: 700; stroke: none; }
+        .admin-staff-link { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 12px; color: #007f5f; background: #ecfdf5; border: 1px solid #c9f2df; border-radius: 8px; font-size: 12px; font-weight: 900; text-decoration: none; white-space: nowrap; }
+        .admin-chart-pill { align-self: flex-start; padding: 8px 10px; color: #047a63; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 999px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+        .admin-line-chart { width: 100%; min-height: 300px; overflow-x: auto; padding: 8px 0 2px; }
+        .admin-line-inner { min-width: 620px; display: grid; gap: 12px; }
+        .admin-line-chart svg { display: block; width: 100%; height: auto; aspect-ratio: 360 / 140; overflow: visible; }
+        .admin-line-chart path,
+        .admin-line-chart circle { vector-effect: non-scaling-stroke; }
+        .admin-line-chart .grid { stroke: #e3edf9; stroke-width: 1; }
+        .admin-line-chart .axis { stroke: #b9c8dc; stroke-width: 1.2; }
+        .admin-line-chart .line { fill: none; stroke: #00856a; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+        .admin-line-chart .dot { fill: #ffffff; stroke: #ec008c; stroke-width: 1.6; }
+        .admin-month-labels { display: grid; grid-template-columns: repeat(var(--month-count), minmax(0, 1fr)); gap: 0; padding-inline: 2.73%; }
+        .admin-month-label { display: grid; gap: 3px; justify-items: center; min-width: 0; color: #64748b; font-size: 12px; font-weight: 800; line-height: 1.15; text-align: center; }
+        .admin-month-label strong { color: #334155; font-size: 12px; font-weight: 900; }
+        .admin-month-label em { color: #00856a; font-size: 10px; font-style: normal; font-weight: 900; text-transform: uppercase; }
         .admin-ranking { display: grid; gap: 12px; }
         .admin-rank-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 56px; gap: 12px; align-items: center; }
         .admin-rank-number { display: grid; width: 34px; height: 34px; place-items: center; color: #007f5f; background: #ecfdf5; border: 1px solid #c9f2df; border-radius: 8px; font-weight: 900; }
         .admin-rank-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; color: #334155; font-size: 13px; font-weight: 900; }
+        .admin-rank-label em { color: #00856a; font-size: 12px; font-style: normal; white-space: nowrap; }
         .admin-rank-track { height: 12px; overflow: hidden; background: #e2e8f0; border-radius: 999px; }
         .admin-rank-fill { height: 100%; background: linear-gradient(90deg, #00856a, #2dd4bf); border-radius: inherit; }
         .admin-rank-count { color: #071127; font-size: 16px; font-weight: 900; text-align: right; }
@@ -58,8 +68,8 @@
         ];
         $lineCount = max(1, $monthlyRegistrations->count());
         $monthlyPoints = $monthlyRegistrations->map(function (array $row, int $index) use ($lineCount, $maxMonthlyCount): array {
-            $x = $lineCount > 1 ? 8 + (($index / ($lineCount - 1)) * 84) : 50;
-            $y = 86 - (($row['total'] / max(1, $maxMonthlyCount)) * 62);
+            $x = $lineCount > 1 ? 24 + (($index / ($lineCount - 1)) * 312) : 180;
+            $y = 126 - (($row['total'] / max(1, $maxMonthlyCount)) * 96);
 
             return [
                 'x' => round($x, 2),
@@ -70,6 +80,7 @@
             ];
         });
         $linePath = $monthlyPoints->map(fn (array $point, int $index): string => ($index === 0 ? 'M ' : 'L ').$point['x'].' '.$point['y'])->implode(' ');
+        $peakMonth = $monthlyRegistrations->sortByDesc('total')->first() ?? ['short_label' => 'N/A', 'total' => 0];
         $beneficiaryPercent = $beneficiaryStats['percentage_4ps'];
         $donutBackground = 'conic-gradient(#00856a 0 '.$beneficiaryPercent.'%, #e2e8f0 '.$beneficiaryPercent.'% 100%)';
     @endphp
@@ -103,7 +114,7 @@
             <div class="admin-card-head">
                 <div>
                     <h2>Pregnant Mothers by Barangay</h2>
-                    <p>Registered pregnant mothers grouped by barangay.</p>
+                    <p>Registered pregnant mothers grouped by barangay with share of active pregnancies.</p>
                 </div>
             </div>
             @if($pregnantByBarangay->isEmpty())
@@ -112,9 +123,13 @@
                 <div class="admin-bar-chart" role="img" aria-label="Bar chart of pregnant mothers by barangay">
                     @foreach($pregnantByBarangay as $row)
                         @php $height = max(8, ($row['total'] / max(1, $maxBarangayCount)) * 100); @endphp
-                        <div class="admin-bar-item">
+                        <div class="admin-bar-item" title="{{ $row['barangay'] }}: {{ $row['total'] }} pregnant mothers, {{ number_format($row['percentage'], 1) }}%">
                             <div class="admin-bar-track"><div class="admin-bar-fill" style="height: {{ $height }}%"></div></div>
-                            <span class="admin-bar-label"><strong>{{ $row['total'] }}</strong>{{ $row['barangay'] }}</span>
+                            <span class="admin-bar-label">
+                                <strong>{{ $row['total'] }}</strong>
+                                <em>{{ number_format($row['percentage'], 1) }}%</em>
+                                {{ $row['barangay'] }}
+                            </span>
                         </div>
                     @endforeach
                 </div>
@@ -171,24 +186,51 @@
         <article class="admin-card">
             <div class="admin-card-head">
                 <div>
+                    <h2>Program Staff Identity Verification</h2>
+                    <p>Healthcare worker ID upload and verification progress.</p>
+                </div>
+                <a class="admin-staff-link" href="{{ route('admin.program-staff.index') }}">Manage Staff</a>
+            </div>
+            <div class="admin-pregnancy-grid">
+                <article class="admin-pregnancy-tile"><span>Total Staff</span><strong>{{ number_format($staffIdentityStats['total']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>Pending Approval</span><strong>{{ number_format($staffIdentityStats['account_pending']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>Approved Accounts</span><strong>{{ number_format($staffIdentityStats['account_approved']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>Pending Review</span><strong>{{ number_format($staffIdentityStats['pending']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>Verified IDs</span><strong>{{ number_format($staffIdentityStats['verified']) }}</strong></article>
+            </div>
+        </article>
+
+        <article class="admin-card">
+            <div class="admin-card-head">
+                <div>
                     <h2>Monthly Registrations</h2>
                     <p>Newly registered pregnant mothers over the last 12 months.</p>
                 </div>
+                <span class="admin-chart-pill">Peak {{ $peakMonth['short_label'] }}: {{ number_format($peakMonth['total']) }}</span>
             </div>
             <div class="admin-line-chart" role="img" aria-label="Line chart of monthly pregnant mother registrations">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path class="grid" d="M8 24H94M8 55H94M8 86H94"/>
-                    <path class="axis" d="M8 18V88H94"/>
-                    @if($monthlyPoints->count() > 1)
-                        <path class="line" d="{{ $linePath }}"/>
-                    @endif
-                    @foreach($monthlyPoints as $point)
-                        <circle class="dot" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="1.6">
-                            <title>{{ $point['label'] }} - {{ $point['total'] }}</title>
-                        </circle>
-                        <text class="label" x="{{ $point['x'] }}" y="96" text-anchor="middle">{{ $point['short_label'] }}</text>
-                    @endforeach
-                </svg>
+                <div class="admin-line-inner">
+                    <svg viewBox="0 0 360 140" preserveAspectRatio="xMidYMid meet">
+                        <path class="grid" d="M24 30H340M24 62H340M24 94H340M24 126H340"/>
+                        <path class="axis" d="M24 24V126H340"/>
+                        @if($monthlyPoints->count() > 1)
+                            <path class="line" d="{{ $linePath }}"/>
+                        @endif
+                        @foreach($monthlyPoints as $point)
+                            <circle class="dot" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="3.4">
+                                <title>{{ $point['label'] }} - {{ $point['total'] }}</title>
+                            </circle>
+                        @endforeach
+                    </svg>
+                    <div class="admin-month-labels" style="--month-count: {{ $monthlyPoints->count() }}">
+                        @foreach($monthlyPoints as $point)
+                            <span class="admin-month-label">
+                                <strong>{{ $point['short_label'] }}</strong>
+                                <em>{{ number_format($point['total']) }}</em>
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </article>
 
@@ -196,7 +238,7 @@
             <div class="admin-card-head">
                 <div>
                     <h2>Barangay Ranking</h2>
-                    <p>Top barangays with the highest number of registered pregnant mothers.</p>
+                    <p>Top barangays with the highest number and percentage of active pregnancies.</p>
                 </div>
             </div>
             @if($topBarangays->isEmpty())
@@ -208,7 +250,7 @@
                         <div class="admin-rank-row">
                             <span class="admin-rank-number">{{ $index + 1 }}</span>
                             <div>
-                                <div class="admin-rank-label"><span>{{ $row['barangay'] }}</span></div>
+                                <div class="admin-rank-label"><span>{{ $row['barangay'] }}</span><em>{{ number_format($row['percentage'], 1) }}%</em></div>
                                 <div class="admin-rank-track"><div class="admin-rank-fill" style="width: {{ $width }}%"></div></div>
                             </div>
                             <span class="admin-rank-count">{{ $row['total'] }}</span>

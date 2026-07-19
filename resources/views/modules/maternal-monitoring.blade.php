@@ -127,7 +127,7 @@
                     <span class="maternal-chip">{!! $iconEye !!} View Only</span>
                 </div>
 
-                <div class="maternal-stat-grid">
+                <div class="maternal-stat-grid is-weight-grid">
                     <article class="maternal-stat-card is-pink"><span>Current Weight</span><strong>{{ $withUnit($weight, 'kg') }}</strong><p>Latest recorded weight</p></article>
                     <article class="maternal-stat-card"><span>Previous Weight</span><strong>{{ $withUnit($previousWeight, 'kg') }}</strong><p>{{ $previousWeight === null ? 'Awaiting another record' : 'Previous monitoring record' }}</p></article>
                     <article class="maternal-stat-card is-green"><span>Total Gained</span><strong>{{ $withUnit($totalGain, 'kg') }}</strong><p>11 kg to 16 kg expected gain</p></article>
@@ -161,7 +161,7 @@
                     <div><span>Blood Pressure Trend</span><h2>Blood Pressure Trend</h2><p>Systolic and diastolic readings update from recorded maternal vitals.</p></div>
                 </div>
 
-                <div class="maternal-stat-grid is-three">
+                <div class="maternal-stat-grid is-three is-bp-grid">
                     <article class="maternal-stat-card is-red"><span>Latest Reading</span><strong>{{ $hasBp ? $bpValue.' mmHg' : 'N/A' }}</strong><p>{{ $recordedDate }}</p></article>
                     <article class="maternal-stat-card"><span>Systolic</span><strong>{{ $withUnit($bpSystolic, 'mmHg') }}</strong><p>Upper pressure reading</p></article>
                     <article class="maternal-stat-card is-green"><span>Current Status</span><strong>{{ $statusLabel($bpNormal) }}</strong><p>Diastolic {{ $withUnit($bpDiastolic, 'mmHg') }}</p></article>

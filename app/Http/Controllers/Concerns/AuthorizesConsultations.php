@@ -269,6 +269,8 @@ trait AuthorizesConsultations
     protected function profilePayload(?object $model, string $role): array
     {
         $name = $model?->full_name ?: $this->roleLabel($role);
+        $contactNumber = trim((string) ($model?->contact_number ?? ''));
+        $smsUrl = $this->smsUrlForContact($contactNumber);
 
         return [
             'id' => $model?->id,
@@ -277,9 +279,28 @@ trait AuthorizesConsultations
             'name' => $name,
             'initials' => $this->initials($name),
             'avatar_url' => null,
+            'contact_number' => $smsUrl ? $contactNumber : null,
+            'sms_url' => $smsUrl,
             'online' => $this->isOnline($model),
             'status_text' => $this->isOnline($model) ? 'Online' : 'Offline',
         ];
+    }
+
+    protected function smsUrlForContact(?string $contactNumber): ?string
+    {
+        $contactNumber = trim((string) $contactNumber);
+
+        if ($contactNumber === '' || Str::lower($contactNumber) === 'not provided') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $contactNumber) ?? '';
+
+        if (strlen($digits) < 7) {
+            return null;
+        }
+
+        return 'sms:'.(Str::startsWith($contactNumber, '+') ? '+' : '').$digits;
     }
 
     protected function riskPayload(?Mother $mother): array

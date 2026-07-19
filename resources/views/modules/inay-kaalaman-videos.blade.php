@@ -19,7 +19,7 @@
             <div>
                 <p class="kaalaman-library-kicker">{{ $monthData['kicker'] }}</p>
                 <h1>{{ $monthData['title'] }}</h1>
-                <p>{{ $monthData['weeks'] }} educational guides and previous video versions.</p>
+                <p>{{ $monthData['weeks'] }} educational guides and archived video versions.</p>
             </div>
         </header>
 
@@ -40,7 +40,7 @@
         </section>
 
         <section class="kaalaman-library-section">
-            <h2 class="kaalaman-section-title">{!! $iconVideo !!} Previous Uploaded Videos</h2>
+            <h2 class="kaalaman-section-title">{!! $iconVideo !!} Archived Uploaded Videos</h2>
             <div class="kaalaman-library-grid">
                 @foreach ($monthData['archive'] as $video)
                     <article class="kaalaman-video-card kaalaman-library-card kaalaman-archive-card is-clickable" role="button" tabindex="0" data-video-card data-video-title="{{ $video['title'] }}" data-video-meta="{{ $video['tag'] }} - {{ $video['time'] }}" data-video-url="{{ $video['url'] }}">

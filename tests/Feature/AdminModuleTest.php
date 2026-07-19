@@ -30,7 +30,7 @@ class AdminModuleTest extends TestCase
             ->assertRedirect('/admin/login');
     }
 
-    public function test_admin_can_login_and_logout_without_using_mother_staff_session(): void
+    public function test_admin_can_login_and_logout_to_shared_login_without_using_mother_staff_session(): void
     {
         $admin = $this->createAdmin('console-admin', 'secret-pass');
 
@@ -47,9 +47,32 @@ class AdminModuleTest extends TestCase
         $this->assertNotNull($admin->last_login_at);
 
         $this->post('/admin/logout')
-            ->assertRedirect('/admin/login')
+            ->assertRedirect('/login')
             ->assertSessionMissing('admin_authenticated')
-            ->assertSessionMissing('admin_id');
+            ->assertSessionMissing('admin_id')
+            ->assertSessionMissing('status');
+    }
+
+    public function test_admin_can_login_from_shared_email_field_with_username(): void
+    {
+        $admin = $this->createAdmin('admin', 'secret-pass');
+
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Email Address / Admin Username');
+
+        $this->post('/login', [
+            'role' => 'mother',
+            'email' => 'admin',
+            'password' => 'secret-pass',
+        ])
+            ->assertRedirect('/admin/statistics')
+            ->assertSessionHas('admin_authenticated', true)
+            ->assertSessionHas('admin_id', $admin->id)
+            ->assertSessionMissing('auth_role');
+
+        $admin->refresh();
+        $this->assertNotNull($admin->last_login_at);
     }
 
     public function test_admin_login_rejects_invalid_password_cleanly(): void
@@ -120,8 +143,9 @@ class AdminModuleTest extends TestCase
             ->assertSee('Barangays Represented')
             ->assertSee('High-Risk Pregnancies')
             ->assertSee('Active Pregnancies')
-            ->assertSee('Barangay San Francisco')
-            ->assertSee('Barangay Del Remedio')
+            ->assertSee('San Francisco')
+            ->assertSee('Del Remedio')
+            ->assertSee('66.7%')
             ->assertSee('25%')
             ->assertSee('2');
 
@@ -131,10 +155,10 @@ class AdminModuleTest extends TestCase
 
     private function createAdmin(string $username, string $password): AdminUser
     {
-        return AdminUser::create([
-            'username' => $username,
-            'password' => Hash::make($password),
-        ]);
+        return AdminUser::updateOrCreate(
+            ['username' => $username],
+            ['password' => Hash::make($password)]
+        );
     }
 
     private function createMother(array $overrides): Mother

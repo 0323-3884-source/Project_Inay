@@ -1,11 +1,22 @@
 @php
     $isAdminAuthScreen = trim($__env->yieldContent('admin_auth_screen')) !== '';
     $adminUsername = $adminUsername ?? session('admin_username', 'admin');
+    $adminNotificationUserId = (int) session('admin_id');
+    $adminNotificationCount = ! $isAdminAuthScreen && session('admin_authenticated') === true && $adminNotificationUserId > 0
+        ? \App\Models\AppNotification::where('recipient_id', $adminNotificationUserId)
+            ->where('recipient_role', 'admin')
+            ->whereNull('read_at')
+            ->count()
+        : 0;
     $adminIcons = [
         'mark' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.8-9.6-9.1C.7 8.4 2.8 4.5 6.7 4.5c2 0 3.6 1 4.5 2.5.9-1.5 2.5-2.5 4.5-2.5 3.9 0 6 3.9 4.3 7.4C19.5 16.2 12 21 12 21z"/></svg>',
         'stats' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16V9"/><path d="M12 16V6"/><path d="M16 16v-4"/></svg>',
         'logout' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+        'id-card' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.4"/><path d="M6 16c.8-1.6 1.9-2.4 3-2.4s2.2.8 3 2.4"/><path d="M14 9h4"/><path d="M14 13h4"/><path d="M14 17h3"/></svg>',
+        'message' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>',
+        'bell' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 21a2 2 0 0 0 3.4 0"/><path d="M4 17h16"/><path d="M6 17c1.2-1.2 1.8-2.7 1.8-7a4.2 4.2 0 1 1 8.4 0c0 4.3.6 5.8 1.8 7"/></svg>',
         'users' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg>',
+        'book' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M8 7h7"/><path d="M8 11h5"/></svg>',
         'heart' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 5.6a5.4 5.4 0 0 0-7.6 0L12 6.8l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6l1.2 1.2L12 22l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg>',
         'shield' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>',
         'map' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>',
@@ -25,7 +36,7 @@
         :root { --admin-green:#00856a; --admin-green-dark:#006854; --admin-pink:#ec008c; --admin-ink:#071127; --admin-muted:#52627d; --admin-line:#dbe5f1; --admin-soft:#f8fafc; --admin-card:#ffffff; }
         * { box-sizing: border-box; letter-spacing: 0; }
         body { margin: 0; color: var(--admin-ink); background: #f3f7fb; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-        svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         a { color: inherit; }
         .admin-auth-body { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(140deg, #f6fbf9 0%, #eef7ff 48%, #fff4fa 100%); }
         .admin-login-shell { width: min(100%, 430px); }
@@ -61,6 +72,25 @@
         .admin-nav-label { margin: 0 0 10px 8px; color: #94a3b8; font-size: 11px; font-weight: 900; text-transform: uppercase; }
         .admin-nav-link { width: 100%; justify-content: flex-start; padding: 0 14px; color: #334155; border: 1px solid transparent; background: transparent; }
         .admin-nav-link.is-active { color: var(--admin-green); background: #ecfdf5; border-color: #c9f2df; }
+        .admin-notification-wrap { position: relative; padding: 0 14px 16px; }
+        .admin-notification-button { position: relative; display: inline-flex; width: 100%; min-height: 44px; align-items: center; justify-content: flex-start; gap: 10px; padding: 0 14px; color: #334155; background: #f8fafc; border: 1px solid #dbe5f1; border-radius: 8px; font-weight: 900; cursor: pointer; }
+        .admin-notification-button:hover, .admin-notification-button.has-unread { color: var(--admin-green); background: #ecfdf5; border-color: #c9f2df; }
+        .admin-notification-count { position: absolute; top: -6px; right: -6px; display: inline-grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; color: #ffffff; background: var(--admin-pink); border: 2px solid #ffffff; border-radius: 999px; font-size: 10px; font-weight: 900; line-height: 1; }
+        .admin-notification-count[hidden] { display: none; }
+        .app-notification-menu { position: absolute; top: calc(100% - 8px); left: 14px; z-index: 90; display: grid; width: min(360px, calc(100vw - 24px)); overflow: hidden; color: #12213c; background: #ffffff; border: 1px solid #dbe5f1; border-radius: 8px; box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18); }
+        .app-notification-menu[hidden] { display: none; }
+        .app-notification-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 14px; border-bottom: 1px solid #eef2f7; }
+        .app-notification-head strong { color: #071127; font-size: 14px; font-weight: 900; }
+        .app-notification-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+        .app-notification-actions button { min-height: 30px; padding: 0 9px; color: #53647c; background: #f8fafc; border: 1px solid #dbe5f1; border-radius: 8px; font-size: 11px; font-weight: 900; cursor: pointer; }
+        .app-notification-actions button:hover { color: var(--admin-green); background: #ecfdf5; border-color: #c9f2df; }
+        .app-notification-list { display: grid; max-height: min(420px, calc(100vh - 180px)); overflow-y: auto; padding: 6px; }
+        .app-notification-item { display: grid; gap: 4px; width: 100%; min-height: 70px; justify-items: start; padding: 10px; color: #334155; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 8px; }
+        .app-notification-item:hover, .app-notification-item.is-unread { background: #ecfdf5; border-color: #c9f2df; }
+        .app-notification-item strong { color: #071127; font-size: 13px; font-weight: 900; line-height: 1.25; }
+        .app-notification-item span { color: #52627d; font-size: 12px; font-weight: 700; line-height: 1.4; }
+        .app-notification-item small, .app-notification-empty { color: #8da0b9; font-size: 11px; font-weight: 800; }
+        .app-notification-empty { padding: 22px 14px; text-align: center; }
         .admin-sidebar-bottom { margin-top: auto; padding: 14px; border-top: 1px solid #eef2f7; }
         .admin-logout { width: 100%; color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; }
         .admin-main { min-width: 0; padding: 28px; }
@@ -71,9 +101,10 @@
         .admin-user-chip { display: inline-flex; align-items: center; gap: 9px; padding: 10px 12px; color: #007f5f; background: #ecfdf5; border: 1px solid #c9f2df; border-radius: 999px; font-size: 13px; font-weight: 900; }
         .admin-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
         .admin-summary-card { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 14px; align-items: center; padding: 18px; background: #ffffff; border: 1px solid var(--admin-line); border-radius: 8px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06); animation: adminFade .26s ease both; }
-        .admin-summary-icon { display: grid; width: 48px; height: 48px; place-items: center; color: var(--admin-green); background: #ecfdf5; border: 1px solid #c9f2df; border-radius: 8px; }
-        .admin-summary-card span { display: block; color: #64748b; font-size: 12px; font-weight: 900; text-transform: uppercase; }
-        .admin-summary-card strong { display: block; margin-top: 7px; font-size: 28px; line-height: 1; font-weight: 900; }
+        .admin-summary-icon { display: grid; width: 48px; height: 48px; place-items: center; color: #047a63; background: linear-gradient(180deg, #f6fffb 0%, #ecfdf5 100%); border: 1px solid #c7eedf; border-radius: 12px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72); }
+        .admin-summary-icon svg { width: 20px; height: 20px; stroke-width: 1.65; }
+        .admin-summary-card > div > span { display: block; color: #64748b; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+        .admin-summary-card > div > strong { display: block; margin-top: 7px; font-size: 28px; line-height: 1; font-weight: 900; }
         .admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
         .admin-card { padding: 20px; overflow: hidden; }
         .admin-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
@@ -101,11 +132,51 @@
             </div>
             <nav class="admin-nav">
                 <p class="admin-nav-label">System</p>
-                <a class="admin-nav-link is-active" href="{{ route('admin.statistics') }}">
+                <a class="admin-nav-link {{ request()->routeIs('admin.statistics') ? 'is-active' : '' }}" href="{{ route('admin.statistics') }}">
                     {!! $adminIcons['stats'] !!}
                     Statistics
                 </a>
+                <a class="admin-nav-link {{ request()->routeIs('admin.program-staff.*') ? 'is-active' : '' }}" href="{{ route('admin.program-staff.index') }}">
+                    {!! $adminIcons['id-card'] !!}
+                    Program Staff
+                </a>
+                <a class="admin-nav-link {{ request()->routeIs('admin.educational-content.*') ? 'is-active' : '' }}" href="{{ route('admin.educational-content.index') }}">
+                    {!! $adminIcons['book'] !!}
+                    Educational Content
+                </a>
+                <a class="admin-nav-link {{ request()->routeIs('admin.staff-messages.*') ? 'is-active' : '' }}" href="{{ route('admin.staff-messages.index') }}">
+                    {!! $adminIcons['message'] !!}
+                    Admin Messages
+                </a>
             </nav>
+            <div
+                class="admin-notification-wrap"
+                data-notification-root
+                data-notification-role="admin"
+                data-notification-user="{{ $adminNotificationUserId }}"
+                data-notifications-url="{{ route('notifications.index') }}"
+                data-notification-read-url-template="{{ route('notifications.read', ['notification' => '__NOTIFICATION__']) }}"
+                data-notification-read-all-url="{{ route('notifications.read-all') }}"
+                data-csrf="{{ csrf_token() }}"
+            >
+                <button class="admin-notification-button" type="button" data-notification-toggle aria-label="Notifications">
+                    {!! $adminIcons['bell'] !!}
+                    Notifications
+                    <span class="admin-notification-count" data-notification-count @if($adminNotificationCount === 0) hidden @endif>{{ $adminNotificationCount > 99 ? '99+' : $adminNotificationCount }}</span>
+                </button>
+                <div class="app-notification-menu" data-notification-menu hidden>
+                    <div class="app-notification-head">
+                        <strong>Notifications</strong>
+                        <div class="app-notification-actions">
+                            <button type="button" data-notification-enable>Enable browser alerts</button>
+                            <button type="button" data-notification-mark-all>Mark all read</button>
+                        </div>
+                    </div>
+                    <div class="app-notification-list" data-notification-list>
+                        <div class="app-notification-empty">Loading notifications...</div>
+                    </div>
+                </div>
+            </div>
             <div class="admin-sidebar-bottom">
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
@@ -119,6 +190,9 @@
         <main class="admin-main">
             @yield('content')
         </main>
+    @endif
+    @if (! $isAdminAuthScreen)
+        <script src="{{ asset('js/app-notifications.js') }}?v={{ filemtime(public_path('js/app-notifications.js')) }}" defer></script>
     @endif
     @stack('scripts')
 </body>

@@ -1,0 +1,94 @@
+.admin-staff-message-page {
+    gap: 12px;
+}
+
+.admin-staff-message-note {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.admin-staff-message-note svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    stroke-width: 2;
+}
+
+.admin-staff-message-page .consultation-workspace {
+    height: calc(100vh - 210px);
+    min-height: 560px;
+}
+
+.admin-staff-message-page .consultation-sidebar-head span,
+.admin-staff-message-page .consultation-unread,
+.admin-staff-message-page .consultation-send,
+.admin-staff-message-page .consultation-message.is-own .consultation-bubble {
+    background: #00856a;
+    border-color: #00856a;
+}
+
+.admin-staff-message-page .consultation-thread:hover,
+.admin-staff-message-page .consultation-thread.is-active {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+}
+
+.admin-staff-message-page .consultation-avatar {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+}
+
+.admin-staff-message-page .consultation-search input:focus {
+    outline-color: rgba(0, 133, 106, 0.14);
+    border-color: #86efc2;
+}
+
+.admin-staff-message-page .staff-coordination-actions button:hover,
+.admin-staff-message-page .consultation-emoji:hover {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+}
+
+.admin-staff-message-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 11px;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .admin-staff-message-note {
+        align-items: flex-start;
+        border-radius: 8px;
+        line-height: 1.4;
+    }
+
+    .admin-staff-message-page .consultation-workspace {
+        height: calc(100vh - 112px);
+        min-height: 0;
+    }
+
+    .admin-staff-message-chip {
+        display: none;
+    }
+}

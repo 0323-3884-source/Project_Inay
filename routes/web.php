@@ -2,11 +2,16 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminStatisticsController;
+use App\Http\Controllers\Admin\EducationalContentController;
+use App\Http\Controllers\Admin\ProgramStaffController;
+use App\Http\Controllers\AppNotificationController;
+use App\Http\Controllers\AdminStaffMessageController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\CallController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\StaffCoordinationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,6 +27,21 @@ Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admi
 Route::middleware('admin.auth')->group(function () {
     Route::get('/admin', fn () => redirect()->route('admin.statistics'))->name('admin.dashboard');
     Route::get('/admin/statistics', AdminStatisticsController::class)->name('admin.statistics');
+    Route::get('/admin/educational-content', [EducationalContentController::class, 'index'])->name('admin.educational-content.index');
+    Route::post('/admin/educational-content', [EducationalContentController::class, 'store'])->name('admin.educational-content.store');
+    Route::patch('/admin/educational-content/{educationalContent}', [EducationalContentController::class, 'update'])->name('admin.educational-content.update');
+    Route::patch('/admin/educational-content/{educationalContent}/publish', [EducationalContentController::class, 'publish'])->name('admin.educational-content.publish');
+    Route::patch('/admin/educational-content/{educationalContent}/unpublish', [EducationalContentController::class, 'unpublish'])->name('admin.educational-content.unpublish');
+    Route::delete('/admin/educational-content/{educationalContent}', [EducationalContentController::class, 'destroy'])->name('admin.educational-content.destroy');
+    Route::get('/admin/staff-messages', [AdminStaffMessageController::class, 'adminIndex'])->name('admin.staff-messages.index');
+    Route::get('/admin/program-staff', [ProgramStaffController::class, 'index'])->name('admin.program-staff.index');
+    Route::get('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'show'])->name('admin.program-staff.show');
+    Route::patch('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'update'])->name('admin.program-staff.update');
+    Route::delete('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'destroy'])->name('admin.program-staff.destroy');
+    Route::patch('/admin/program-staff/{programStaff}/verify', [ProgramStaffController::class, 'verify'])->name('admin.program-staff.verify');
+    Route::patch('/admin/program-staff/{programStaff}/unverify', [ProgramStaffController::class, 'unverify'])->name('admin.program-staff.unverify');
+    Route::patch('/admin/program-staff/{programStaff}/approve', [ProgramStaffController::class, 'approve'])->name('admin.program-staff.approve');
+    Route::patch('/admin/program-staff/{programStaff}/reject', [ProgramStaffController::class, 'reject'])->name('admin.program-staff.reject');
 });
 
 Route::get('/register/mother', [AuthController::class, 'showMotherRegister'])->name('mother.register');
@@ -31,6 +51,12 @@ Route::get('/register/staff', [AuthController::class, 'showStaffRegister'])->nam
 Route::post('/register/staff', [AuthController::class, 'registerStaff'])->name('staff.register.store');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [AppNotificationController::class, 'index'])->name('index');
+    Route::post('/read-all', [AppNotificationController::class, 'markAllRead'])->name('read-all');
+    Route::post('/{notification}/read', [AppNotificationController::class, 'markRead'])->name('read');
+});
 
 Route::get('/mother/dashboard', [AuthController::class, 'motherDashboard'])->name('mother.dashboard');
 Route::get('/maternal-monitoring', [AuthController::class, 'maternalMonitoring'])->name('maternal-monitoring');
@@ -48,11 +74,15 @@ Route::patch('/mother/clinic-schedule/{appointment}/decline', [AppointmentContro
 Route::patch('/mother/clinic-schedule/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('mother.clinic-schedule.reschedule');
 Route::get('/inay-kaalaman/videos/{month}', [AuthController::class, 'inayKaalamanVideos'])->name('inay-kaalaman.videos');
 Route::get('/inay-kaalaman/infographics/{month}/pdf', [AuthController::class, 'inayKaalamanInfographicPdf'])->name('inay-kaalaman.infographic.pdf');
+Route::post('/inay-kaalaman/progress', [AuthController::class, 'saveInayKaalamanProgress'])->name('inay-kaalaman.progress');
 Route::post('/inay-kaalaman/uploads', [AuthController::class, 'uploadInayKaalamanRecord'])->name('inay-kaalaman.upload');
+Route::delete('/inay-kaalaman/uploads/{upload}', [AuthController::class, 'deleteInayKaalamanRecord'])->name('inay-kaalaman.upload.delete');
 Route::get('/staff/dashboard', [AuthController::class, 'staffDashboard'])->name('staff.dashboard');
 Route::get('/staff/mothers', [AuthController::class, 'staffMothers'])->name('staff.mothers');
 Route::get('/staff/neonatal-vaccines', [AuthController::class, 'staffNeonatalVaccines'])->name('staff.neonatal');
 Route::get('/staff/consultation', [ConsultationController::class, 'staff'])->name('staff.consultation');
+Route::get('/staff/staff-coordination', [StaffCoordinationController::class, 'index'])->name('staff.coordination');
+Route::get('/staff/admin-messages', [AdminStaffMessageController::class, 'staffIndex'])->name('staff.admin-messages');
 Route::get('/staff/clinic-schedule', [AppointmentController::class, 'staffIndex'])->name('staff.clinic-schedule.index');
 Route::post('/staff/clinic-schedule', [AppointmentController::class, 'store'])->name('staff.clinic-schedule.store');
 Route::patch('/staff/clinic-schedule/{appointment}', [AppointmentController::class, 'update'])->name('staff.clinic-schedule.update');
@@ -90,5 +120,21 @@ Route::prefix('consultation')->name('consultation.')->group(function () {
     Route::post('/calls/{call}/signal', [CallController::class, 'signal'])->name('calls.signal');
     Route::post('/conversations/{conversation}/calls', [CallController::class, 'store'])->name('conversations.calls.store');
     Route::patch('/calls/{call}', [CallController::class, 'update'])->name('calls.update');
+});
+
+Route::prefix('staff-coordination')->name('staff-coordination.')->group(function () {
+    Route::get('/threads', [StaffCoordinationController::class, 'threads'])->name('threads.index');
+    Route::get('/threads/{thread}/messages', [StaffCoordinationController::class, 'messages'])->name('threads.messages.index');
+    Route::post('/threads/{thread}/messages', [StaffCoordinationController::class, 'store'])->name('threads.messages.store');
+    Route::post('/threads/{thread}/read', [StaffCoordinationController::class, 'markRead'])->name('threads.read');
+    Route::post('/messages/{message}/unsend', [StaffCoordinationController::class, 'unsend'])->name('messages.unsend');
+});
+
+Route::prefix('admin-staff-messages')->name('admin-staff-messages.')->group(function () {
+    Route::get('/threads', [AdminStaffMessageController::class, 'threads'])->name('threads.index');
+    Route::get('/threads/{thread}/messages', [AdminStaffMessageController::class, 'messages'])->name('threads.messages.index');
+    Route::post('/threads/{thread}/messages', [AdminStaffMessageController::class, 'store'])->name('threads.messages.store');
+    Route::post('/threads/{thread}/read', [AdminStaffMessageController::class, 'markRead'])->name('threads.read');
+    Route::post('/messages/{message}/unsend', [AdminStaffMessageController::class, 'unsend'])->name('messages.unsend');
 });
 

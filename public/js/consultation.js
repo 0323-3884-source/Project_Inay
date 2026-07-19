@@ -89,6 +89,7 @@
     const quickActions = root.querySelector('[data-quick-actions]');
     const iecSelect = root.querySelector('[data-iec-select]');
     const callPopover = root.querySelector('[data-call-popover]');
+    const smsButton = root.querySelector('[data-sms-button]');
     const mobileBack = root.querySelector('[data-mobile-back]');
 
     const terminalCallStatuses = ['declined', 'cancelled', 'missed', 'expired', 'ended'];
@@ -490,6 +491,13 @@
         root.querySelectorAll('[data-call-type]').forEach((button) => {
             button.disabled = !conversation || state.callPhase !== 'idle' || state.callActionLocked;
         });
+
+        if (smsButton) {
+            const canSms = Boolean(conversation && participant.sms_url);
+            smsButton.disabled = !canSms;
+            smsButton.title = canSms ? `Send SMS to ${participant.name || 'participant'}` : 'SMS is unavailable for this contact';
+            smsButton.setAttribute('aria-label', canSms ? `Send SMS to ${participant.name || 'participant'}` : 'SMS unavailable');
+        }
     };
 
     const isNearBottom = () => messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
@@ -2233,6 +2241,17 @@
 
     root.querySelectorAll('[data-call-type]').forEach((button) => {
         button.addEventListener('click', () => openOutgoingPreview(button.dataset.callType));
+    });
+
+    smsButton?.addEventListener('click', () => {
+        const participant = selectedConversation()?.participant || {};
+
+        if (!participant.sms_url) {
+            setError('SMS number is not available for this contact.');
+            return;
+        }
+
+        window.location.href = participant.sms_url;
     });
 
     callPopover?.addEventListener('click', (event) => {

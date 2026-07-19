@@ -5,12 +5,34 @@
 @section('auth_screen', 'true')
 
 @php
+    $staffRoleOptions = [
+        'Program Staff',
+        'Midwife',
+        'Nurse',
+        'Barangay Health Worker',
+        'Physician',
+        'Administrator',
+        'Coordinator',
+        'Nutritionist',
+        'Social Worker',
+    ];
     $fullName = old('full_name', trim(implode(' ', array_filter([
         old('first_name'),
         old('middle_name'),
         old('last_name'),
     ]))));
+    $selectedStaffRole = old('role', old('position', 'Program Staff'));
 @endphp
+
+@push('styles')
+    <style>
+        .staff-id-upload-card { display: grid; gap: 10px; }
+        .staff-id-preview { display: grid; min-height: 180px; place-items: center; overflow: hidden; color: #64748b; background: #f8fafc; border: 1px dashed #bfd0e7; border-radius: 12px; font-size: 13px; font-weight: 800; text-align: center; }
+        .staff-id-preview[hidden] { display: none; }
+        .staff-id-preview img { width: 100%; height: 100%; max-height: 260px; object-fit: contain; background: #ffffff; }
+        .staff-file-input { height: auto; padding: 10px 12px; }
+    </style>
+@endpush
 
 @section('content')
     <header class="auth-header">
@@ -32,7 +54,7 @@
             <div class="alert error auth-error">Please fix the highlighted fields.</div>
         @endif
 
-        <form method="POST" action="{{ route('staff.register.store') }}">
+        <form method="POST" action="{{ route('staff.register.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="role-grid" aria-label="Choose account role">
@@ -71,13 +93,47 @@
                 @error('password')<span class="field-error">{{ $message }}</span>@enderror
             </div>
 
+            <div class="auth-field">
+                <label class="auth-label" for="contact_number">Contact Number</label>
+                <input class="auth-input" id="contact_number" type="tel" name="contact_number" value="{{ old('contact_number') }}" placeholder="0917 000 0000" required>
+                @error('contact_number')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label" for="staff_id">Healthcare Worker ID Number</label>
+                <input class="auth-input" id="staff_id" name="staff_id" value="{{ old('staff_id') }}" placeholder="Auto-generated if left blank">
+                @error('staff_id')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label" for="role">Role</label>
+                <select class="auth-input" id="role" name="role" required>
+                    @foreach($staffRoleOptions as $roleOption)
+                        <option value="{{ $roleOption }}" @selected($selectedStaffRole === $roleOption)>{{ $roleOption }}</option>
+                    @endforeach
+                </select>
+                @error('role')<span class="field-error">{{ $message }}</span>@enderror
+                @error('position')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label" for="healthcare_worker_id_photo">Healthcare Worker ID Photo</label>
+                <div class="staff-id-upload-card">
+                    <input class="auth-input staff-file-input" id="healthcare_worker_id_photo" type="file" name="healthcare_worker_id_photo" accept="image/png,image/jpeg,image/webp">
+                    <div class="staff-id-preview" id="staffIdPreview" hidden>
+                        <span>Selected ID photo preview will appear here.</span>
+                    </div>
+                </div>
+                @error('healthcare_worker_id_photo')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
             <label class="consent-box" for="privacy_policy">
                 <input id="privacy_policy" type="checkbox" name="privacy_policy" value="1" @checked(old('privacy_policy')) required>
                 <span>I have read and agree to the <a href="#">Privacy Policy</a>.</span>
             </label>
             @error('privacy_policy')<span class="field-error">{{ $message }}</span>@enderror
 
-            <button class="auth-submit" type="submit">
+            <button class="auth-submit requires-consent" id="staffSubmit" type="submit">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -91,4 +147,35 @@
             <a href="{{ route('login') }}">Mayroon nang account? Log in</a>
         </div>
     </section>
+
+    <script>
+        const staffIdInput = document.getElementById('healthcare_worker_id_photo');
+        const staffIdPreview = document.getElementById('staffIdPreview');
+        const privacyPolicy = document.getElementById('privacy_policy');
+        const staffSubmit = document.getElementById('staffSubmit');
+
+        const syncStaffSubmit = () => {
+            staffSubmit.classList.toggle('is-ready', privacyPolicy.checked);
+        };
+
+        syncStaffSubmit();
+        privacyPolicy.addEventListener('change', syncStaffSubmit);
+
+        staffIdInput?.addEventListener('change', () => {
+            const file = staffIdInput.files?.[0];
+
+            if (!file || !file.type.startsWith('image/')) {
+                staffIdPreview.hidden = true;
+                staffIdPreview.innerHTML = '<span>Selected ID photo preview will appear here.</span>';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                staffIdPreview.hidden = false;
+                staffIdPreview.innerHTML = `<img src="${event.target.result}" alt="Selected healthcare worker ID preview">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
 @endsection

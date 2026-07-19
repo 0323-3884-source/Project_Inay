@@ -28,6 +28,14 @@
         'planning' => 'Planning pregnancy',
         'not_pregnant' => 'Not pregnant',
     ];
+    $uploadTypeLabels = [
+        'Prenatal Records and Receipts' => 'Prenatal Records and Receipts',
+        'Checkup Records' => 'Prenatal Records and Receipts',
+        'Prescription' => 'Prenatal Records and Receipts',
+        'Receipts' => 'Prenatal Records and Receipts',
+        'Certificate' => 'Certificate',
+        'Other Documents' => 'Other Supporting Document',
+    ];
     $riskLabels = [
         'low' => 'Low Risk',
         'medium' => 'Needs Review',
@@ -41,14 +49,19 @@
     $caseId = 'MAT-RHU-'.str_pad((string) $mother->id, 3, '0', STR_PAD_LEFT);
     $pregnancyWeek = $latestRecord?->pregnancy_week;
     $pregnancyMonth = $latestRecord?->pregnancy_month;
-    $trimester = $pregnancyWeek ? ($pregnancyWeek >= 28 ? 'Third Trimester' : ($pregnancyWeek >= 14 ? 'Second Trimester' : 'First Trimester')) : 'Not provided';
+    $isCurrentlyPregnant = $mother->pregnancy_status === 'pregnant';
+    $trimester = $isCurrentlyPregnant
+        ? ($pregnancyWeek ? ($pregnancyWeek >= 28 ? 'Third Trimester' : ($pregnancyWeek >= 14 ? 'Second Trimester' : 'First Trimester')) : 'Not provided')
+        : ($mother->pregnancy_status === 'postpartum' ? 'Postpartum' : 'Not applicable');
     $bpValue = $latestRecord?->bp_systolic && $latestRecord?->bp_diastolic ? $latestRecord->bp_systolic.'/'.$latestRecord->bp_diastolic.' mmHg' : 'Not logged';
     $weightNumber = $latestRecord?->weight;
     $weightValue = $weightNumber === null ? 'Not logged' : rtrim(rtrim(number_format((float) $weightNumber, 2), '0'), '.').' kg';
     $sugarValue = $latestRecord?->blood_sugar === null ? 'Not logged' : rtrim(rtrim(number_format((float) $latestRecord->blood_sugar, 1), '0'), '.').' mg/dL';
     $hemoValue = $latestRecord?->hemoglobin === null ? 'Not logged' : rtrim(rtrim(number_format((float) $latestRecord->hemoglobin, 1), '0'), '.').' g/dL';
     $latestDate = ($latestRecord?->recorded_at ?? $latestRecord?->created_at);
-    $completion = min(100, ($records->count() * 5) + ($uploads->count() * 5));
+    $kaalamanMonthlyProgress = $kaalamanMonthlyProgress ?? ['months' => [], 'overall' => ['completed_months' => 0, 'total_months' => 10, 'pending_required' => 0, 'files_uploaded' => $uploads->count()]];
+    $kaalamanOverallProgress = $kaalamanOverallProgress ?? ($kaalamanMonthlyProgress['overall'] ?? ['completed_months' => 0, 'total_months' => 10, 'pending_required' => 0, 'files_uploaded' => $uploads->count()]);
+    $completion = $careCompletion ?? min(100, ($records->count() * 5) + ($uploads->count() * 5));
     $checkupUploads = $uploads->filter(fn ($upload) => str_contains(strtolower($upload->record_type), 'checkup'))->count();
     $prescriptionUploads = $uploads->filter(fn ($upload) => str_contains(strtolower($upload->record_type), 'prescription'))->count();
     $weightRecords = $records->filter(fn ($record) => $record->weight !== null)->values();
@@ -59,6 +72,34 @@
     $weightPointY = $weightNumber ? max(12, min(84, 100 - (((float) $weightNumber - 70) / 10 * 90))) : 54;
     $initialRecordDate = $latestDate?->format('Y-m-d') ?? now()->toDateString();
 @endphp
+
+@push('styles')
+    <style>
+        .casefile-learning-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+        .casefile-learning-summary article { padding: 13px; background: #f8fafc; border: 1px solid #dde6f0; border-radius: 8px; }
+        .casefile-learning-summary span { display: block; color: #7c8ba3; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+        .casefile-learning-summary strong { display: block; margin-top: 6px; color: #030813; font-size: 18px; font-weight: 900; }
+        .casefile-learning-months { display: grid; gap: 12px; margin-top: 14px; }
+        .casefile-learning-month { display: grid; gap: 12px; padding: 14px; background: #ffffff; border: 1px solid #dde6f0; border-radius: 8px; }
+        .casefile-learning-month.is-complete { border-color: #86efac; background: #f0fdf4; }
+        .casefile-learning-month header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .casefile-learning-month h3 { margin: 0; color: #030813; font-size: 15px; font-weight: 900; }
+        .casefile-learning-month p { margin: 4px 0 0; color: #52627d; font-size: 12px; font-weight: 800; }
+        .casefile-learning-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 10px; font-weight: 900; white-space: nowrap; }
+        .casefile-learning-badge.is-complete { color: #008f6b; background: #dcfce7; border-color: #86efac; }
+        .casefile-learning-progress { overflow: hidden; height: 8px; background: #e8edf5; border-radius: 999px; }
+        .casefile-learning-progress span { display: block; height: 100%; background: linear-gradient(90deg, #ec0b7d, #00a680); border-radius: inherit; }
+        .casefile-learning-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .casefile-learning-grid article { padding: 10px; background: #f8fafc; border: 1px solid #e5edf6; border-radius: 8px; }
+        .casefile-learning-grid span { display: block; color: #7c8ba3; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+        .casefile-learning-grid strong { display: block; margin-top: 5px; color: #030813; font-size: 13px; font-weight: 900; }
+        .casefile-learning-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+        .casefile-learning-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; background: #f8fafc; border: 1px solid #e5edf6; border-radius: 8px; color: #030813; font-size: 12px; font-weight: 800; }
+        .casefile-learning-list small { color: #52627d; font-size: 11px; font-weight: 800; }
+        @media (max-width: 980px) { .casefile-learning-summary, .casefile-learning-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 620px) { .casefile-learning-summary, .casefile-learning-grid { grid-template-columns: 1fr; } .casefile-learning-month header { flex-direction: column; } }
+    </style>
+@endpush
 
 @section('content')
     <section class="casefiles-shell casefile-summary-page" aria-label="Mother care summary">
@@ -85,9 +126,9 @@
                     </div>
                     <strong>{{ $caseId }}</strong>
                     <div class="casefile-contact-row">
-                        <span>{!! $iconPhone !!} {{ $mother->contact_number ?: 'Phone not provided' }}</span>
-                        <span>{!! $iconMap !!} {{ $mother->barangay ?: 'No address recorded' }}</span>
-                        <span>{!! $iconUser !!} {{ $staff->full_name }}</span>
+                        <article>{!! $iconPhone !!}<div><span>Mother Contact</span><strong>{{ $mother->contact_number ?: 'Phone not provided' }}</strong></div></article>
+                        <article>{!! $iconMap !!}<div><span>Barangay</span><strong>{{ $mother->barangay ?: 'No address recorded' }}</strong></div></article>
+                        <article>{!! $iconUser !!}<div><span>Assigned Program Staff</span><strong>{{ $staff->full_name }}</strong></div></article>
                     </div>
                 </div>
             </div>
@@ -112,16 +153,15 @@
         <div class="casefile-status-grid">
             <article class="is-pink"><span>Care Status</span><strong>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</strong><small>{{ $trimester }}</small>{!! $iconHeart !!}</article>
             <article class="is-green"><span>Risk Assessment</span><strong data-summary-risk>{{ $riskLabel }}</strong><small>Updated by monitoring records</small>{!! $iconShield !!}</article>
-            <article><span>Next Appointment</span><strong>Not provided</strong><small>Scheduled prenatal follow-up</small>{!! $iconClock !!}</article>
-            <article class="is-green"><span>Care Completion</span><strong>{{ $completion }}%</strong><small>Monitoring, documents, and learning</small><em style="--progress: {{ $completion }}%"></em>{!! $iconPulse !!}</article>
+            <article><span>Next Appointment</span><strong>Not provided</strong><small>No follow-up date scheduled</small>{!! $iconClock !!}</article>
+            <article class="is-green"><span>Care Completion</span><strong>{{ $completion }}%</strong><small>Monitoring, learning, and documents</small><em style="--progress: {{ $completion }}%"></em>{!! $iconPulse !!}</article>
         </div>
 
         <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
-            <button class="is-active" type="button" data-casefile-tab="overview">Overview</button>
-            <button type="button" data-casefile-tab="monitoring">Monitoring <span data-monitoring-count>{{ $records->count() }}</span></button>
-            <button type="button" data-casefile-tab="learning">Learning <span>0</span></button>
-            <button type="button" data-casefile-tab="documents">Documents <span>{{ $uploads->count() }}</span></button>
-            <button type="button" data-casefile-tab="notes">Notes <span>{{ $latestRecord?->notes ? 1 : 0 }}</span></button>
+            <button class="is-active" type="button" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
+            <button type="button" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
+            <button type="button" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $kaalamanOverallProgress['completed_months'] ?? 0 }}/{{ $kaalamanOverallProgress['total_months'] ?? 10 }} months done</small></button>
+            <button type="button" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
         </div>
 
         <section data-casefile-panel="overview">
@@ -134,10 +174,30 @@
                     <button type="button" data-vitals-open>{!! $iconPulse !!} Update Vitals</button>
                 </div>
                 <div class="casefile-vital-grid is-large">
-                    <article><i class="is-pink">{!! $iconHeart !!}</i><span>Blood Pressure</span><strong data-vital-value="blood_pressure">{{ $bpValue }}</strong><small>Healthy Range: Target below 140/90 mmHg</small><b data-vital-status="blood_pressure">Normal</b></article>
-                    <article><i class="is-pink">{!! $iconPulse !!}</i><span>Blood Sugar</span><strong data-vital-value="blood_sugar">{{ $sugarValue }}</strong><small>Healthy Range: 70 - 140 mg/dL</small><b data-vital-status="blood_sugar">Normal</b></article>
-                    <article><i class="is-green">{!! $iconShield !!}</i><span>Weight</span><strong data-vital-value="weight">{{ $weightValue }}</strong><small>Healthy Range: Review gain against baseline</small><b data-vital-status="weight">Normal</b></article>
-                    <article><i class="is-blue">{!! $iconShield !!}</i><span>Hemoglobin</span><strong data-vital-value="hemoglobin">{{ $hemoValue }}</strong><small>Healthy Range: 11.0 g/dL and above</small><b data-vital-status="hemoglobin">Normal</b></article>
+                    <article>
+                        <div class="casefile-vital-head"><i class="is-pink">{!! $iconHeart !!}</i><b data-vital-status="blood_pressure">Normal</b></div>
+                        <span>Blood Pressure</span>
+                        <strong data-vital-value="blood_pressure">{{ $bpValue }}</strong>
+                        <small>Target below 140/90 mmHg</small>
+                    </article>
+                    <article>
+                        <div class="casefile-vital-head"><i class="is-pink">{!! $iconPulse !!}</i><b data-vital-status="blood_sugar">Normal</b></div>
+                        <span>Blood Sugar</span>
+                        <strong data-vital-value="blood_sugar">{{ $sugarValue }}</strong>
+                        <small>Healthy range: 70 - 140 mg/dL</small>
+                    </article>
+                    <article>
+                        <div class="casefile-vital-head"><i class="is-green">{!! $iconShield !!}</i><b data-vital-status="weight">Normal</b></div>
+                        <span>Weight</span>
+                        <strong data-vital-value="weight">{{ $weightValue }}</strong>
+                        <small>Review gain against baseline</small>
+                    </article>
+                    <article>
+                        <div class="casefile-vital-head"><i class="is-blue">{!! $iconShield !!}</i><b data-vital-status="hemoglobin">Normal</b></div>
+                        <span>Hemoglobin</span>
+                        <strong data-vital-value="hemoglobin">{{ $hemoValue }}</strong>
+                        <small>11.0 g/dL and above</small>
+                    </article>
                 </div>
                 <div class="casefile-safe-banner" data-vitals-banner>{!! $iconShield !!} All available maternal indicators are within healthy pregnancy thresholds.</div>
             </section>
@@ -231,28 +291,57 @@
             </div>
         </section>
 
-        <section class="casefile-panel" data-casefile-panel="learning" hidden>
-            <h2>Learning Progress</h2>
-            <p class="casefile-panel-note">INAY Kaalaman progress will appear here after learning activity is recorded.</p>
-        </section>
+        <section class="casefile-panel" data-casefile-panel="learning-documents" hidden>
+            <h2>{!! $iconFile !!} INAY Kaalaman Learning & Documents</h2>
+            <p class="casefile-panel-note">Actual saved reading, video, infographic, and uploaded-document progress from this mother.</p>
 
-        <section class="casefile-panel" data-casefile-panel="documents" hidden>
-            <h2>{!! $iconFile !!} Uploaded INAY Kaalaman Records</h2>
-            @if ($uploads->isEmpty())
-                <p class="casefile-panel-note">No uploaded prenatal records or receipts yet.</p>
-            @else
-                <div class="casefile-upload-list">
-                    @foreach ($uploads as $upload)
-                        <article>
-                            <span>{!! $iconFile !!}</span>
+            <div class="casefile-learning-summary">
+                <article><span>Months Completed</span><strong>{{ $kaalamanOverallProgress['completed_months'] ?? 0 }}/{{ $kaalamanOverallProgress['total_months'] ?? 10 }}</strong></article>
+                <article><span>Overall Learning</span><strong>{{ $kaalamanOverallProgress['percentage'] ?? 0 }}%</strong></article>
+                <article><span>Activities Pending</span><strong>{{ $kaalamanOverallProgress['pending_required'] ?? 0 }}</strong></article>
+                <article><span>Files Uploaded</span><strong>{{ $kaalamanOverallProgress['files_uploaded'] ?? $uploads->count() }}</strong></article>
+            </div>
+
+            <div class="casefile-learning-months">
+                @foreach (($kaalamanMonthlyProgress['months'] ?? []) as $progressMonth)
+                    <article class="casefile-learning-month {{ $progressMonth['is_complete'] ? 'is-complete' : '' }}">
+                        <header>
                             <div>
-                                <strong>{{ $upload->record_type }}</strong>
-                                <p>{{ $upload->original_name }} &middot; Month {{ $upload->month }} &middot; {{ $upload->created_at?->format('M j, Y') }}</p>
+                                <h3>Month {{ $progressMonth['month'] }}: {{ $progressMonth['title'] }}</h3>
+                                <p>{{ $progressMonth['trimester'] }} &middot; {{ $progressMonth['weeks'] }}</p>
                             </div>
-                        </article>
-                    @endforeach
-                </div>
-            @endif
+                            <span class="casefile-learning-badge {{ $progressMonth['is_complete'] ? 'is-complete' : '' }}">{{ $progressMonth['status'] }} &middot; {{ $progressMonth['percentage'] }}%</span>
+                        </header>
+
+                        <div class="casefile-learning-progress" aria-label="Month {{ $progressMonth['month'] }} completion">
+                            <span style="width: {{ $progressMonth['percentage'] }}%"></span>
+                        </div>
+
+                        <div class="casefile-learning-grid">
+                            <article><span>Reading</span><strong>{{ $progressMonth['reading']['label'] }}</strong><small>{{ $progressMonth['reading']['completed_at'] ?: 'Not completed' }}</small></article>
+                            <article><span>Videos</span><strong>{{ $progressMonth['watched_videos'] }}/{{ $progressMonth['total_videos'] }} watched</strong><small>{{ $progressMonth['total_videos'] - $progressMonth['watched_videos'] }} pending</small></article>
+                            <article><span>Infographic</span><strong>{{ $progressMonth['infographic']['label'] }}</strong><small>{{ $progressMonth['infographic']['completed_at'] ?: 'Not completed' }}</small></article>
+                            <article><span>Documents</span><strong>{{ $progressMonth['uploaded_required_documents'] }}/{{ $progressMonth['required_documents'] }} uploaded</strong><small>{{ count($progressMonth['uploaded_documents']) }} file{{ count($progressMonth['uploaded_documents']) === 1 ? '' : 's' }} total</small></article>
+                        </div>
+
+                        <ul class="casefile-learning-list">
+                            @foreach ($progressMonth['videos'] as $video)
+                                <li><span>{{ $video['title'] }}</span><small>{{ $video['label'] }}{{ $video['completed_at'] ? ' - '.$video['completed_at'] : '' }}</small></li>
+                            @endforeach
+                        </ul>
+
+                        @if (count($progressMonth['uploaded_documents']) > 0)
+                            <ul class="casefile-learning-list">
+                                @foreach ($progressMonth['uploaded_documents'] as $document)
+                                    <li><span>{{ $document['label'] }}: {{ $document['filename'] }}</span><small>Uploaded {{ $document['uploaded_at'] ?: 'date not recorded' }}</small></li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="casefile-panel-note">No uploaded documents for this month yet.</p>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
         </section>
 
         <section class="casefile-panel" data-casefile-panel="notes" hidden>

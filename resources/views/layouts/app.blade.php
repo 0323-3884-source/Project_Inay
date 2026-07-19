@@ -17,6 +17,7 @@
             --inay-panel: #ffffff;
             --inay-green: #0f9f6e;
             --inay-red: #d92d63;
+            --inay-font-sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             --portal-sidebar-width: 270px;
             --portal-header-height: 76px;
         }
@@ -28,9 +29,16 @@
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: var(--inay-font-sans);
             color: #2f2a2c;
             background: #f7f4f1;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
         }
 
         a {
@@ -247,7 +255,9 @@
         }
 
         .portal-main {
+            min-width: 0;
             width: auto;
+            overflow-x: hidden;
             margin: 0;
             padding: 108px 34px 42px calc(var(--portal-sidebar-width) + 34px);
         }
@@ -394,6 +404,127 @@
             font-size: 10px;
             font-weight: 900;
             line-height: 1;
+        }
+
+        .portal-notification-count[hidden] {
+            display: none;
+        }
+
+        .portal-notification-wrap {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .app-notification-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            z-index: 80;
+            display: grid;
+            width: min(360px, calc(100vw - 24px));
+            overflow: hidden;
+            color: #12213c;
+            background: #ffffff;
+            border: 1px solid #dbe5f0;
+            border-radius: 12px;
+            box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
+        }
+
+        .app-notification-menu[hidden] {
+            display: none;
+        }
+
+        .app-notification-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 13px 14px;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .app-notification-head strong {
+            color: #071127;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        .app-notification-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .app-notification-actions button {
+            min-height: 30px;
+            padding: 0 9px;
+            color: #53647c;
+            background: #f8fafc;
+            border: 1px solid #dbe5f0;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .app-notification-actions button:hover {
+            color: var(--inay-pink);
+            background: #fff3fa;
+            border-color: #ffcfe4;
+        }
+
+        .app-notification-list {
+            display: grid;
+            max-height: min(420px, calc(100vh - 180px));
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .app-notification-item {
+            display: grid;
+            gap: 4px;
+            width: 100%;
+            min-height: 70px;
+            justify-items: start;
+            padding: 10px;
+            color: #334155;
+            text-align: left;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+        }
+
+        .app-notification-item:hover,
+        .app-notification-item.is-unread {
+            background: #fff4fa;
+            border-color: #ffd4e7;
+        }
+
+        .app-notification-item strong {
+            color: #071127;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.25;
+        }
+
+        .app-notification-item span {
+            color: #52627d;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .app-notification-item small,
+        .app-notification-empty {
+            color: #8da0b9;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .app-notification-empty {
+            padding: 22px 14px;
+            text-align: center;
         }
 
         .portal-close:active,
@@ -630,6 +761,51 @@
         .portal-nav-item.is-disabled:active {
             transform: none;
             box-shadow: none;
+        }
+
+        .portal-nav-group {
+            display: grid;
+            gap: 6px;
+        }
+
+        .portal-nav-group summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .portal-nav-group summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .portal-nav-group .portal-nav-item {
+            width: 100%;
+        }
+
+        .portal-nav-caret {
+            margin-left: auto;
+            transition: transform 180ms ease;
+        }
+
+        .portal-nav-group[open] .portal-nav-caret {
+            transform: rotate(180deg);
+        }
+
+        .portal-nav-sublist {
+            display: grid;
+            gap: 5px;
+            padding: 0 0 2px 18px;
+        }
+
+        .portal-nav-sublist .portal-nav-item {
+            min-height: 42px;
+            padding: 9px 12px 9px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .portal-nav-sublist .portal-icon svg {
+            width: 17px;
+            height: 17px;
         }
 
         .portal-icon {
@@ -1198,6 +1374,41 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .casefile-contact-row article {
+            display: inline-grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            min-width: min(100%, 210px);
+            padding: 10px 12px;
+            color: #26364d;
+            background: #f8fafc;
+            border: 1px solid #dbe5f0;
+            border-radius: 12px;
+        }
+
+        .casefile-contact-row article svg {
+            color: #ec0a78;
+        }
+
+        .casefile-contact-row article span {
+            display: block;
+            color: #8da0b9;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .casefile-contact-row article strong {
+            display: block;
+            margin-top: 3px;
+            color: #061125;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
         }
 
         .casefile-facts {
@@ -1911,14 +2122,34 @@
         }
 
         .casefile-tabs button {
-            min-height: 44px;
+            display: grid;
+            gap: 3px;
+            min-height: 56px;
+            align-content: center;
+            justify-items: center;
             color: #324663;
             background: transparent;
             border: 0;
             border-radius: 7px;
+            transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        .casefile-tabs button strong {
+            color: currentColor;
             font-size: 14px;
             font-weight: 900;
-            transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+            line-height: 1.15;
+        }
+
+        .casefile-tabs button small {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: currentColor;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.2;
+            opacity: 0.78;
         }
 
         .casefile-tabs button.is-active,
@@ -1937,7 +2168,6 @@
             height: 22px;
             align-items: center;
             justify-content: center;
-            margin-left: 6px;
             color: #607089;
             background: #eef2f7;
             border-radius: 999px;
@@ -1977,9 +2207,18 @@
 
         .casefile-vital-grid.is-large article {
             position: relative;
+            display: grid;
+            gap: 9px;
             min-height: 136px;
             padding: 20px 20px 16px;
             background: #ffffff;
+        }
+
+        .casefile-vital-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
         }
 
         .casefile-vital-grid i {
@@ -1987,9 +2226,7 @@
             width: 38px;
             height: 38px;
             place-items: center;
-            margin-right: 14px;
             border-radius: 8px;
-            vertical-align: middle;
         }
 
         .casefile-vital-grid i.is-pink {
@@ -2011,12 +2248,15 @@
         }
 
         .casefile-vital-grid.is-large strong {
+            display: block;
             font-size: 25px;
+            line-height: 1.08;
+            overflow-wrap: anywhere;
         }
 
         .casefile-vital-grid small {
             display: block;
-            margin-top: 12px;
+            margin-top: auto;
             padding-top: 12px;
             color: #53647c;
             border-top: 1px solid #dbe5f0;
@@ -2025,9 +2265,10 @@
         }
 
         .casefile-vital-grid b {
-            position: absolute;
-            top: 16px;
-            right: 16px;
+            display: inline-flex;
+            min-height: 28px;
+            align-items: center;
+            justify-content: center;
             padding: 6px 10px;
             color: #008a61;
             background: #ecfdf5;
@@ -3623,7 +3864,8 @@
         .kaalaman-shell {
             display: grid;
             gap: 18px;
-            width: min(980px, 100%);
+            min-width: 0;
+            width: min(1120px, 100%);
             margin: 0 auto;
             color: #0f1f35;
         }
@@ -3727,33 +3969,99 @@
             font-weight: 900;
         }
 
-        .kaalaman-trimester-grid {
+        .kaalaman-timeline-shell {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            min-width: 0;
+            overflow: hidden;
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #fff7fb 100%);
+            border: 1px solid #f5d8e6;
+            border-radius: 24px;
+            box-shadow: 0 18px 36px rgba(236, 10, 120, 0.08);
+        }
+
+        .kaalaman-timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 14px;
+        }
+
+        .kaalaman-timeline-shell .kaalaman-eyebrow {
+            margin: 0;
+            color: #d80b78;
+        }
+
+        .kaalaman-timeline-header strong {
+            display: block;
+            margin-top: 6px;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .kaalaman-timeline-count {
+            display: inline-flex;
+            min-height: 32px;
+            align-items: center;
+            padding: 0 13px;
+            color: #9f1239;
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .kaalaman-trimester-grid {
+            display: flex;
+            gap: 16px;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 4px 2px 8px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scroll-behavior: smooth;
+            scroll-padding-inline: 2px;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .kaalaman-trimester-grid::-webkit-scrollbar {
+            display: none;
         }
 
         .kaalaman-trimester-card {
             appearance: none;
-            display: block;
-            width: 100%;
+            display: grid;
+            flex: 0 0 calc((100% - 32px) / 3);
+            gap: 14px;
             min-height: 100%;
+            min-width: 0;
             padding: 18px;
-            text-align: center;
+            scroll-snap-align: center;
+            text-align: left;
             background: #ffffff;
-            border: 1px solid #dde6f0;
-            border-radius: 12px;
+            border: 1px solid #f0d7e4;
+            border-radius: 18px;
             color: inherit;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
-            transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.07);
+            transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
             font: inherit;
         }
 
         .kaalaman-trimester-card.is-current,
         .kaalaman-trimester-card.is-selected {
-            border-color: #ff8fc9;
-            box-shadow: inset 0 0 0 1px #ffb6d9, 0 10px 24px rgba(236, 10, 120, 0.10);
+            background: linear-gradient(180deg, #ffffff 0%, #fff4fa 100%);
+            border-color: #ec0a78;
+            box-shadow: inset 0 0 0 1px #ffb6d9, 0 16px 30px rgba(236, 10, 120, 0.14);
         }
 
         .kaalaman-trimester-card:hover {
@@ -3762,7 +4070,7 @@
         }
 
         .kaalaman-trimester-card:active {
-            transform: translateY(0) scale(0.985);
+            transform: translateY(0);
         }
 
         .kaalaman-trimester-card:focus-visible {
@@ -3770,17 +4078,99 @@
             outline-offset: 3px;
         }
 
+        .kaalaman-stage-progress {
+            display: block;
+            width: 100%;
+            height: 9px;
+            overflow: hidden;
+            background: #ffe1ef;
+            border-radius: 999px;
+        }
+
+        .kaalaman-stage-progress span {
+            display: block;
+            min-width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #ec0a78 0%, #ff6a9a 100%);
+            border-radius: inherit;
+        }
+
+        .kaalaman-stage-percent {
+            display: block;
+            margin-top: 8px;
+            color: #9f1239;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .kaalaman-stage-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 12px;
+            align-items: start;
+        }
+
+        .kaalaman-stage-icon {
+            display: inline-flex;
+            width: 44px;
+            height: 44px;
+            align-items: center;
+            justify-content: center;
+            color: #d80b78;
+            background: #fff0f7;
+            border: 1px solid #ffd3e8;
+            border-radius: 14px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+        }
+
+        .kaalaman-stage-icon.is-large {
+            width: 54px;
+            height: 54px;
+            border-radius: 18px;
+        }
+
+        .kaalaman-stage-icon svg {
+            width: 22px;
+            height: 22px;
+            max-width: 22px;
+            max-height: 22px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .kaalaman-stage-icon.is-large svg {
+            width: 26px;
+            height: 26px;
+            max-width: 26px;
+            max-height: 26px;
+        }
+
+        .kaalaman-stage-kicker {
+            display: block;
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
         .kaalaman-pill {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-height: 26px;
-            padding: 0 14px;
+            max-width: 100%;
+            padding: 6px 14px;
             color: #d80b78;
             background: #ffe7f3;
             border-radius: 999px;
             font-size: 10px;
             font-weight: 900;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+            text-align: center;
         }
 
         .kaalaman-pill.is-muted {
@@ -3791,19 +4181,21 @@
         .kaalaman-trimester-card h2,
         .kaalaman-trimester-title {
             display: block;
-            margin: 12px 0 4px;
+            margin: 0 0 8px;
             color: #030813;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 900;
+            line-height: 1.18;
         }
 
         .kaalaman-trimester-card p,
         .kaalaman-trimester-subtitle {
             display: block;
-            margin: 0 0 14px;
+            margin: 14px 0 14px;
             color: #64748b;
             font-size: 11px;
             font-weight: 800;
+            text-transform: uppercase;
         }
 
         .kaalaman-metric-list {
@@ -3819,8 +4211,8 @@
             justify-content: space-between;
             gap: 10px;
             width: 100%;
-            min-height: 32px;
-            padding: 0 10px;
+            min-height: 36px;
+            padding: 7px 10px;
             color: #334155;
             background: #f8fafc;
             border-radius: 8px;
@@ -3832,12 +4224,160 @@
             display: inline-flex;
             align-items: center;
             gap: 7px;
+            min-width: 0;
+            line-height: 1.25;
         }
 
         .kaalaman-metric strong {
+            flex: 0 0 auto;
             color: #030813;
             font-size: 12px;
             font-weight: 900;
+        }
+
+        .kaalaman-stage-bulletin {
+            display: grid;
+            gap: 9px;
+        }
+
+        .kaalaman-stage-bulletin > span {
+            display: grid;
+            grid-template-columns: 10px 92px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid #eef2f7;
+            border-radius: 12px;
+            color: #334155;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .kaalaman-stage-bulletin > span::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            margin-top: 5px;
+            background: #ec0a78;
+            border-radius: 999px;
+            box-shadow: 0 0 0 4px #ffe7f3;
+        }
+
+        .kaalaman-stage-bulletin strong {
+            grid-column: 2;
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .kaalaman-stage-bulletin em {
+            grid-column: 3;
+            color: #334155;
+            font-style: normal;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
+
+        .kaalaman-slider-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            min-height: 32px;
+            padding-top: 4px;
+        }
+
+        .kaalaman-slider-dot {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            padding: 0;
+            background: #ffd8e9;
+            border: 0;
+            border-radius: 999px;
+            box-shadow: inset 0 0 0 1px rgba(236, 10, 120, 0.08);
+            cursor: pointer;
+            transition: width 240ms ease, background 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+        }
+
+        .kaalaman-slider-dot.is-active {
+            width: 48px;
+            background: #ec0a78;
+            box-shadow: 0 8px 18px rgba(236, 10, 120, 0.26);
+        }
+
+        .kaalaman-slider-dot:hover {
+            background: #ff9ac8;
+            transform: translateY(-1px);
+        }
+
+        .kaalaman-slider-dot:focus-visible {
+            outline: 3px solid rgba(236, 10, 120, 0.18);
+            outline-offset: 4px;
+        }
+
+        .kaalaman-stage-detail {
+            display: grid;
+            gap: 16px;
+            padding: 22px;
+            background: #ffffff;
+            border: 1px solid #f0d7e4;
+            border-radius: 22px;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+        }
+
+        .kaalaman-stage-detail.is-hidden {
+            display: none;
+        }
+
+        .kaalaman-stage-detail-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .kaalaman-stage-detail h2,
+        .kaalaman-stage-detail p {
+            margin: 0;
+        }
+
+        .kaalaman-stage-detail h2 {
+            margin-top: 10px;
+            color: #030813;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.18;
+        }
+
+        .kaalaman-stage-detail p {
+            margin-top: 8px;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.6;
+        }
+
+        .kaalaman-topic-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .kaalaman-topic-grid span {
+            display: inline-flex;
+            min-height: 34px;
+            align-items: center;
+            padding: 7px 12px;
+            color: #9f1239;
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.25;
         }
 
         .kaalaman-months {
@@ -5224,6 +5764,10 @@
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
+            .kaalaman-trimester-card {
+                flex-basis: calc((100% - 16px) / 2);
+            }
+
             .casefiles-filter-form,
             .casefile-detail-grid {
                 grid-template-columns: 1fr;
@@ -5273,6 +5817,88 @@
                 grid-template-columns: 1fr;
             }
 
+            .maternal-vitals-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .maternal-vital-card {
+                min-height: 158px;
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            .maternal-vital-top {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .maternal-vital-icon {
+                width: 34px;
+                height: 34px;
+            }
+
+            .maternal-mini-badge {
+                min-height: 24px;
+                padding: 0 9px;
+                font-size: 9px;
+                white-space: normal;
+                text-align: center;
+            }
+
+            .maternal-vital-card strong {
+                margin-top: 14px;
+                font-size: 24px;
+            }
+
+            .maternal-vital-card strong span {
+                display: inline-block;
+                margin-left: 2px;
+                font-size: 10px;
+            }
+
+            .maternal-vital-card > div:last-child {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 5px;
+                padding-top: 10px;
+            }
+
+            .maternal-vital-card b {
+                font-size: 9px;
+                text-align: left;
+            }
+
+            .maternal-stat-grid.is-weight-grid,
+            .maternal-stat-grid.is-bp-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .maternal-stat-grid.is-weight-grid .maternal-stat-card,
+            .maternal-stat-grid.is-bp-grid .maternal-stat-card {
+                min-height: 108px;
+                padding: 13px;
+                border-radius: 12px;
+            }
+
+            .maternal-stat-grid.is-weight-grid .maternal-stat-card strong,
+            .maternal-stat-grid.is-bp-grid .maternal-stat-card strong {
+                font-size: 20px;
+            }
+
+            .maternal-stat-grid.is-weight-grid .maternal-stat-card p,
+            .maternal-stat-grid.is-bp-grid .maternal-stat-card p {
+                font-size: 10px;
+                line-height: 1.35;
+            }
+
+            .maternal-stat-grid.is-weight-grid .maternal-stat-card:nth-child(5),
+            .maternal-stat-grid.is-bp-grid .maternal-stat-card:first-child {
+                grid-column: 1 / -1;
+            }
+
             .maternal-heading-actions {
                 justify-content: flex-start;
             }
@@ -5303,6 +5929,160 @@
             .casefile-panel-title {
                 align-items: flex-start;
                 flex-direction: column;
+            }
+
+            .casefile-summary-page .casefile-status-grid,
+            .casefile-summary-page .casefile-vital-grid.is-large {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .casefile-summary-page .casefile-status-grid article {
+                min-height: 132px;
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .casefile-summary-page .casefile-status-grid strong {
+                margin-top: 16px;
+                font-size: clamp(18px, 6vw, 24px);
+                line-height: 1.08;
+                overflow-wrap: anywhere;
+            }
+
+            .casefile-summary-page .casefile-status-grid small {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            .casefile-summary-page .casefile-status-grid svg {
+                top: 14px;
+                right: 14px;
+                width: 17px;
+                height: 17px;
+            }
+
+            .casefile-summary-page .casefile-status-grid em {
+                height: 7px;
+                margin-top: 14px;
+            }
+
+            .casefile-summary-page .casefile-tabs {
+                display: flex;
+                gap: 10px;
+                padding: 10px;
+                overflow-x: auto;
+                overscroll-behavior-x: contain;
+                scroll-snap-type: x mandatory;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .casefile-summary-page .casefile-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .casefile-summary-page .casefile-tabs button {
+                display: grid;
+                flex: 0 0 138px;
+                min-height: 74px;
+                place-items: center;
+                padding: 12px;
+                scroll-snap-align: start;
+                background: #f8fafc;
+                border: 1px solid #dbe5f0;
+                border-radius: 12px;
+                white-space: normal;
+                text-align: center;
+            }
+
+            .casefile-summary-page .casefile-tabs button.is-active,
+            .casefile-summary-page .casefile-tabs button:hover {
+                color: #ffffff;
+                background: #ec0a78;
+                border-color: #ec0a78;
+                box-shadow: 0 10px 20px rgba(236, 10, 120, 0.14);
+            }
+
+            .casefile-summary-page .casefile-tabs button.is-active span,
+            .casefile-summary-page .casefile-tabs button:hover span {
+                color: #ec0a78;
+                background: #ffffff;
+            }
+
+            .casefile-summary-page .casefile-tabs span {
+                margin: 6px 0 0;
+            }
+
+            .casefile-summary-page .casefile-profile-card {
+                gap: 16px;
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .casefile-summary-page .casefile-profile-actions {
+                display: grid;
+                width: 100%;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 9px;
+            }
+
+            .casefile-summary-page .casefile-profile-actions button {
+                width: 100%;
+                min-height: 42px;
+                padding: 0 10px;
+                font-size: 11px;
+            }
+
+            .casefile-summary-page .casefile-contact-row {
+                display: grid;
+                width: 100%;
+                grid-template-columns: 1fr;
+                gap: 9px;
+            }
+
+            .casefile-summary-page .casefile-contact-row article {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article {
+                min-height: 172px;
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .casefile-summary-page .casefile-vital-head {
+                align-items: flex-start;
+            }
+
+            .casefile-summary-page .casefile-vital-grid i {
+                width: 34px;
+                height: 34px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large strong {
+                font-size: clamp(18px, 5.4vw, 22px);
+                line-height: 1.12;
+                overflow-wrap: anywhere;
+            }
+
+            .casefile-summary-page .casefile-vital-grid span {
+                font-size: 9px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid small {
+                margin-top: 10px;
+                padding-top: 10px;
+                font-size: 10px;
+                line-height: 1.35;
+            }
+
+            .casefile-summary-page .casefile-vital-grid b {
+                padding: 5px 8px;
+                font-size: 9px;
+                white-space: normal;
+                text-align: center;
             }
 
             .casefile-journey-grid {
@@ -5423,6 +6203,29 @@
                 padding: 18px;
             }
 
+            .kaalaman-timeline-shell {
+                padding: 14px;
+                border-radius: 20px;
+            }
+
+            .kaalaman-trimester-grid {
+                gap: 12px;
+            }
+
+            .kaalaman-trimester-card {
+                flex-basis: 100%;
+                border-radius: 20px;
+            }
+
+            .kaalaman-stage-detail {
+                padding: 18px;
+                border-radius: 20px;
+            }
+
+            .kaalaman-stage-detail-head {
+                grid-template-columns: 1fr;
+            }
+
             .kaalaman-library-heading {
                 flex-direction: column;
             }
@@ -5493,6 +6296,252 @@
             }
         }
 
+        body.portal-shell {
+            overflow-x: hidden;
+        }
+
+        body.portal-drawer-open {
+            overflow: hidden;
+        }
+
+        .portal-main > *,
+        .portal-main :where(.card, .clinic-filter-card, .clinic-panel, .clinic-card, .clinic-next-card, .ch-card, .neo-card, .casefile-card, .casefile-panel, .casefile-profile-card, .casefile-chart-card, .maternal-panel, .kaalaman-hero, .kaalaman-stage-detail, .kaalaman-month-body, .kaalaman-library-panel, .consultation-workspace) {
+            min-width: 0;
+        }
+
+        .portal-main :where(.card h1, .card h2, .detail-item, .detail-item *, .clinic-fact, .clinic-fact *, .ch-metric, .ch-metric *, .ch-profile-extra article, .ch-profile-extra article *, .neo-metric, .neo-metric *, .neo-extra article, .neo-extra article *, .casefile-facts article, .casefile-facts article *, .casefile-contact-row article, .casefile-contact-row article *, .staff-id-card, .staff-id-card *) {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .portal-main :where(img, video, canvas, svg, iframe, embed, object) {
+            max-width: 100%;
+        }
+
+        .portal-main :where(canvas, svg) {
+            height: auto;
+        }
+
+        .portal-main :where(.ch-plot, .neo-plot, .casefile-chart-canvas) svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .portal-main :where(.ch-plot, .neo-plot, .casefile-chart-canvas) {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .portal-main :where(.ch-table-wrap, .neo-table-wrap, .history-table-scroll, .clinic-table-wrap, .casefile-table-scroll, .table-responsive) {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .portal-main :where(.ch-table, .neo-table, .history-table) {
+            width: 100%;
+            min-width: 640px;
+        }
+
+        .portal-main :where(input, select, textarea) {
+            min-width: 0;
+        }
+
+        .portal-main :where(button, .button, a[class*="button"], .clinic-primary, .clinic-secondary, .clinic-danger, .clinic-success, .clinic-link-button, .ch-button, .neo-button, .casefile-add-button, .casefile-icon-action, .kaalaman-button) {
+            touch-action: manipulation;
+        }
+
+        .portal-main :where(a, button, input, select, textarea, summary):focus-visible {
+            outline: 3px solid rgba(236, 10, 120, 0.22);
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 1024px) {
+            .portal-sidebar {
+                width: min(320px, 88vw);
+            }
+
+            .portal-main {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .portal-header {
+                height: auto;
+                min-height: 70px;
+                padding: 10px 12px;
+            }
+
+            .portal-main {
+                width: 100%;
+                padding: 92px 12px 28px;
+            }
+
+            .portal-page-title {
+                display: -webkit-box;
+                max-width: calc(100vw - 180px);
+                overflow: hidden;
+                white-space: normal;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+            }
+
+            .portal-nav-item {
+                min-height: 48px;
+            }
+
+            .portal-main :where(.ch-table, .neo-table, .history-table) {
+                min-width: 560px;
+            }
+
+            .portal-main :where(.clinic-actions, .ch-actions, .neo-actions, .casefile-card-actions, .casefile-profile-actions, .maternal-heading-actions, .kaalaman-modal-actions) {
+                gap: 8px;
+            }
+
+            .portal-main :where(.ch-dialog, .neo-dialog, .clinic-dialog, .vitals-dialog, .history-dialog, .casefile-modal-dialog) {
+                width: calc(100vw - 20px);
+                max-height: calc(100vh - 20px);
+                max-height: calc(100dvh - 20px);
+            }
+
+            .portal-main :where(.ch-modal, .neo-modal, .clinic-modal, .vitals-modal, .history-modal, .casefile-modal) {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 540px) {
+            .portal-header-profile {
+                display: none;
+            }
+
+            .portal-header-right {
+                flex: 0 0 auto;
+            }
+
+            .portal-page-title {
+                max-width: calc(100vw - 150px);
+                font-size: 16px;
+            }
+
+            .portal-main {
+                padding-right: 10px;
+                padding-left: 10px;
+            }
+
+            .app-notification-menu {
+                position: fixed;
+                top: 78px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-height: calc(100vh - 90px);
+                max-height: calc(100dvh - 90px);
+            }
+
+            .app-notification-head {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .app-notification-actions {
+                display: grid;
+                width: 100%;
+                grid-template-columns: 1fr;
+                justify-content: stretch;
+            }
+
+            .app-notification-actions button {
+                width: 100%;
+                min-height: 38px;
+            }
+
+            .app-notification-list {
+                max-height: min(58vh, 420px);
+                max-height: min(58dvh, 420px);
+            }
+
+            .portal-main :where(.ch-plot, .neo-plot) {
+                height: 220px;
+                padding: 12px;
+            }
+
+            .portal-main :where(.consultation-composer) {
+                grid-template-columns: 34px minmax(0, 1fr) 34px 40px;
+                gap: 5px;
+            }
+
+            .portal-main :where(.consultation-input-shell) {
+                padding: 8px 9px 5px;
+            }
+
+            .portal-main :where(.consultation-call-actions) {
+                max-width: 88px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .portal-header {
+                gap: 8px;
+                padding-right: 8px;
+                padding-left: 8px;
+            }
+
+            .portal-header-icon,
+            .portal-menu-button,
+            .portal-profile-summary {
+                width: 38px;
+                height: 38px;
+            }
+
+            .portal-page-title {
+                max-width: calc(100vw - 138px);
+                font-size: 15px;
+            }
+
+            .portal-main {
+                padding-right: 8px;
+                padding-left: 8px;
+            }
+
+            .portal-main :where(.clinic-card, .ch-vaccine, .neo-vaccine, .casefile-card) {
+                padding: 12px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) and (max-width: 900px) {
+            .portal-header {
+                min-height: 62px;
+            }
+
+            .portal-main {
+                padding-top: 74px;
+            }
+
+            .consultation-body .portal-main {
+                padding-top: 74px;
+            }
+
+            .consultation-workspace {
+                height: calc(100vh - 86px);
+                height: calc(100dvh - 86px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .portal-sidebar,
+            .portal-nav-item,
+            .portal-close,
+            .portal-menu-button,
+            .portal-header-icon {
+                transition: none;
+            }
+        }
+
         .photo-crop-modal[hidden] { display: none; }
         .photo-crop-modal { position: fixed; inset: 0; z-index: 140; display: flex; align-items: center; justify-content: center; padding: 18px; }
         .photo-crop-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.62); backdrop-filter: blur(4px); }
@@ -5529,6 +6578,35 @@
         }
     </style>
     @stack('styles')
+    <style>
+        @media (max-width: 760px) {
+            .portal-main .card {
+                width: 100%;
+                max-width: 100%;
+                overflow: hidden;
+            }
+
+            .portal-main .card h1,
+            .portal-main .card h2 {
+                font-size: clamp(24px, 8vw, 31px);
+                line-height: 1.15;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .portal-main .details,
+            .portal-main .staff-dashboard-profile {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .portal-main .detail-item {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+        }
+    </style>
 </head>
 @php
     $portalRole = session('auth_role');
@@ -5537,6 +6615,7 @@
     $hasPortalShell = $isMotherPortal || $isStaffPortal;
     $portalName = session('auth_name', 'Project INAY User');
     $portalEmail = session('auth_email');
+    $portalAuthId = (int) session('auth_id');
     $nameParts = preg_split('/\s+/', trim($portalName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
     $portalInitials = '';
 
@@ -5545,9 +6624,18 @@
     }
 
     $portalInitials = $portalInitials ?: 'IN';
-    $motherRecord = $mother ?? null;
-    $staffRecord = $staff ?? null;
-    $portalPhotoUrl = $motherRecord?->profile_photo_path ? asset('storage/'.$motherRecord->profile_photo_path) : null;
+    $motherRecord = $isMotherPortal && ($mother ?? null) instanceof \App\Models\Mother ? $mother : null;
+    $staffRecord = $isStaffPortal && ($staff ?? null) instanceof \App\Models\ProgramStaff ? $staff : null;
+
+    if ($isMotherPortal && (! $motherRecord || (int) $motherRecord->id !== $portalAuthId)) {
+        $motherRecord = \App\Models\Mother::find($portalAuthId);
+    }
+
+    if ($isStaffPortal && (! $staffRecord || (int) $staffRecord->id !== $portalAuthId)) {
+        $staffRecord = \App\Models\ProgramStaff::find($portalAuthId);
+    }
+
+    $portalPhotoUrl = $isMotherPortal && $motherRecord?->profile_photo_path ? asset('storage/'.$motherRecord->profile_photo_path) : null;
     $pregnancyStatus = $motherRecord->pregnancy_status ?? null;
     $pregnancyLabel = match ($pregnancyStatus) {
         'pregnant' => 'Pregnant',
@@ -5564,10 +6652,11 @@
     $portalKicker = $isStaffPortal ? 'Program Staff Portal' : 'Mother Portal';
     $portalBrandTitle = $isStaffPortal ? 'Program Staff Portal' : 'Project INAY';
     $portalBrandSubtitle = $isStaffPortal ? 'Clinical Monitoring System' : 'Maternal & Child Health';
-    $portalRoleLabel = $isStaffPortal ? ($staffRecord->position ?? 'Program Staff') : 'Mother';
+    $portalRoleLabel = $isStaffPortal ? ($staffRecord?->role_label ?? 'Program Staff') : 'Mother';
+    $portalNotificationRole = $isStaffPortal ? 'program_staff' : 'mother';
     $portalNotificationCount = $hasPortalShell
-        ? \App\Models\AppNotification::where('recipient_id', session('auth_id'))
-            ->where('recipient_role', $isStaffPortal ? 'program_staff' : 'mother')
+        ? \App\Models\AppNotification::where('recipient_id', $portalAuthId)
+            ->where('recipient_role', $portalNotificationRole)
             ->whereNull('read_at')
             ->count()
         : 0;
@@ -5598,18 +6687,33 @@
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('mother.dashboard'), 'active' => request()->routeIs('mother.dashboard')],
         ['label' => 'Maternal Monitoring', 'icon' => 'activity', 'href' => route('maternal-monitoring'), 'active' => request()->routeIs('maternal-monitoring')],
         ['label' => 'Child Health', 'icon' => 'baby', 'href' => route('child-health'), 'active' => request()->routeIs('child-health')],
-        ['label' => 'Notifications', 'icon' => 'bell'],
         ['label' => 'Clinic Schedule', 'icon' => 'calendar', 'href' => route('mother.clinic-schedule.index'), 'active' => request()->routeIs('mother.clinic-schedule.*')],
         ['label' => 'INAY Kaalaman', 'icon' => 'book', 'href' => route('inay-kaalaman'), 'active' => request()->routeIs('inay-kaalaman*')],
         ['label' => 'Health Services', 'icon' => 'services', 'href' => route('health-services'), 'active' => request()->routeIs('health-services')],
-        ['label' => 'Consultation', 'icon' => 'message', 'href' => route('mother.consultation'), 'active' => request()->routeIs('mother.consultation')],
+        [
+            'label' => 'Messages',
+            'icon' => 'message',
+            'active' => request()->routeIs('mother.consultation'),
+            'children' => [
+                ['label' => 'Consultation', 'icon' => 'message', 'href' => route('mother.consultation'), 'active' => request()->routeIs('mother.consultation')],
+            ],
+        ],
     ];
     $staffNavItems = [
         ['label' => 'Monitor Desk', 'icon' => 'dashboard', 'href' => route('staff.dashboard'), 'active' => request()->routeIs('staff.dashboard')],
         ['label' => 'Mothers Casefiles', 'icon' => 'users', 'href' => route('staff.mothers'), 'active' => request()->routeIs('staff.mothers*')],
         ['label' => 'Neonatal & Vaccines', 'icon' => 'baby', 'href' => route('staff.neonatal'), 'active' => request()->routeIs('staff.neonatal*')],
         ['label' => 'Clinic Schedule', 'icon' => 'calendar', 'href' => route('staff.clinic-schedule.index'), 'active' => request()->routeIs('staff.clinic-schedule.*')],
-        ['label' => 'Consultation', 'icon' => 'message', 'href' => route('staff.consultation'), 'active' => request()->routeIs('staff.consultation')],
+        [
+            'label' => 'Messages',
+            'icon' => 'message',
+            'active' => request()->routeIs('staff.consultation') || request()->routeIs('staff.coordination') || request()->routeIs('staff.admin-messages'),
+            'children' => [
+                ['label' => 'Consultation', 'icon' => 'message', 'href' => route('staff.consultation'), 'active' => request()->routeIs('staff.consultation')],
+                ['label' => 'Staff Coordination', 'icon' => 'users', 'href' => route('staff.coordination'), 'active' => request()->routeIs('staff.coordination')],
+                ['label' => 'Admin Messages', 'icon' => 'message', 'href' => route('staff.admin-messages'), 'active' => request()->routeIs('staff.admin-messages')],
+            ],
+        ],
         ['label' => 'Dynamic Reports', 'icon' => 'report'],
     ];
     $portalNavItems = $isStaffPortal ? $staffNavItems : $motherNavItems;
@@ -5639,12 +6743,33 @@
                         </span>
                     @endif
 
-                    <button class="portal-header-icon" type="button" aria-label="Notifications">
-                        {!! $portalIconSvgs['bell'] !!}
-                        @if ($portalNotificationCount > 0)
-                            <span class="portal-notification-count">{{ $portalNotificationCount > 99 ? '99+' : $portalNotificationCount }}</span>
-                        @endif
-                    </button>
+                    <div
+                        class="portal-notification-wrap"
+                        data-notification-root
+                        data-notification-role="{{ $portalNotificationRole }}"
+                        data-notification-user="{{ $portalAuthId }}"
+                        data-notifications-url="{{ route('notifications.index') }}"
+                        data-notification-read-url-template="{{ route('notifications.read', ['notification' => '__NOTIFICATION__']) }}"
+                        data-notification-read-all-url="{{ route('notifications.read-all') }}"
+                        data-csrf="{{ csrf_token() }}"
+                    >
+                        <button class="portal-header-icon" type="button" aria-label="Notifications" data-notification-toggle>
+                            {!! $portalIconSvgs['bell'] !!}
+                            <span class="portal-notification-count" data-notification-count @if($portalNotificationCount === 0) hidden @endif>{{ $portalNotificationCount > 99 ? '99+' : $portalNotificationCount }}</span>
+                        </button>
+                        <div class="app-notification-menu" data-notification-menu hidden>
+                            <div class="app-notification-head">
+                                <strong>Notifications</strong>
+                                <div class="app-notification-actions">
+                                    <button type="button" data-notification-enable>Enable browser alerts</button>
+                                    <button type="button" data-notification-mark-all>Mark all read</button>
+                                </div>
+                            </div>
+                            <div class="app-notification-list" data-notification-list>
+                                <div class="app-notification-empty">Loading notifications...</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="portal-header-profile">
                         <span class="portal-avatar">
@@ -5741,7 +6866,23 @@
                     <ul class="portal-nav-list">
                         @foreach ($portalNavItems as $navItem)
                             <li>
-                                @if (! empty($navItem['href']))
+                                @if (! empty($navItem['children']))
+                                    <details class="portal-nav-group" @if(! empty($navItem['active'])) open @endif>
+                                        <summary class="portal-nav-item @if(! empty($navItem['active'])) is-active @endif">
+                                            <span class="portal-icon">{!! $portalIconSvgs[$navItem['icon']] !!}</span>
+                                            <span>{{ $navItem['label'] }}</span>
+                                            <span class="portal-icon portal-nav-caret">{!! $portalIconSvgs['chevron'] !!}</span>
+                                        </summary>
+                                        <div class="portal-nav-sublist">
+                                            @foreach ($navItem['children'] as $childItem)
+                                                <a class="portal-nav-item @if(! empty($childItem['active'])) is-active @endif" href="{{ $childItem['href'] }}">
+                                                    <span class="portal-icon">{!! $portalIconSvgs[$childItem['icon']] !!}</span>
+                                                    <span>{{ $childItem['label'] }}</span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </details>
+                                @elseif (! empty($navItem['href']))
                                     <a class="portal-nav-item @if(! empty($navItem['active'])) is-active @endif" href="{{ $navItem['href'] }}">
                                         <span class="portal-icon">{!! $portalIconSvgs[$navItem['icon']] !!}</span>
                                         <span>{{ $navItem['label'] }}</span>
@@ -5782,12 +6923,16 @@
     @endif
 
     <main class="@hasSection('auth_screen') auth-page @else page @if($hasPortalShell) portal-main @endif @endif">
-        @if (session('status'))
+        @if (session('status') && ! trim($__env->yieldContent('auth_screen')))
             <div class="alert @hasSection('auth_screen') auth-alert @endif">{{ session('status') }}</div>
         @endif
 
         @yield('content')
     </main>
+    @if ($hasPortalShell)
+        <script src="{{ asset('js/portal-responsive.js') }}?v={{ filemtime(public_path('js/portal-responsive.js')) }}" defer></script>
+        <script src="{{ asset('js/app-notifications.js') }}?v={{ filemtime(public_path('js/app-notifications.js')) }}" defer></script>
+    @endif
     @if ($hasPortalShell)
         <div class="photo-crop-modal" data-photo-crop-modal hidden>
             <div class="photo-crop-backdrop" data-photo-crop-cancel></div>

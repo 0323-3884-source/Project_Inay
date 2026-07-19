@@ -25,13 +25,15 @@ class ConsultationModuleTest extends TestCase
             ->get('/mother/consultation')
             ->assertOk()
             ->assertSee('MOTHER PORTAL')
-            ->assertSee('Chat securely with your assigned Program Staff.');
+            ->assertSee('Chat securely with your assigned Program Staff.')
+            ->assertSee('data-sms-button', false);
 
         $this->withSession($this->staffSession($staff))
             ->get('/staff/consultation')
             ->assertOk()
             ->assertSee('PROGRAM STAFF PORTAL')
-            ->assertSee('Respond to assigned mothers in one secure chat workspace.');
+            ->assertSee('Respond to assigned mothers in one secure chat workspace.')
+            ->assertSee('data-sms-button', false);
 
         $this->assertDatabaseCount('conversations', 1);
         $conversation = Conversation::first();
@@ -72,6 +74,31 @@ class ConsultationModuleTest extends TestCase
         $this->assertTrue($motherMessages[0]['is_own']);
         $this->assertFalse($motherMessages[1]['is_own']);
         $this->assertSame('Hello mother', $motherMessages[1]['message']);
+    }
+
+    public function test_consultation_sms_contact_uses_the_other_role_account_for_same_email_users(): void
+    {
+        [$mother, $staff] = $this->makeAssignedPair('shared-sms@example.test');
+
+        $motherPayload = $this->withSession($this->motherSession($mother))
+            ->getJson(route('consultation.conversations.index'))
+            ->assertOk()
+            ->json('conversations.0.participant');
+
+        $this->assertSame('program_staff', $motherPayload['role']);
+        $this->assertSame($staff->id, $motherPayload['id']);
+        $this->assertSame($staff->contact_number, $motherPayload['contact_number']);
+        $this->assertSame('sms:09171111111', $motherPayload['sms_url']);
+
+        $staffPayload = $this->withSession($this->staffSession($staff))
+            ->getJson(route('consultation.conversations.index'))
+            ->assertOk()
+            ->json('conversations.0.participant');
+
+        $this->assertSame('mother', $staffPayload['role']);
+        $this->assertSame($mother->id, $staffPayload['id']);
+        $this->assertSame($mother->contact_number, $staffPayload['contact_number']);
+        $this->assertSame('sms:09170000000', $staffPayload['sms_url']);
     }
 
     public function test_staff_conversation_list_only_contains_assigned_mothers_and_does_not_duplicate_conversations(): void

@@ -55,6 +55,16 @@ class Mother extends Model
         return $this->hasMany(MaternalMonitoringRecord::class);
     }
 
+    public function inayKaalamanProgress(): HasMany
+    {
+        return $this->hasMany(InayKaalamanProgress::class);
+    }
+
+    public function inayKaalamanUploads(): HasMany
+    {
+        return $this->hasMany(InayKaalamanUpload::class);
+    }
+
     public function casefileStaff(): BelongsToMany
     {
         return $this->belongsToMany(ProgramStaff::class, 'staff_mother_casefiles', 'mother_id', 'staff_id')

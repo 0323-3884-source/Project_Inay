@@ -84,6 +84,38 @@
 @section('content')
     <style>
         .neonatal-shell{--pink:#ec008c;--navy:#071127;--muted:#52627d;--line:#dbe5f1;--soft:#f8fafc;--green:#00856a;--blue:#2563eb;color:var(--navy)}.neonatal-shell *{box-sizing:border-box;letter-spacing:0}.neonatal-shell svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.neo-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:end;border-bottom:1px solid #d4deec;padding-bottom:22px;margin-bottom:22px}.neo-kicker{margin:0 0 10px;color:var(--pink);font-size:12px;font-weight:800;text-transform:uppercase}.neo-heading h1{margin:0;font-size:30px;line-height:1.08;font-weight:900}.neo-heading p{margin:8px 0 0;color:var(--muted);font-size:15px}.neo-stats{display:grid;grid-template-columns:repeat(3,130px);gap:12px}.neo-stat{padding:14px;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.08)}.neo-stat span{display:block;color:#8aa0bd;text-transform:uppercase;font-size:11px;font-weight:800}.neo-stat strong{display:block;margin-top:8px;font-size:24px;font-weight:900}.neo-workspace{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:22px;align-items:start}.neo-card{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 8px rgba(15,23,42,.08)}.neo-sidebar{position:sticky;top:96px;padding:18px}.neo-sidebar-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.neo-sidebar h2,.neo-section h2{margin:0;font-size:18px;font-weight:900}.neo-muted{margin:6px 0 0;color:var(--muted);font-size:13px}.neo-search{display:flex;align-items:center;gap:10px;height:44px;margin:16px 0 12px;padding:0 12px;border:1px solid #cbd8ea;border-radius:8px;color:#8aa0bd}.neo-search input{width:100%;border:0;outline:0;color:#0f1b33}.neo-list{display:grid;gap:9px;max-height:540px;overflow:auto;padding-right:4px}.neo-child-link{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid #e0e8f3;border-radius:8px;background:#fff;color:inherit;text-decoration:none}.neo-child-link:hover,.neo-child-link.is-active{border-color:#ff9bd1;background:#fff4fa;text-decoration:none}.neo-avatar{position:relative;display:grid;place-items:center;width:50px;height:50px;border-radius:999px;background:#7c2dff;color:#fff;font-weight:900;overflow:hidden}.neo-avatar img{width:100%;height:100%;object-fit:cover}.neo-link-name{display:block;overflow:hidden;color:#071127;font-weight:900;text-overflow:ellipsis;white-space:nowrap}.neo-link-meta{display:block;margin-top:4px;color:#64748b;font-size:12px}.neo-badge,.neo-status,.neo-count{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase}.neo-badge.is-danger,.neo-status.is-overdue{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}.neo-badge.is-blue,.neo-status.is-upcoming{background:#eff6ff;color:#075ef2;border:1px solid #bfdbfe}.neo-badge.is-good,.neo-status.is-complete{background:#dcfce7;color:#007f5f;border:1px solid #86efc2}.neo-status.is-due{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}.neo-status.is-cancelled{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1}.neo-main{display:grid;gap:18px}.neo-profile{padding:22px}.neo-profile-head{display:grid;grid-template-columns:minmax(260px,1.25fr) repeat(4,minmax(120px,1fr));gap:14px;align-items:center}.neo-title{display:flex;gap:16px;align-items:center;min-width:0}.neo-avatar-form{margin:0}.neo-avatar-button{position:relative;display:grid;cursor:pointer}.neo-avatar.is-large{width:74px;height:74px;font-size:26px}.neo-avatar-action{position:absolute;left:-4px;top:-4px;display:grid;width:26px;height:26px;place-items:center;border:2px solid #fff;border-radius:999px;background:var(--pink);color:#fff;box-shadow:0 8px 18px rgba(236,0,140,.2)}.neo-avatar-button input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.neo-title h2{margin:0;font-size:24px;line-height:1.15;font-weight:900}.neo-title p{margin:6px 0 0;color:var(--muted);font-size:14px}.neo-pills,.neo-actions,.neo-vaccine-summary{display:flex;gap:8px;flex-wrap:wrap}.neo-pills{margin-top:10px}.neo-metric,.neo-extra article{padding:14px;border:1px solid #d8e2ee;border-radius:7px;background:#f8fbff}.neo-metric span,.neo-extra span{display:flex;align-items:center;gap:7px;color:#8aa0bd;font-size:11px;text-transform:uppercase;font-weight:900}.neo-metric strong,.neo-extra strong{display:block;margin-top:8px;font-size:16px;font-weight:900}.neo-extra{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}.neo-last{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px;padding-top:15px;border-top:1px solid #edf2f7;color:var(--muted);font-size:13px}.neo-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border:1px solid var(--pink);border-radius:8px;background:var(--pink);color:#fff;padding:0 14px;font-weight:900;text-decoration:none;cursor:pointer}.neo-button.is-light{background:#fff;color:#1f2a44;border-color:#cbd8ea}.neo-button.is-quiet{background:#f8fafc;color:#334155;border-color:#dbe5f1}.neo-button.is-green{background:#ecfdf5;color:#007f5f;border-color:#86efc2}.neo-alert-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.neo-alert{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:14px;border:1px solid #fecdd3;border-radius:8px;background:#fff1f2;color:#be123c}.neo-alert strong{display:block;font-weight:900}.neo-alert p{margin:5px 0 0;font-size:14px;line-height:1.45}.neo-alert form{margin:0}.neo-normal,.neo-error-box{padding:14px 16px;border-radius:8px;font-weight:800}.neo-normal{border:1px solid #86efc2;background:#ecfdf5;color:#007f5f}.neo-error-box{display:flex;gap:10px;border:1px solid #fecdd3;background:#fff1f2;color:#be123c}.neo-section{padding:18px}.neo-section-head,.neo-chart-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.neo-section-head h2,.neo-chart h3{display:flex;align-items:center;gap:8px}.neo-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.neo-chart{padding:18px}.neo-chart h3{margin:0;font-size:17px;font-weight:900}.neo-chart p{margin:7px 0 0;color:var(--muted);font-size:13px}.neo-chart small{color:#8aa0bd;text-transform:uppercase;font-weight:900}.neo-plot{height:260px;border:1px solid #e6edf6;border-radius:8px;background:#f8fafc;padding:18px 20px 22px}.neo-plot svg{display:block;width:100%;height:100%;stroke-width:1}.neo-plot .grid{stroke:#dbeafe;stroke-dasharray:4 7}.neo-plot .axis{stroke:#b8c7dc}.neo-plot .label{fill:#8090ad;font-size:3.15px;font-weight:400!important;stroke:none!important}.neo-plot .axis-title{fill:#94a3b8;font-size:2.85px;font-weight:400!important;stroke:none!important}.neo-plot .line{fill:none;stroke:var(--pink);stroke-width:1.25}.neo-plot .line.is-purple{stroke:#7c3aed}.neo-plot .dot{fill:#fff;stroke:#2563eb;stroke-width:1.8}.neo-plot .dot.is-purple{stroke:#7c3aed}.neo-empty{display:grid;place-items:center;min-height:160px;color:#64748b;background:#f8fafc;border:1px dashed #d5deea;border-radius:8px;text-align:center;padding:20px}.neo-table-wrap{overflow:auto}.neo-table{width:100%;border-collapse:collapse}.neo-table th{background:#f8fafc;color:#8aa0bd;text-align:left;font-size:12px;text-transform:uppercase;font-weight:900;padding:12px}.neo-table td{padding:13px 12px;border-top:1px solid #eef2f7;color:#24324b}.neo-vaccine-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.neo-vaccine{width:100%;text-align:left;padding:16px;border:1px solid #d7e1ee;border-radius:8px;background:#f8fbff;color:inherit;cursor:pointer}.neo-vaccine:hover{border-color:#9ec5fe;background:#f4f8ff}.neo-vaccine.is-overdue{background:#fff7f9;border-color:#fecdd3}.neo-vaccine-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.neo-vaccine h3{margin:0;font-size:16px;font-weight:900}.neo-vaccine small{display:block;margin-top:4px;color:#52627d}.neo-vaccine dl{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 0}.neo-vaccine dt{color:#64748b;font-size:12px;font-weight:900}.neo-vaccine dd{margin:4px 0 0;color:#17233b;font-size:14px}.neo-modal[hidden]{display:none}.neo-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}.neo-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(3px)}.neo-dialog{position:relative;width:min(740px,calc(100vw - 24px));max-height:86vh;overflow:auto;background:#fff;border-radius:8px;box-shadow:0 28px 70px rgba(15,23,42,.26)}.neo-dialog header,.neo-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 22px;border-bottom:1px solid #e2e8f0}.neo-dialog footer{border-top:1px solid #e2e8f0;border-bottom:0;justify-content:end}.neo-dialog h2{margin:0;font-size:20px;font-weight:900}.neo-close{width:38px;height:38px;border:0;background:#fff;color:#64748b;border-radius:999px;display:grid;place-items:center;cursor:pointer}.neo-form{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.neo-form label{display:grid;gap:7px;color:#64748b;font-size:12px;text-transform:uppercase;font-weight:900}.neo-form label.is-wide{grid-column:1/-1}.neo-form input,.neo-form select,.neo-form textarea{width:100%;border:1px solid #cbd8ea;border-radius:7px;background:#fff;color:#0f1b33;font-size:14px;outline:none}.neo-form input,.neo-form select{height:44px;padding:0 12px}.neo-form input[type=file]{height:auto;padding:10px 12px}.neo-form textarea{min-height:96px;padding:12px;resize:vertical}body.has-neo-modal{overflow:hidden}@media(max-width:1180px){.neo-heading,.neo-workspace,.neo-charts,.neo-alert-grid{grid-template-columns:1fr}.neo-sidebar{position:static}.neo-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.neo-profile-head{grid-template-columns:1fr 1fr}.neo-title{grid-column:1/-1}.neo-extra{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.neo-stats,.neo-profile-head,.neo-extra,.neo-form,.neo-vaccine-grid{grid-template-columns:1fr}.neo-heading{align-items:start}.neo-vaccine dl{grid-template-columns:1fr}.neo-last{align-items:flex-start;flex-direction:column}.neo-button{width:100%}}
+        .neo-table-action-head,
+        .neo-table-action-cell {
+            text-align: right;
+        }
+
+        .neo-table-action {
+            display: inline-flex;
+            min-height: 34px;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 12px;
+            color: #be185d;
+            background: #fff5fa;
+            border: 1px solid #fbcfe8;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .neo-table-action:hover {
+            color: #ffffff;
+            background: #ec008c;
+            border-color: #ec008c;
+        }
+
+        .neo-table-action svg {
+            width: 15px;
+            height: 15px;
+        }
     </style>
 
     <section class="neonatal-shell" aria-label="Staff Neonatal and Vaccine Workspace">
@@ -218,7 +250,51 @@
                         @if($selectedGrowth->isEmpty())
                             <div class="neo-empty">No growth history available yet.</div>
                         @else
-                            <div class="neo-table-wrap"><table class="neo-table"><thead><tr><th>Age</th><th>Weight</th><th>Height</th><th>Head / Temp</th><th>Date</th><th>Recorded By</th></tr></thead><tbody>@foreach($selectedGrowth->sortByDesc('measured_at') as $record)<tr><td>{{ $record->age_months }} mo</td><td>{{ $formatNumber($record->weight, ' kg') }}</td><td>{{ $formatNumber($record->height, ' cm') }}</td><td>{{ $formatNumber($record->head_circumference, ' cm') }} / {{ $formatNumber($record->temperature, ' C') }}</td><td>{{ $record->measured_at?->format('M j, Y') }}</td><td>{{ $record->recorder?->full_name ?? $staff->full_name }}</td></tr>@endforeach</tbody></table></div>
+                            <div class="neo-table-wrap">
+                                <table class="neo-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Age</th>
+                                            <th>Weight</th>
+                                            <th>Height</th>
+                                            <th>Head / Temp</th>
+                                            <th>Date</th>
+                                            <th>Recorded By</th>
+                                            <th class="neo-table-action-head">Edit Growth</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($selectedGrowth->sortByDesc('measured_at') as $record)
+                                            <tr>
+                                                <td>{{ $record->age_months }} mo</td>
+                                                <td>{{ $formatNumber($record->weight, ' kg') }}</td>
+                                                <td>{{ $formatNumber($record->height, ' cm') }}</td>
+                                                <td>{{ $formatNumber($record->head_circumference, ' cm') }} / {{ $formatNumber($record->temperature, ' C') }}</td>
+                                                <td>{{ $record->measured_at?->format('M j, Y') }}</td>
+                                                <td>{{ $record->recorder?->full_name ?? $staff->full_name }}</td>
+                                                <td class="neo-table-action-cell">
+                                                    <button
+                                                        class="neo-table-action"
+                                                        type="button"
+                                                        data-neo-growth
+                                                        data-action="{{ route('staff.neonatal.growth.update', $record) }}"
+                                                        data-date="{{ $record->measured_at?->toDateString() }}"
+                                                        data-age="{{ $record->age_months }}"
+                                                        data-weight="{{ $record->weight }}"
+                                                        data-height="{{ $record->height }}"
+                                                        data-head="{{ $record->head_circumference }}"
+                                                        data-temp="{{ $record->temperature }}"
+                                                        data-remarks="{{ $record->remarks }}"
+                                                        aria-label="Edit growth record from {{ $record->measured_at?->format('M j, Y') }}"
+                                                    >
+                                                        {!! $iconEdit !!} Edit
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         @endif
                     </section>
 
@@ -288,19 +364,20 @@
 
             <div class="neo-modal" data-neo-modal="growth" hidden>
                 <div class="neo-backdrop" data-neo-close></div>
-                <form class="neo-dialog" method="POST" action="{{ route('staff.neonatal.growth.store', $selectedInfant) }}">
+                <form class="neo-dialog" method="POST" action="{{ route('staff.neonatal.growth.store', $selectedInfant) }}" data-growth-form data-store-action="{{ route('staff.neonatal.growth.store', $selectedInfant) }}">
                     @csrf
-                    <header><h2>Update Growth</h2><button type="button" class="neo-close" data-neo-close aria-label="Close growth modal">{!! $iconClose !!}</button></header>
+                    <input type="hidden" name="_method" value="PATCH" data-growth-method disabled>
+                    <header><h2 data-growth-title>Update Growth</h2><button type="button" class="neo-close" data-neo-close aria-label="Close growth modal">{!! $iconClose !!}</button></header>
                     <div class="neo-form">
-                        <label>Measurement Date<input type="date" name="measured_at" required max="{{ now()->toDateString() }}" value="{{ now()->toDateString() }}"></label>
-                        <label>Age (months)<input type="number" min="0" max="60" name="age_months" required value="{{ $ageMonths }}"></label>
-                        <label>Weight (kg)<input type="number" step="0.01" min="0.5" max="50" name="weight" required></label>
-                        <label>Height (cm)<input type="number" step="0.01" min="20" max="130" name="height" required></label>
-                        <label>Head Circumference (cm)<input type="number" step="0.01" min="20" max="70" name="head_circumference"></label>
-                        <label>Temperature (C)<input type="number" step="0.1" min="34" max="43" name="temperature"></label>
-                        <label class="is-wide">Remarks<textarea name="remarks"></textarea></label>
+                        <label>Measurement Date<input type="date" name="measured_at" required max="{{ now()->toDateString() }}" value="{{ now()->toDateString() }}" data-growth-date></label>
+                        <label>Age (months)<input type="number" min="0" max="60" name="age_months" required value="{{ $ageMonths }}" data-growth-age></label>
+                        <label>Weight (kg)<input type="number" step="0.01" min="0.5" max="50" name="weight" required data-growth-weight></label>
+                        <label>Height (cm)<input type="number" step="0.01" min="20" max="130" name="height" required data-growth-height></label>
+                        <label>Head Circumference (cm)<input type="number" step="0.01" min="20" max="70" name="head_circumference" data-growth-head></label>
+                        <label>Temperature (C)<input type="number" step="0.1" min="34" max="43" name="temperature" data-growth-temp></label>
+                        <label class="is-wide">Remarks<textarea name="remarks" data-growth-remarks></textarea></label>
                     </div>
-                    <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Growth</button></footer>
+                    <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit" data-growth-submit>Save Growth</button></footer>
                 </form>
             </div>
 
@@ -357,7 +434,24 @@
                 body.classList.add('has-neo-modal');
                 modal.querySelector('input, select, textarea, button')?.focus();
             };
-            document.querySelectorAll('[data-neo-open]').forEach((button) => button.addEventListener('click', () => open(button.dataset.neoOpen)));
+            const growthForm = document.querySelector('[data-growth-form]');
+            const growthMethod = growthForm?.querySelector('[data-growth-method]');
+            const growthTitle = document.querySelector('[data-growth-title]');
+            const growthSubmit = document.querySelector('[data-growth-submit]');
+            const resetGrowthForm = () => {
+                if (!growthForm) return;
+                growthForm.action = growthForm.dataset.storeAction || growthForm.action;
+                growthForm.reset();
+                if (growthMethod) growthMethod.disabled = true;
+                if (growthTitle) growthTitle.textContent = 'Update Growth';
+                if (growthSubmit) growthSubmit.textContent = 'Save Growth';
+                growthForm.querySelector('[data-growth-date]').value = '{{ now()->toDateString() }}';
+                growthForm.querySelector('[data-growth-age]').value = '{{ $ageMonths }}';
+            };
+            document.querySelectorAll('[data-neo-open]').forEach((button) => button.addEventListener('click', () => {
+                if (button.dataset.neoOpen === 'growth') resetGrowthForm();
+                open(button.dataset.neoOpen);
+            }));
             document.querySelectorAll('[data-neo-close]').forEach((el) => el.addEventListener('click', close));
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
 
@@ -369,6 +463,24 @@
             });
 
             const vaccineForm = document.querySelector('[data-vaccine-form]');
+            document.querySelectorAll('[data-neo-growth]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    if (!growthForm) return;
+                    growthForm.action = button.dataset.action || '';
+                    if (growthMethod) growthMethod.disabled = false;
+                    if (growthTitle) growthTitle.textContent = 'Edit Growth Record';
+                    if (growthSubmit) growthSubmit.textContent = 'Save Changes';
+                    growthForm.querySelector('[data-growth-date]').value = button.dataset.date || '';
+                    growthForm.querySelector('[data-growth-age]').value = button.dataset.age || '';
+                    growthForm.querySelector('[data-growth-weight]').value = button.dataset.weight || '';
+                    growthForm.querySelector('[data-growth-height]').value = button.dataset.height || '';
+                    growthForm.querySelector('[data-growth-head]').value = button.dataset.head || '';
+                    growthForm.querySelector('[data-growth-temp]').value = button.dataset.temp || '';
+                    growthForm.querySelector('[data-growth-remarks]').value = button.dataset.remarks || '';
+                    open('growth');
+                });
+            });
+
             document.querySelectorAll('[data-neo-vaccine]').forEach((button) => {
                 button.addEventListener('click', () => {
                     if (!vaccineForm) return;

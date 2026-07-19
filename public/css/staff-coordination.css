@@ -1,0 +1,90 @@
+.staff-coordination-page {
+    gap: 12px;
+}
+
+.staff-coordination-note {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.staff-coordination-note svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    stroke-width: 2;
+}
+
+.staff-coordination-workspace {
+    height: calc(100vh - var(--portal-header-height) - 130px);
+}
+
+.staff-coordination-head {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
+.staff-coordination-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 11px;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.staff-coordination-actions {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding-bottom: 0;
+}
+
+.staff-coordination-actions button {
+    min-height: 38px;
+    flex: 0 0 auto;
+    padding: 0 13px;
+    color: #1f2a44;
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 8px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.staff-coordination-actions button:hover {
+    color: #be185d;
+    border-color: #f9a8d4;
+    background: #fff7fb;
+}
+
+.staff-coordination-page .consultation-attach[disabled] {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+    .staff-coordination-note {
+        align-items: flex-start;
+        border-radius: 8px;
+        line-height: 1.4;
+    }
+
+    .staff-coordination-chip {
+        display: none;
+    }
+}
