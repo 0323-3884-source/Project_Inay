@@ -10,7 +10,9 @@ class Appointment extends Model
 {
     public const STATUS_PENDING = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_RESCHEDULED = 'rescheduled';
     public const STATUS_RESCHEDULE_REQUESTED = 'reschedule_requested';
+    public const STATUS_REJECTED = 'rejected';
     public const STATUS_DECLINED = 'declined';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_COMPLETED = 'completed';
@@ -18,10 +20,13 @@ class Appointment extends Model
 
     public const MEETING_IN_PERSON = 'in_person';
     public const MEETING_VIDEO = 'video_consultation';
+    public const MEETING_PHONE = 'phone_call';
+    public const MEETING_CHAT = 'chat';
 
     protected $fillable = [
         'mother_id',
         'staff_id',
+        'staff_availability_id',
         'conversation_id',
         'appointment_type',
         'meeting_type',
@@ -69,8 +74,10 @@ class Appointment extends Model
     public static function meetingTypeLabels(): array
     {
         return [
-            self::MEETING_IN_PERSON => 'In-person',
-            self::MEETING_VIDEO => 'Video consultation',
+            self::MEETING_IN_PERSON => 'Face-to-face',
+            self::MEETING_VIDEO => 'Video call',
+            self::MEETING_PHONE => 'Phone call',
+            self::MEETING_CHAT => 'Chat',
         ];
     }
 
@@ -79,7 +86,9 @@ class Appointment extends Model
         return [
             self::STATUS_PENDING => 'Pending',
             self::STATUS_CONFIRMED => 'Confirmed',
+            self::STATUS_RESCHEDULED => 'Rescheduled',
             self::STATUS_RESCHEDULE_REQUESTED => 'Reschedule Requested',
+            self::STATUS_REJECTED => 'Rejected',
             self::STATUS_DECLINED => 'Declined',
             self::STATUS_CANCELLED => 'Cancelled',
             self::STATUS_COMPLETED => 'Completed',
@@ -92,6 +101,7 @@ class Appointment extends Model
         return [
             self::STATUS_PENDING,
             self::STATUS_CONFIRMED,
+            self::STATUS_RESCHEDULED,
             self::STATUS_RESCHEDULE_REQUESTED,
         ];
     }
@@ -100,6 +110,7 @@ class Appointment extends Model
     {
         return [
             self::STATUS_DECLINED,
+            self::STATUS_REJECTED,
             self::STATUS_CANCELLED,
             self::STATUS_COMPLETED,
             self::STATUS_MISSED,
@@ -114,6 +125,11 @@ class Appointment extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(ProgramStaff::class, 'staff_id');
+    }
+
+    public function staffAvailability(): BelongsTo
+    {
+        return $this->belongsTo(StaffAvailability::class);
     }
 
     public function conversation(): BelongsTo

@@ -17,6 +17,9 @@ class Mother extends Model
         'barangay',
         'contact_number',
         'age',
+        'civil_status',
+        'gravidity',
+        'parity',
         'blood_type',
         'pregnancy_status',
         'profile_photo_path',
@@ -34,6 +37,8 @@ class Mother extends Model
     {
         return [
             'age' => 'integer',
+            'gravidity' => 'integer',
+            'parity' => 'integer',
             'location_latitude' => 'decimal:7',
             'location_longitude' => 'decimal:7',
             'location_accuracy' => 'integer',
@@ -50,6 +55,19 @@ class Mother extends Model
         ])));
     }
 
+    public function getMaternalAgeRiskAttribute(): ?string
+    {
+        if ($this->age === null) {
+            return null;
+        }
+
+        return match (true) {
+            $this->age < 18 => 'Young Maternal Age Risk',
+            $this->age >= 35 => 'Advanced Maternal Age Risk',
+            default => 'Standard Maternal Age',
+        };
+    }
+
     public function maternalMonitoringRecords(): HasMany
     {
         return $this->hasMany(MaternalMonitoringRecord::class);
@@ -63,6 +81,11 @@ class Mother extends Model
     public function inayKaalamanUploads(): HasMany
     {
         return $this->hasMany(InayKaalamanUpload::class);
+    }
+
+    public function inayKaalamanCheckups(): HasMany
+    {
+        return $this->hasMany(InayKaalamanCheckup::class);
     }
 
     public function casefileStaff(): BelongsToMany

@@ -20,7 +20,34 @@
     $formatNumber = fn ($value, $suffix = '') => $value === null ? 'N/A' : rtrim(rtrim(number_format((float) $value, 2), '0'), '.').$suffix;
     $bloodTypeOptions = ['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     $today = now()->startOfDay();
-    $selectedMother = $selectedInfant?->mother ?? $mothers->first();
+    $linkedChildrenTotal = (int) ($neonatalStats['linked_infants'] ?? 0);
+    $completedVaccineTotal = (int) ($neonatalStats['vaccines_completed'] ?? 0);
+    $followUpTotal = (int) (($neonatalStats['active_alerts'] ?? 0) + ($neonatalStats['pending_followups'] ?? 0));
+    $neonatalSummaryCards = [
+        [
+            'label' => 'Linked Children',
+            'value' => $linkedChildrenTotal,
+            'description' => $linkedChildrenTotal === 1 ? 'Child profile from assigned mothers' : 'Child profiles from assigned mothers',
+            'icon' => $iconBaby,
+            'tone' => 'is-blue',
+        ],
+        [
+            'label' => 'Completed Doses',
+            'value' => $completedVaccineTotal,
+            'description' => 'Vaccines marked completed',
+            'icon' => $iconSyringe,
+            'tone' => 'is-green',
+        ],
+        [
+            'label' => 'Follow-ups',
+            'value' => $followUpTotal,
+            'description' => $followUpTotal > 0 ? 'Alerts and growth reviews pending' : 'No follow-up items pending',
+            'icon' => $iconAlert,
+            'tone' => $followUpTotal > 0 ? 'is-pink' : 'is-green',
+        ],
+    ];
+    $selectedMother = $selectedMother ?? ($selectedInfant?->mother ?? $mothers->first());
+    $selectedMotherInfants = collect($selectedMotherInfants ?? []);
     $selectedGrowth = $selectedInfant?->growthRecords ?? collect();
     $latestGrowth = $selectedGrowth->last();
     $ageMonths = $selectedInfant ? ($latestGrowth?->age_months ?? ($selectedInfant->birth_date ? max(0, (int) $selectedInfant->birth_date->diffInMonths(now())) : 0)) : 0;
@@ -116,19 +143,795 @@
             width: 15px;
             height: 15px;
         }
+
+        .neo-child-switch {
+            display: grid;
+            gap: 6px;
+            max-width: 340px;
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .neo-child-switch select {
+            width: 100%;
+            height: 38px;
+            padding: 0 11px;
+            color: #0f1b33;
+            background: #ffffff;
+            border: 1px solid #cbd8ea;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .neonatal-shell {
+            display: grid;
+            gap: 18px;
+            max-width: 1480px;
+            margin: 0 auto;
+        }
+
+        .neonatal-shell .neo-heading {
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 0;
+            padding-bottom: 18px;
+            border-bottom-color: #dde6f1;
+        }
+
+        .neonatal-shell .neo-heading h1 {
+            font-size: clamp(24px, 3vw, 34px);
+        }
+
+        .neonatal-shell .neo-heading p,
+        .neonatal-shell .neo-muted {
+            line-height: 1.45;
+            font-weight: 650;
+        }
+
+        .neonatal-shell .neo-stats {
+            grid-template-columns: repeat(3, minmax(118px, 1fr));
+        }
+
+        .neonatal-shell .neo-stat,
+        .neonatal-shell .neo-card {
+            border-color: #dce6f1;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .neonatal-shell .neo-stat {
+            min-height: 88px;
+            padding: 13px 14px;
+        }
+
+        .neonatal-shell .neo-workspace {
+            grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        .neonatal-shell .neo-sidebar {
+            top: 88px;
+            padding: 16px;
+        }
+
+        .neonatal-shell .neo-search {
+            height: 42px;
+            margin: 14px 0 12px;
+            background: #ffffff;
+        }
+
+        .neonatal-shell .neo-child-link {
+            position: relative;
+            min-height: 76px;
+            padding: 11px 12px;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .neonatal-shell .neo-child-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 0, 140, 0.08);
+        }
+
+        .neonatal-shell .neo-child-link.is-active {
+            border-color: #ff9bd1;
+            background: #fff4fa;
+            box-shadow: inset 3px 0 0 #ec008c;
+        }
+
+        .neonatal-shell .neo-avatar {
+            width: 48px;
+            height: 48px;
+        }
+
+        .neonatal-shell .neo-profile,
+        .neonatal-shell .neo-section,
+        .neonatal-shell .neo-chart {
+            padding: 16px;
+        }
+
+        .neonatal-shell .neo-profile-head {
+            grid-template-columns: minmax(260px, 1.25fr) repeat(4, minmax(128px, 1fr));
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .neonatal-shell .neo-title {
+            align-self: center;
+        }
+
+        .neonatal-shell .neo-metric,
+        .neonatal-shell .neo-extra article {
+            min-height: 86px;
+            padding: 13px;
+            background: #f8fafc;
+            border-color: #dce6f1;
+        }
+
+        .neonatal-shell .neo-metric strong,
+        .neonatal-shell .neo-extra strong {
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .neonatal-shell .neo-extra {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .neonatal-shell .neo-last {
+            margin-top: 14px;
+            padding-top: 14px;
+        }
+
+        .neonatal-shell .neo-button {
+            min-height: 40px;
+            padding: 0 13px;
+            border-radius: 8px;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .neonatal-shell .neo-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 0, 140, 0.1);
+        }
+
+        .neonatal-shell .neo-alert-grid,
+        .neonatal-shell .neo-charts,
+        .neonatal-shell .neo-vaccine-grid {
+            gap: 12px;
+        }
+
+        .neonatal-shell .neo-alert {
+            padding: 13px 14px;
+            box-shadow: none;
+        }
+
+        .neonatal-shell .neo-chart-head,
+        .neonatal-shell .neo-section-head {
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .neonatal-shell .neo-chart h3,
+        .neonatal-shell .neo-section h2 {
+            font-size: 17px;
+        }
+
+        .neonatal-shell .neo-plot {
+            height: 230px;
+            padding: 14px 16px 18px;
+        }
+
+        .neonatal-shell .neo-vaccine {
+            padding: 14px;
+            background: #ffffff;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .neonatal-shell .neo-vaccine:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.08);
+        }
+
+        .neonatal-shell .neo-table th,
+        .neonatal-shell .neo-table td {
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        .neonatal-shell .neo-modal {
+            z-index: 100;
+            padding: 18px;
+        }
+
+        .neonatal-shell .neo-dialog {
+            display: flex;
+            width: min(780px, calc(100vw - 24px));
+            max-height: min(88vh, 760px);
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #dce6f1;
+            border-radius: 10px;
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.24);
+        }
+
+        .neonatal-shell .neo-dialog header,
+        .neonatal-shell .neo-dialog footer {
+            flex: 0 0 auto;
+            padding: 18px 22px;
+            background: #ffffff;
+        }
+
+        .neonatal-shell .neo-dialog header {
+            border-bottom-color: #e5edf6;
+        }
+
+        .neonatal-shell .neo-dialog footer {
+            border-top-color: #e5edf6;
+        }
+
+        .neonatal-shell .neo-dialog h2 {
+            color: #9a2d67;
+            font-size: 21px;
+            line-height: 1.2;
+        }
+
+        .neonatal-shell .neo-close {
+            display: inline-grid;
+            width: 46px;
+            height: 46px;
+            flex: 0 0 46px;
+            place-items: center;
+            color: #475569;
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .neonatal-shell .neo-close svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2.5;
+        }
+
+        .neonatal-shell .neo-close:hover,
+        .neonatal-shell .neo-close:focus-visible {
+            color: #ec008c;
+            background: #fff4fa;
+            border-color: #ff9bd1;
+            box-shadow: 0 8px 16px rgba(236, 0, 140, 0.1);
+            outline: 0;
+            transform: translateY(-1px);
+        }
+
+        .neonatal-shell .neo-form {
+            min-height: 0;
+            overflow: auto;
+            padding: 18px 22px;
+        }
+
+        @media (max-width: 1180px) {
+            .neonatal-shell .neo-heading,
+            .neonatal-shell .neo-workspace,
+            .neonatal-shell .neo-charts,
+            .neonatal-shell .neo-alert-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-sidebar {
+                position: static;
+            }
+
+            .neonatal-shell .neo-profile-head {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .neonatal-shell .neo-title {
+                grid-column: 1 / -1;
+            }
+
+            .neonatal-shell .neo-extra {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .neonatal-shell .neo-stats,
+            .neonatal-shell .neo-profile-head,
+            .neonatal-shell .neo-extra,
+            .neonatal-shell .neo-form,
+            .neonatal-shell .neo-vaccine-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-heading {
+                align-items: start;
+            }
+
+            .neonatal-shell .neo-last,
+            .neonatal-shell .neo-section-head,
+            .neonatal-shell .neo-chart-head {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .neonatal-shell .neo-actions,
+            .neonatal-shell .neo-vaccine-summary {
+                width: 100%;
+            }
+
+            .neonatal-shell .neo-button {
+                width: 100%;
+            }
+
+            .neonatal-shell .neo-dialog {
+                width: calc(100vw - 18px);
+                max-height: calc(100vh - 18px);
+            }
+
+            .neonatal-shell .neo-dialog header,
+            .neonatal-shell .neo-dialog footer,
+            .neonatal-shell .neo-form {
+                padding: 16px;
+            }
+        }
+
+        .neonatal-shell,
+        .neonatal-shell .neo-main,
+        .neonatal-shell .neo-profile,
+        .neonatal-shell .neo-section,
+        .neonatal-shell .neo-chart,
+        .neonatal-shell .neo-dialog,
+        .neonatal-shell .neo-form,
+        .neonatal-shell .neo-vaccine,
+        .neonatal-shell .neo-table-wrap {
+            min-width: 0;
+        }
+
+        .neonatal-shell .neo-workspace {
+            grid-template-columns: minmax(270px, clamp(290px, 24vw, 350px)) minmax(0, 1fr);
+        }
+
+        .neonatal-shell .neo-stats {
+            width: min(100%, 480px);
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        }
+
+        .neonatal-shell .neo-profile-head {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr));
+        }
+
+        .neonatal-shell .neo-profile-head .neo-title {
+            grid-column: span 2;
+            min-width: 0;
+        }
+
+        .neonatal-shell .neo-title > div {
+            min-width: 0;
+        }
+
+        .neonatal-shell .neo-title h2,
+        .neonatal-shell .neo-title p,
+        .neonatal-shell .neo-link-name,
+        .neonatal-shell .neo-link-meta {
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .neonatal-shell .neo-child-switch {
+            width: min(100%, 340px);
+            max-width: 100%;
+        }
+
+        .neonatal-shell .neo-extra {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+        }
+
+        .neonatal-shell .neo-alert-grid {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+        }
+
+        .neonatal-shell .neo-charts {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+        }
+
+        .neonatal-shell .neo-vaccine-grid {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+        }
+
+        .neonatal-shell .neo-vaccine-top,
+        .neonatal-shell .neo-section-head,
+        .neonatal-shell .neo-chart-head,
+        .neonatal-shell .neo-last {
+            flex-wrap: wrap;
+        }
+
+        .neonatal-shell .neo-vaccine-top > span:first-child,
+        .neonatal-shell .neo-section-head > div,
+        .neonatal-shell .neo-chart-head > div,
+        .neonatal-shell .neo-last > span {
+            min-width: min(100%, 220px);
+        }
+
+        .neonatal-shell .neo-actions,
+        .neonatal-shell .neo-vaccine-summary {
+            justify-content: flex-end;
+        }
+
+        .neonatal-shell .neo-button {
+            flex: 0 1 auto;
+            white-space: nowrap;
+        }
+
+        .neonatal-shell .neo-plot {
+            height: clamp(190px, 24vw, 240px);
+        }
+
+        .neonatal-shell .neo-table-wrap {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            border: 1px solid #e5edf6;
+            border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .neonatal-shell .neo-table {
+            min-width: 760px;
+        }
+
+        @media (max-width: 1440px) {
+            .neonatal-shell .neo-workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-sidebar {
+                position: static;
+            }
+
+            .neonatal-shell .neo-list {
+                max-height: none;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+                padding-right: 0;
+            }
+        }
+
+        @media (max-width: 980px) {
+            .neonatal-shell .neo-heading {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-stats {
+                width: 100%;
+            }
+
+            .neonatal-shell .neo-profile-head .neo-title {
+                grid-column: 1 / -1;
+            }
+
+            .neonatal-shell .neo-actions,
+            .neonatal-shell .neo-vaccine-summary {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .neonatal-shell {
+                gap: 14px;
+            }
+
+            .neonatal-shell .neo-heading h1 {
+                font-size: 26px;
+            }
+
+            .neonatal-shell .neo-profile,
+            .neonatal-shell .neo-section,
+            .neonatal-shell .neo-chart,
+            .neonatal-shell .neo-sidebar {
+                padding: 14px;
+            }
+
+            .neonatal-shell .neo-title {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .neonatal-shell .neo-avatar.is-large {
+                width: 68px;
+                height: 68px;
+            }
+
+            .neonatal-shell .neo-plot {
+                height: 190px;
+                padding: 12px;
+            }
+
+            .neonatal-shell .neo-vaccine dl {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .neonatal-shell .neo-button,
+            .neonatal-shell .neo-table-action {
+                width: 100%;
+            }
+        }
+
+        .neonatal-shell .neo-heading {
+            grid-template-columns: minmax(280px, 1fr) minmax(500px, 620px);
+            align-items: end;
+        }
+
+        .neonatal-shell .neo-stats {
+            width: 100%;
+            max-width: 620px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-self: stretch;
+        }
+
+        .neonatal-shell .neo-stat {
+            position: relative;
+            display: grid;
+            min-height: 118px;
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-areas:
+                "icon label"
+                "value value"
+                "copy copy";
+            align-content: start;
+            column-gap: 10px;
+            row-gap: 6px;
+            overflow: hidden;
+            background: #ffffff;
+            transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .neonatal-shell .neo-stat:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+        }
+
+        .neonatal-shell .neo-stat-icon {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            grid-area: icon;
+            place-items: center;
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+        }
+
+        .neonatal-shell .neo-stat-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .neonatal-shell .neo-stat-label {
+            display: block;
+            grid-area: label;
+            align-self: center;
+            color: #7f91ad;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.25;
+            text-transform: uppercase;
+        }
+
+        .neonatal-shell .neo-stat strong {
+            grid-area: value;
+            margin-top: 4px;
+            color: #071127;
+            font-size: clamp(24px, 2vw, 32px);
+            line-height: 1;
+        }
+
+        .neonatal-shell .neo-stat small {
+            grid-area: copy;
+            color: #52627d;
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        .neonatal-shell .neo-stat.is-green .neo-stat-icon {
+            color: #00856a;
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+        }
+
+        .neonatal-shell .neo-stat.is-pink .neo-stat-icon {
+            color: #be185d;
+            background: #fff4fa;
+            border-color: #fbcfe8;
+        }
+
+        .neonatal-shell .neo-stat.is-green {
+            border-color: #c7f0de;
+        }
+
+        .neonatal-shell .neo-stat.is-pink {
+            border-color: #f9c4df;
+        }
+
+        .neonatal-shell .neo-profile-head {
+            align-items: start;
+        }
+
+        .neonatal-shell .neo-metric,
+        .neonatal-shell .neo-extra article {
+            display: grid;
+            align-content: start;
+            gap: 6px;
+        }
+
+        .neonatal-shell .neo-vaccine-summary .neo-status,
+        .neonatal-shell .neo-count {
+            min-height: 34px;
+        }
+
+        .neonatal-shell .neo-vaccine-summary {
+            align-items: center;
+        }
+
+        .neonatal-shell .neo-vaccine {
+            display: grid;
+            gap: 12px;
+        }
+
+        .neonatal-shell .neo-vaccine dl {
+            gap: 10px 14px;
+        }
+
+        .neonatal-shell .neo-table tbody tr:hover {
+            background: #fff7fb;
+        }
+
+        .neonatal-shell .neo-table th:last-child,
+        .neonatal-shell .neo-table td:last-child {
+            min-width: 132px;
+        }
+
+        .neonatal-shell [hidden] {
+            display: none !important;
+        }
+
+        .neonatal-shell .neo-search input {
+            min-width: 0;
+            font-size: 14px;
+            font-weight: 750;
+        }
+
+        .neonatal-shell .neo-search input::placeholder {
+            color: #64748b;
+            opacity: 1;
+        }
+
+
+        @media (max-width: 1180px) {
+            .neonatal-shell .neo-heading {
+                grid-template-columns: 1fr;
+                align-items: start;
+            }
+
+            .neonatal-shell .neo-stats {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 780px) {
+            .neonatal-shell .neo-stats {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+            }
+
+            .neonatal-shell .neo-stat {
+                min-height: 108px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .neonatal-shell .neo-stat {
+                min-height: auto;
+            }
+
+            .neonatal-shell .neo-stat strong {
+                font-size: 26px;
+            }
+        }
+
+        .neonatal-shell .neo-profile-head {
+            grid-template-columns: minmax(290px, 0.85fr) minmax(0, 1.65fr);
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .neonatal-shell .neo-profile-head .neo-title {
+            grid-column: auto;
+            align-items: flex-start;
+            padding: 6px 2px;
+        }
+
+        .neonatal-shell .neo-core-metrics {
+            display: grid;
+            min-width: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .neonatal-shell .neo-core-metrics .neo-metric {
+            min-height: 106px;
+        }
+
+        .neonatal-shell .neo-extra {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            margin-top: 16px;
+        }
+
+        .neonatal-shell .neo-extra article {
+            min-height: 92px;
+        }
+
+        .neonatal-shell .neo-last {
+            margin-top: 16px;
+        }
+
+        @media (max-width: 1160px) {
+            .neonatal-shell .neo-profile-head {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-profile-head .neo-title,
+            .neonatal-shell .neo-core-metrics {
+                grid-column: 1 / -1;
+            }
+
+            .neonatal-shell .neo-core-metrics {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 920px) {
+            .neonatal-shell .neo-core-metrics,
+            .neonatal-shell .neo-extra {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            .neonatal-shell .neo-core-metrics,
+            .neonatal-shell .neo-extra {
+                grid-template-columns: 1fr;
+            }
+
+            .neonatal-shell .neo-profile-head .neo-title {
+                padding: 0;
+            }
+        }
     </style>
 
     <section class="neonatal-shell" aria-label="Staff Neonatal and Vaccine Workspace">
         <header class="neo-heading">
             <div>
                 <p class="neo-kicker">Program Staff / Neonatal Care</p>
-                <h1>Neonatal & Vaccine Command</h1>
-                <p>Child case records linked to your mother casefiles.</p>
+                <h1>Neonatal & Vaccine Monitoring</h1>
+                <p>Mother-linked child profiles, growth history, vaccine status, and follow-up alerts.</p>
             </div>
-            <div class="neo-stats">
-                <article class="neo-stat"><span>Linked Children</span><strong>{{ $neonatalStats['linked_infants'] ?? 0 }}</strong></article>
-                <article class="neo-stat"><span>Completed</span><strong>{{ $neonatalStats['vaccines_completed'] ?? 0 }}</strong></article>
-                <article class="neo-stat"><span>Follow-ups</span><strong>{{ ($neonatalStats['active_alerts'] ?? 0) + ($neonatalStats['pending_followups'] ?? 0) }}</strong></article>
+            <div class="neo-stats" aria-label="Neonatal monitoring summary">
+                @foreach($neonatalSummaryCards as $summary)
+                    <article class="neo-stat {{ $summary['tone'] }}">
+                        <span class="neo-stat-icon" aria-hidden="true">{!! $summary['icon'] !!}</span>
+                        <span class="neo-stat-label">{{ $summary['label'] }}</span>
+                        <strong>{{ number_format($summary['value']) }}</strong>
+                        <small>{{ $summary['description'] }}</small>
+                    </article>
+                @endforeach
             </div>
         </header>
 
@@ -143,35 +946,63 @@
         <div class="neo-workspace">
             <aside class="neo-card neo-sidebar">
                 <div class="neo-sidebar-head">
-                    <div><h2>Linked Child Case Records</h2><p class="neo-muted">{{ $mothers->count() }} assigned mother{{ $mothers->count() === 1 ? '' : 's' }}</p></div>
-                    <button class="neo-button" type="button" data-neo-open="add-child">{!! $iconPlus !!} Add</button>
+                    <div><h2>Mother's Child</h2><p class="neo-muted">{{ $mothers->count() }} assigned mother{{ $mothers->count() === 1 ? '' : 's' }}</p></div>
                 </div>
-                <label class="neo-search">{!! $iconSearch !!}<input type="search" placeholder="Search child or mother" data-neo-search></label>
+                <label class="neo-search">{!! $iconSearch !!}<input type="search" placeholder="Search mother and its child info" aria-label="Search mother and its child information" data-neo-search></label>
                 <div class="neo-list" data-neo-list>
-                    @forelse($children as $child)
+                    @forelse($mothers as $mother)
                         @php
-                            $childAge = $child->birth_date ? max(0, (int) $child->birth_date->diffInMonths(now())) : 0;
-                            $childLatestGrowth = $child->growthRecords->last();
-                            $childPhoto = $child->photo_path ? asset('storage/'.$child->photo_path) : null;
-                            $childOverdue = $child->vaccineRecords->filter(function ($record) use ($today) {
+                            $motherChildren = $children->where('mother_id', $mother->id)->sortBy(fn ($child) => ($child->birth_date?->format('Ymd') ?? '99999999').$child->full_name)->values();
+                            $motherOverdue = $motherChildren->flatMap->vaccineRecords->filter(function ($record) use ($today) {
                                 return in_array($record->status, ['missed', 'overdue'], true) || ($record->status !== 'completed' && $record->due_date && $record->due_date->isBefore($today));
                             })->count();
-                            $searchText = strtolower($child->full_name.' '.$child->mother?->full_name.' '.$child->mother?->barangay);
+                            $childSummary = $motherChildren->isEmpty()
+                                ? 'No child profile yet'
+                                : $motherChildren->pluck('full_name')->take(2)->implode(', ').($motherChildren->count() > 2 ? ' +' . ($motherChildren->count() - 2) : '');
+                            $childSearchText = $motherChildren->map(function ($child) use ($formatNumber) {
+                                $childAge = $child->birth_date ? max(0, (int) $child->birth_date->diffInMonths(now())) : null;
+                                $latestChildGrowth = $child->growthRecords->last();
+                                return collect([
+                                    $child->full_name,
+                                    $child->sex,
+                                    $child->birth_date?->format('M j, Y'),
+                                    $child->birth_date?->format('Y-m-d'),
+                                    $childAge !== null ? $childAge.' month'.($childAge === 1 ? '' : 's') : null,
+                                    $child->blood_type,
+                                    $child->facility,
+                                    $latestChildGrowth?->measured_at?->format('M j, Y'),
+                                    $latestChildGrowth?->weight !== null ? $formatNumber($latestChildGrowth->weight, ' kg') : null,
+                                    $latestChildGrowth?->height !== null ? $formatNumber($latestChildGrowth->height, ' cm') : null,
+                                    $child->vaccineRecords->pluck('vaccine_name')->implode(' '),
+                                    $child->vaccineRecords->pluck('dose_label')->implode(' '),
+                                    $child->vaccineRecords->pluck('status')->implode(' '),
+                                ])->filter()->implode(' ');
+                            })->implode(' ');
+                            $childCountLabel = $motherChildren->count().' child'.($motherChildren->count() === 1 ? '' : 'ren');
+                            $searchText = collect([
+                                $mother->full_name,
+                                $mother->barangay,
+                                $childCountLabel,
+                                $childSummary,
+                                $motherChildren->isEmpty() ? 'No child profile yet' : null,
+                                $motherOverdue > 0 ? $motherOverdue.' overdue follow-up vaccine alert' : 'no overdue vaccine',
+                                $childSearchText,
+                            ])->filter()->implode(' ');
                         @endphp
-                        <a class="neo-child-link @if($selectedInfant?->id === $child->id) is-active @endif" href="{{ route('staff.neonatal', ['child' => $child->id]) }}" data-search-text="{{ $searchText }}">
-                            <span class="neo-avatar">@if($childPhoto)<img src="{{ $childPhoto }}" alt="{{ $child->full_name }}">@else{{ $initials($child->full_name) }}@endif</span>
-                            <span><span class="neo-link-name">{{ $child->full_name }}</span><span class="neo-link-meta">{{ $child->mother?->full_name ?? 'No mother linked' }} / {{ $childAge }} mo / {{ $childLatestGrowth?->measured_at?->format('M j') ?? 'No growth' }}</span></span>
-                            <span class="neo-badge {{ $childOverdue > 0 ? 'is-danger' : 'is-good' }}">{{ $childOverdue }}</span>
+                        <a class="neo-child-link @if($selectedMother?->id === $mother->id) is-active @endif" href="{{ route('staff.neonatal', ['mother' => $mother->id]) }}" data-search-text="{{ $searchText }}">
+                            <span class="neo-avatar">{{ $initials($mother->full_name) }}</span>
+                            <span><span class="neo-link-name">{{ $mother->full_name }}</span><span class="neo-link-meta">{{ $motherChildren->count() }} child{{ $motherChildren->count() === 1 ? '' : 'ren' }} / {{ $childSummary }}</span></span>
+                            <span class="neo-badge {{ $motherOverdue > 0 ? 'is-danger' : ($motherChildren->isEmpty() ? 'is-blue' : 'is-good') }}">{{ $motherChildren->count() }}</span>
                         </a>
                     @empty
-                        <div class="neo-empty">No child case records yet.</div>
+                        <div class="neo-empty">No assigned mothers yet.</div>
                     @endforelse
                 </div>
             </aside>
 
             <div class="neo-main">
                 @if($childAccessDenied)
-                    <section class="neo-card neo-section"><div class="neo-empty">The selected child profile is not assigned to your casefiles.</div></section>
+                    <section class="neo-card neo-section"><div class="neo-empty">{{ $accessDeniedMessage ?? 'The selected profile is not assigned to your casefiles.' }}</div></section>
                 @elseif($selectedInfant)
                     <section class="neo-card neo-profile">
                         <div class="neo-profile-head">
@@ -188,13 +1019,25 @@
                                 <div>
                                     <h2>{{ $selectedInfant->full_name }}</h2>
                                     <p>{{ $selectedInfant->mother?->full_name ?? 'Mother profile unavailable' }}</p>
+                                    @if($selectedMotherInfants->count() > 1)
+                                        <label class="neo-child-switch">Mother's Child
+                                            <select onchange="if(this.value){window.location=this.value}">
+                                                @foreach($selectedMotherInfants as $motherChild)
+                                                    @php $motherChildAge = $motherChild->birth_date ? max(0, (int) $motherChild->birth_date->diffInMonths(now())) : 0; @endphp
+                                                    <option value="{{ route('staff.neonatal', ['mother' => $selectedMother?->id, 'child' => $motherChild->id]) }}" @selected($selectedInfant->id === $motherChild->id)>{{ $motherChild->full_name }} ({{ $motherChildAge }} months)</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    @endif
                                     <div class="neo-pills"><span class="neo-badge {{ $growthAlerts->count() > 0 ? 'is-danger' : 'is-good' }}">{{ $growthAlerts->count() }} alert{{ $growthAlerts->count() === 1 ? '' : 's' }}</span><span class="neo-badge is-blue">{{ $completedVaccines }} vaccines completed</span></div>
                                 </div>
                             </div>
-                            <article class="neo-metric"><span>{!! $iconBaby !!} Age</span><strong>{{ $ageMonths }} months</strong></article>
-                            <article class="neo-metric"><span>{!! $iconCalendar !!} Birth Date</span><strong>{{ $selectedInfant->birth_date?->format('M j, Y') ?? 'N/A' }}</strong></article>
-                            <article class="neo-metric"><span>{!! $iconScale !!} Weight</span><strong>{{ $formatNumber($latestGrowth?->weight, ' kg') }}</strong></article>
-                            <article class="neo-metric"><span>{!! $iconRuler !!} Height</span><strong>{{ $formatNumber($latestGrowth?->height, ' cm') }}</strong></article>
+                            <div class="neo-core-metrics">
+                                <article class="neo-metric"><span>{!! $iconBaby !!} Age</span><strong>{{ $ageMonths }} months</strong></article>
+                                <article class="neo-metric"><span>{!! $iconCalendar !!} Birth Date</span><strong>{{ $selectedInfant->birth_date?->format('M j, Y') ?? 'N/A' }}</strong></article>
+                                <article class="neo-metric"><span>{!! $iconScale !!} Weight</span><strong>{{ $formatNumber($latestGrowth?->weight, ' kg') }}</strong></article>
+                                <article class="neo-metric"><span>{!! $iconRuler !!} Height</span><strong>{{ $formatNumber($latestGrowth?->height, ' cm') }}</strong></article>
+                            </div>
                         </div>
                         <div class="neo-extra">
                             <article><span>Sex</span><strong>{{ ucfirst($selectedInfant->sex) }}</strong></article>
@@ -205,8 +1048,15 @@
                         </div>
                         <div class="neo-last">
                             <span>Last measurement: <strong>{{ $latestGrowth?->measured_at?->format('M j, Y') ?? 'No growth measurement yet' }}</strong></span>
-                            <div class="neo-actions"><button class="neo-button is-light" type="button" data-neo-open="edit-child">{!! $iconEdit !!} Edit Child</button><button class="neo-button is-green" type="button" data-neo-open="growth">{!! $iconTrend !!} Update Growth</button></div>
+                            <div class="neo-actions">
+                                <button class="neo-button is-light" type="button" data-neo-open="edit-child">{!! $iconEdit !!} Edit Child</button>
+                                <button class="neo-button is-green" type="button" data-neo-open="growth">{!! $iconTrend !!} Update Growth</button>
+                                <button class="neo-button is-light" type="button" data-casefile-record="print" data-record-kind="child" data-record-url="{{ route('staff.neonatal.print', $selectedInfant) }}">Print Record</button>
+                                <button class="neo-button is-light" type="button" data-casefile-record="pdf" data-record-kind="child" data-record-url="{{ route('staff.neonatal.pdf', $selectedInfant) }}">Export PDF</button>
+                            </div>
                         </div>
+                        <p data-record-error role="alert" hidden></p>
+                        <p data-record-ready role="status" hidden><span data-record-status></span> <a data-record-open target="_blank" rel="noopener">Open generated record</a></p>
                     </section>
 
                     @if($growthAlerts->isEmpty())
@@ -314,30 +1164,17 @@
                         @endif
                     </section>
                 @else
-                    <section class="neo-card neo-section"><div class="neo-empty">No assigned child record yet. Add a child from an assigned mother casefile.</div></section>
+                    <section class="neo-card neo-section">
+                        <div class="neo-empty">
+                            @if($selectedMother)
+                                No child profile is linked to {{ $selectedMother->full_name }} yet. Once a child profile is registered, neonatal and vaccine monitoring will appear here.
+                            @else
+                                No assigned mother record yet. Add mothers to your casefiles before creating child profiles.
+                            @endif
+                        </div>
+                    </section>
                 @endif
             </div>
-        </div>
-
-        <div class="neo-modal" data-neo-modal="add-child" hidden>
-            <div class="neo-backdrop" data-neo-close></div>
-            <form class="neo-dialog" method="POST" action="{{ route('staff.neonatal.infants.store') }}" enctype="multipart/form-data">
-                @csrf
-                <header><h2>Add Child Case Record</h2><button type="button" class="neo-close" data-neo-close aria-label="Close add child modal">{!! $iconClose !!}</button></header>
-                <div class="neo-form">
-                    <label class="is-wide">Mother<select name="mother_id" required>@foreach($mothers as $mother)<option value="{{ $mother->id }}" @selected(old('mother_id', $selectedMother?->id) == $mother->id)>{{ $mother->full_name }} - {{ $mother->barangay }}</option>@endforeach</select></label>
-                    <label class="is-wide">Child Name<input name="full_name" required maxlength="255" value="{{ old('full_name') }}"></label>
-                    <label>Sex<select name="sex" required><option value="female" @selected(old('sex') === 'female')>Female</option><option value="male" @selected(old('sex') === 'male')>Male</option><option value="other" @selected(old('sex') === 'other')>Other</option></select></label>
-                    <label>Birth Date<input type="date" name="birth_date" required max="{{ now()->toDateString() }}" value="{{ old('birth_date') }}"></label>
-                    <label>Birth Weight (kg)<input type="number" step="0.01" min="0.5" max="12" name="birth_weight" value="{{ old('birth_weight') }}"></label>
-                    <label>Birth Length (cm)<input type="number" step="0.01" min="20" max="80" name="birth_height" value="{{ old('birth_height') }}"></label>
-                    <label>Blood Type<select name="blood_type">@foreach($bloodTypeOptions as $type)<option value="{{ $type }}" @selected(old('blood_type', 'Unknown') === $type)>{{ $type }}</option>@endforeach</select></label>
-                    <label>Profile Photo<input type="file" name="child_photo" accept="image/png,image/jpeg,image/webp" data-photo-crop data-photo-title="Upload Baby Profile Photo"></label>
-                    <label class="is-wide">Facility<input name="facility" value="{{ old('facility', $selectedMother?->barangay ? 'RHU - '.$selectedMother->barangay : '') }}"></label>
-                    <label class="is-wide">Notes<textarea name="notes">{{ old('notes') }}</textarea></label>
-                </div>
-                <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Child</button></footer>
-            </form>
         </div>
 
         @if($selectedInfant)
@@ -457,9 +1294,22 @@
 
             const search = document.querySelector('[data-neo-search]');
             const rows = Array.from(document.querySelectorAll('[data-neo-list] [data-search-text]'));
+            const normalizeSearch = (value) => (value || '')
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+            const indexedRows = rows.map((row) => ({
+                row,
+                text: normalizeSearch(`${row.dataset.searchText || ''} ${row.textContent || ''}`),
+            }));
             search?.addEventListener('input', () => {
-                const term = search.value.trim().toLowerCase();
-                rows.forEach((row) => { row.hidden = term !== '' && !row.dataset.searchText.includes(term); });
+                const terms = normalizeSearch(search.value).split(' ').filter(Boolean);
+                indexedRows.forEach(({ row, text }) => {
+                    row.hidden = terms.length > 0 && !terms.every((term) => text.includes(term));
+                });
             });
 
             const vaccineForm = document.querySelector('[data-vaccine-form]');
@@ -497,4 +1347,5 @@
             });
         })();
     </script>
+    <script src="{{ asset('js/mother-care-record.js') }}?v={{ filemtime(public_path('js/mother-care-record.js')) }}" defer></script>
 @endsection

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MaternalMonitoringRecord;
 use App\Models\Mother;
 use App\Models\ProgramStaff;
+use App\Support\MaternalVitalScreening;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -33,11 +34,19 @@ class AdminStatisticsController extends Controller
         $totalNon4ps = max(0, $totalMothers - $total4ps);
         $activePregnancies = $pregnantMothers->count();
         $completedPregnancies = $mothers->where('pregnancy_status', 'postpartum')->count();
-        $highRiskPregnancies = $pregnantMothers
-            ->filter(fn (Mother $mother): bool => strtolower((string) ($latestRiskRecords[$mother->id]?->risk_level ?? '')) === 'high')
+        $forReviewPregnancies = $pregnantMothers
+            ->filter(function (Mother $mother) use ($latestRiskRecords): bool {
+                $record = $latestRiskRecords->get($mother->id);
+
+                return MaternalVitalScreening::normalizeStatus($record?->screening_summary_status ?? $record?->risk_level) === MaternalVitalScreening::STATUS_REVIEW;
+            })
             ->count();
-        $lowRiskPregnancies = $pregnantMothers
-            ->filter(fn (Mother $mother): bool => strtolower((string) ($latestRiskRecords[$mother->id]?->risk_level ?? '')) === 'low')
+        $withinReferencePregnancies = $pregnantMothers
+            ->filter(function (Mother $mother) use ($latestRiskRecords): bool {
+                $record = $latestRiskRecords->get($mother->id);
+
+                return MaternalVitalScreening::normalizeStatus($record?->screening_summary_status ?? $record?->risk_level) === MaternalVitalScreening::STATUS_WITHIN;
+            })
             ->count();
         $barangaysRepresented = $mothers
             ->map(fn (Mother $mother): string => $this->normalizeBarangay($mother->barangay))
@@ -112,7 +121,7 @@ class AdminStatisticsController extends Controller
                 ['title' => 'Total 4Ps Beneficiaries', 'count' => $total4ps, 'icon' => 'heart'],
                 ['title' => 'Total Non-4Ps', 'count' => $totalNon4ps, 'icon' => 'shield'],
                 ['title' => 'Barangays Represented', 'count' => $barangaysRepresented, 'icon' => 'map'],
-                ['title' => 'High-Risk Pregnancies', 'count' => $highRiskPregnancies, 'icon' => 'alert'],
+                ['title' => 'For Review Screenings', 'count' => $forReviewPregnancies, 'icon' => 'alert'],
                 ['title' => 'Active Pregnancies', 'count' => $activePregnancies, 'icon' => 'activity'],
                 ['title' => 'Program Staff', 'count' => $staffIdentityStats['total'], 'icon' => 'users'],
                 ['title' => 'Pending Staff Approval', 'count' => $staffIdentityStats['account_pending'], 'icon' => 'alert'],
@@ -134,8 +143,8 @@ class AdminStatisticsController extends Controller
                 'total_pregnant' => $activePregnancies,
                 'active' => $activePregnancies,
                 'completed' => $completedPregnancies,
-                'high_risk' => $highRiskPregnancies,
-                'low_risk' => $lowRiskPregnancies,
+                'for_review' => $forReviewPregnancies,
+                'within_reference_range' => $withinReferencePregnancies,
             ],
             'staffIdentityStats' => $staffIdentityStats,
         ]);

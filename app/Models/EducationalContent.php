@@ -12,6 +12,10 @@ class EducationalContent extends Model
         'month',
         'title',
         'description',
+        'category',
+        'calendar_month',
+        'infographic_key',
+        'infographic_sections',
         'output_description',
         'display_order',
         'youtube_url',
@@ -33,6 +37,8 @@ class EducationalContent extends Model
     {
         return [
             'month' => 'integer',
+            'calendar_month' => 'integer',
+            'infographic_sections' => 'array',
             'display_order' => 'integer',
             'uploaded_video_size' => 'integer',
             'infographic_size' => 'integer',
@@ -44,6 +50,30 @@ class EducationalContent extends Model
     public function scopePublished($query)
     {
         return $query->where('is_published', true);
+    }
+
+    public function scopeInfographics($query)
+    {
+        return $query->where(fn ($query) => $query
+            ->whereNotNull('infographic_sections')
+            ->orWhereNotNull('infographic_path'));
+    }
+
+    public function getHasInfographicAttribute(): bool
+    {
+        return filled($this->infographic_path) || ! empty($this->infographic_sections);
+    }
+
+    public function getInfographicProgressKeyAttribute(): string
+    {
+        return $this->infographic_key ?: 'content-'.$this->id.'-infographic';
+    }
+
+    public function getInfographicProgressMonthAttribute(): int
+    {
+        // Standalone stage resources use the existing final learning bucket.
+        // Their distinct keys do not alter the required monthly checklist totals.
+        return $this->month ?? 10;
     }
 
     public function getYoutubeEmbedUrlAttribute(): ?string

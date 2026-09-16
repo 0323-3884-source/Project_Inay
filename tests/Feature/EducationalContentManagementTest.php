@@ -39,7 +39,7 @@ class EducationalContentManagementTest extends TestCase
             ])
             ->assertRedirect('/admin/educational-content');
 
-        $content = EducationalContent::first();
+        $content = EducationalContent::where('title', 'Month 1 Prenatal Basics')->firstOrFail();
 
         $this->assertNotNull($content);
         $this->assertFalse($content->is_published);
@@ -100,6 +100,8 @@ class EducationalContentManagementTest extends TestCase
                 'stage_key' => 'second-trimester',
                 'month' => 4,
                 'title' => 'Second Trimester Movement Guide',
+                'category' => 'Prenatal Care',
+                'calendar_month' => 7,
                 'description' => 'Watch for healthy movement patterns.',
                 'output_description' => 'Movement awareness completed.',
                 'display_order' => 1,
@@ -109,11 +111,13 @@ class EducationalContentManagementTest extends TestCase
             ])
             ->assertRedirect('/admin/educational-content');
 
-        $content = EducationalContent::first();
+        $content = EducationalContent::where('title', 'Second Trimester Movement Guide')->firstOrFail();
 
         $this->assertNotNull($content);
         $this->assertTrue($content->is_published);
         $this->assertStringStartsWith('educational-content/videos/', $content->uploaded_video_path);
+        $this->assertSame('Prenatal Care', $content->category);
+        $this->assertSame(7, $content->calendar_month);
         $this->assertStringStartsWith('educational-content/infographics/', $content->infographic_path);
         $this->assertStringNotContainsString('movement-guide.mp4', $content->uploaded_video_path);
         $this->assertStringNotContainsString('movement-guide.png', $content->infographic_path);

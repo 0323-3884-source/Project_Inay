@@ -2,6 +2,7 @@
     $startValue = substr((string) $appointment->start_time, 0, 5);
     $endValue = substr((string) $appointment->end_time, 0, 5);
     $dateValue = $appointment->appointment_date->toDateString();
+    $availabilityValue = $appointment->staff_availability_id ?: '';
     $detailTitle = $appointment->typeLabel().' with '.$appointment->mother->full_name;
 @endphp
 
@@ -9,15 +10,15 @@
     <div class="clinic-card-top">
         <div>
             <h3>{{ $appointment->typeLabel() }}</h3>
-            <p>{{ $appointment->mother->full_name }} · {{ $appointment->appointment_date->format('M j, Y') }} · {{ $timeLabel($appointment->start_time) }} - {{ $timeLabel($appointment->end_time) }}</p>
+            <p>{{ $appointment->mother->full_name }} &middot; {{ $appointment->appointment_date->format('M j, Y') }} &middot; {{ $timeLabel($appointment->start_time) }} - {{ $timeLabel($appointment->end_time) }}</p>
         </div>
         <span class="clinic-pill {{ $statusClass($appointment->status) }}">{{ $appointment->statusLabel() }}</span>
     </div>
 
     <div class="clinic-facts">
-        <div class="clinic-fact"><span>Meeting</span><strong>{{ $appointment->meetingLabel() }}</strong></div>
+        <div class="clinic-fact"><span>Consultation type</span><strong>{{ $appointment->meetingLabel() }}</strong></div>
         <div class="clinic-fact"><span>Location</span><strong>{{ $appointment->location ?: 'Not provided' }}</strong></div>
-        <div class="clinic-fact"><span>Program Staff</span><strong>{{ $appointment->staff->full_name }}</strong></div>
+        <div class="clinic-fact"><span>Healthcare worker</span><strong>{{ $appointment->staff->full_name }}</strong></div>
         <div class="clinic-fact"><span>Conversation</span><strong>{{ $appointment->conversation_id ? 'Linked' : 'Not linked' }}</strong></div>
     </div>
 
@@ -41,12 +42,28 @@
         >View Details</button>
 
         @if (! $isHistory && in_array($appointment->status, \App\Models\Appointment::activeStatuses(), true))
+            @if (in_array($appointment->status, [\App\Models\Appointment::STATUS_PENDING, \App\Models\Appointment::STATUS_RESCHEDULE_REQUESTED], true))
+                <form method="POST" action="{{ route('staff.clinic-schedule.confirm', $appointment) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="clinic-success" type="submit">Confirm</button>
+                </form>
+
+                <form method="POST" action="{{ route('staff.clinic-schedule.reject', $appointment) }}" data-reject-form>
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="decline_reason" value="">
+                    <button class="clinic-danger" type="submit">Reject</button>
+                </form>
+            @endif
+
             <button
                 class="clinic-secondary"
                 type="button"
                 data-edit-appointment
                 data-update-url="{{ route('staff.clinic-schedule.update', $appointment) }}"
                 data-mother-id="{{ $appointment->mother_id }}"
+                data-staff-availability-id="{{ $availabilityValue }}"
                 data-conversation-id="{{ $appointment->conversation_id }}"
                 data-appointment-type="{{ $appointment->appointment_type }}"
                 data-meeting-type="{{ $appointment->meeting_type }}"
@@ -57,6 +74,15 @@
                 data-notes="{{ $appointment->notes }}"
                 data-status="{{ $appointment->status }}"
             >Edit</button>
+
+            <button
+                class="clinic-secondary"
+                type="button"
+                data-open-staff-reschedule
+                data-suggest-url="{{ route('staff.clinic-schedule.suggest-schedule', $appointment) }}"
+                data-suggest-title="Suggest New Schedule for {{ $appointment->mother->full_name }}"
+                data-suggest-appointment-type="{{ $appointment->appointment_type }}"
+            >Suggest New Schedule</button>
 
             <form method="POST" action="{{ route('staff.clinic-schedule.cancel', $appointment) }}">
                 @csrf

@@ -1,0 +1,42 @@
+@page { size: A4 portrait; margin: 15mm 15mm 30mm; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: #161616; font-family: "DejaVu Sans", sans-serif; font-size: 9pt; line-height: 1.4; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 9pt; }
+th, td { padding: 5pt; border: .5pt solid #888; text-align: left; vertical-align: top; word-wrap: break-word; }
+th { font-weight: bold; background: #f2f2f2; }
+thead { display: table-header-group; }
+thead tr { page-break-after: avoid; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+p { margin: 5pt 0 8pt; word-wrap: break-word; orphans: 3; widows: 3; }
+h1, h2, h3, h4 { page-break-after: avoid; break-after: avoid; }
+h3 { font-size: 10pt; margin: 12pt 0 6pt; }
+h4 { font-size: 9pt; margin: 10pt 0 5pt; }
+/* Word template header: page coordinates x=72pt, y=45pt, width=453.96pt.
+   Offsets account for the document's existing 15mm (42.52pt) page margins. */
+.document-header { position: relative; height: 65pt; page-break-inside: avoid; }
+.template-letterhead { position: absolute; left: 29.48pt; top: 2.48pt; width: 453.96pt; height: 62pt; display: block; }
+.letterhead-office-mask { position: absolute; left: 268pt; top: 15pt; width: 212pt; height: 35pt; background: #fff; display: block; }
+.document-title { text-align: center; margin: 15pt 0 16pt; }
+.document-title h1 { margin: 0 0 3pt; font-size: 14pt; letter-spacing: 1pt; }
+.document-title h2 { margin: 0; font-size: 12pt; }
+.document-title p, .caption { font-size: 8pt; color: #444; }
+.section-title { margin: 15pt 0 7pt; padding-bottom: 4pt; border-bottom: .7pt solid #444; font-size: 10pt; }
+.new-page { page-break-before: always; }
+.fields th { width: 21%; font-size: 8pt; }
+.fields td { width: 29%; }
+.history { font-size: 8pt; }
+.history th, .history td { padding: 4pt; }
+.vitals { font-size: 7.4pt; }
+.detail { font-size: 8pt; margin: 3pt 0; }
+.clinical-notes { white-space: pre-wrap; }
+.signature { width: 65%; margin-top: 24pt; page-break-inside: avoid; break-inside: avoid; }
+.signature-line { border-top: .7pt solid #222; margin-top: 30pt; padding-top: 5pt; font-weight: bold; }
+/* Fixed-height Word footer stays within the reserved 30mm bottom margin.
+   Its last line ends approximately 15mm above the physical paper edge. */
+.document-footer { position: fixed; bottom: -42pt; left: 28.28pt; width: 455.2pt; height: 42pt; margin: 0; padding: 0; }
+.template-footer { display: block; width: 455.2pt; height: 42pt; }
+@media print {
+    body { background: white; color: #161616; }
+    nav, aside, button, .no-print { display: none !important; }
+    .section-title, thead { break-after: avoid; }
+}

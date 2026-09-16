@@ -21,6 +21,8 @@
     $iconTrend = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>';
     $iconHistory = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v5l3 2"/></svg>';
     $iconAlert = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+    $iconCheck = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+    $iconHighRisk = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>';
 
     $statusLabels = [
         'pregnant' => 'Pregnant',
@@ -36,15 +38,13 @@
         'Certificate' => 'Certificate',
         'Other Documents' => 'Other Supporting Document',
     ];
-    $riskLabels = [
-        'low' => 'Low Risk',
-        'medium' => 'Needs Review',
-        'high' => 'High Risk',
-    ];
-
-    $riskValue = strtolower((string) ($latestRecord?->risk_level ?? ''));
-    $riskLabel = $riskLabels[$riskValue] ?? 'Pending';
-    $riskClass = in_array($riskValue, ['low', 'medium', 'high'], true) ? 'is-'.$riskValue : 'is-pending';
+    $screeningStatusLabel = fn ($status) => \App\Support\MaternalVitalScreening::normalizeStatus($status);
+    $screeningStatusClass = fn ($status) => 'is-'.\App\Support\MaternalVitalScreening::statusSlug($status);
+    $latestVitals = $maternalVitalsPayload['latest'] ?? null;
+    $formattedVitalsById = collect($maternalVitalsPayload['records'] ?? [])->keyBy('id');
+    $riskLabel = $latestVitals['screening_summary_status'] ?? $screeningStatusLabel($latestRecord?->screening_summary_status ?? $latestRecord?->risk_level);
+    $riskValue = \App\Support\MaternalVitalScreening::statusKey($riskLabel);
+    $riskClass = $screeningStatusClass($riskLabel);
     $initials = strtoupper(substr($mother->first_name, 0, 1).substr($mother->last_name, 0, 1));
     $caseId = 'MAT-RHU-'.str_pad((string) $mother->id, 3, '0', STR_PAD_LEFT);
     $pregnancyWeek = $latestRecord?->pregnancy_week;
@@ -56,53 +56,3235 @@
     $bpValue = $latestRecord?->bp_systolic && $latestRecord?->bp_diastolic ? $latestRecord->bp_systolic.'/'.$latestRecord->bp_diastolic.' mmHg' : 'Not logged';
     $weightNumber = $latestRecord?->weight;
     $weightValue = $weightNumber === null ? 'Not logged' : rtrim(rtrim(number_format((float) $weightNumber, 2), '0'), '.').' kg';
+    $heightNumber = $records->first(fn ($record) => $record->height_cm !== null)?->height_cm;
+    $prePregnancyWeightNumber = $records->first(fn ($record) => $record->pre_pregnancy_weight !== null)?->pre_pregnancy_weight;
+    $prePregnancyBmiNumber = $heightNumber !== null && $prePregnancyWeightNumber !== null && (float) $heightNumber > 0
+        ? round((float) $prePregnancyWeightNumber / ((((float) $heightNumber / 100) ** 2)), 2)
+        : null;
     $sugarValue = $latestRecord?->blood_sugar === null ? 'Not logged' : rtrim(rtrim(number_format((float) $latestRecord->blood_sugar, 1), '0'), '.').' mg/dL';
-    $hemoValue = $latestRecord?->hemoglobin === null ? 'Not logged' : rtrim(rtrim(number_format((float) $latestRecord->hemoglobin, 1), '0'), '.').' g/dL';
+    $temperatureValue = $latestRecord?->temperature === null ? 'Not logged' : rtrim(rtrim(number_format((float) $latestRecord->temperature, 1), '0'), '.').' C';
+    $heartRateValue = $latestRecord?->heart_rate === null ? 'Not logged' : $latestRecord->heart_rate.' bpm';
+    $bloodSugarTestTypes = \App\Support\MaternalVitalScreening::bloodSugarTestTypes();
+    $bloodSugarTestTypeLabel = $latestVitals['blood_sugar_test_type_label'] ?? 'Test type not recorded';
     $latestDate = ($latestRecord?->recorded_at ?? $latestRecord?->created_at);
     $kaalamanMonthlyProgress = $kaalamanMonthlyProgress ?? ['months' => [], 'overall' => ['completed_months' => 0, 'total_months' => 10, 'pending_required' => 0, 'files_uploaded' => $uploads->count()]];
     $kaalamanOverallProgress = $kaalamanOverallProgress ?? ($kaalamanMonthlyProgress['overall'] ?? ['completed_months' => 0, 'total_months' => 10, 'pending_required' => 0, 'files_uploaded' => $uploads->count()]);
     $completion = $careCompletion ?? min(100, ($records->count() * 5) + ($uploads->count() * 5));
-    $checkupUploads = $uploads->filter(fn ($upload) => str_contains(strtolower($upload->record_type), 'checkup'))->count();
     $prescriptionUploads = $uploads->filter(fn ($upload) => str_contains(strtolower($upload->record_type), 'prescription'))->count();
     $weightRecords = $records->filter(fn ($record) => $record->weight !== null)->values();
     $bpRecords = $records->filter(fn ($record) => $record->bp_systolic !== null && $record->bp_diastolic !== null)->values();
+    $latestBpEntry = collect($maternalVitalsPayload['blood_pressure_history'] ?? [])->last();
+    $bpStatusState = function (?string $status, bool $hasRecord): string {
+        if (! $hasRecord) {
+            return 'is-empty';
+        }
+
+        $rawStatus = strtolower(trim((string) $status));
+        $statusKey = \App\Support\MaternalVitalScreening::statusKey($status);
+
+        if ($statusKey === 'urgent_referral_recommended' || in_array($rawStatus, ['high risk', 'high-risk', 'critical'], true)) {
+            return 'is-high-risk';
+        }
+
+        if ($statusKey === 'within_reference_range' || in_array($rawStatus, ['normal / stable', 'normal', 'stable'], true)) {
+            return 'is-normal';
+        }
+
+        return 'is-monitoring';
+    };
+    $bpStatusLabelFor = function (?string $status, bool $hasRecord) use ($bpStatusState): string {
+        return match ($bpStatusState($status, $hasRecord)) {
+            'is-normal' => 'Normal / Stable',
+            'is-high-risk' => 'High Risk',
+            'is-empty' => 'No Record',
+            default => 'Needs Monitoring',
+        };
+    };
+    $bpStatusExplanationFor = function (?string $status, bool $hasRecord) use ($bpStatusState): string {
+        return match ($bpStatusState($status, $hasRecord)) {
+            'is-normal' => 'Latest recorded blood pressure is within the configured screening review range.',
+            'is-high-risk' => 'A high-risk blood pressure status was recorded. Professional clinical assessment is required.',
+            'is-empty' => 'No blood pressure record available yet.',
+            default => 'Blood pressure requires further monitoring and professional assessment.',
+        };
+    };
+    $latestBpStatusSource = $latestBpEntry['raw_status'] ?? $latestBpEntry['status'] ?? null;
+    $latestBpStatusState = $bpStatusState($latestBpStatusSource, $latestBpEntry !== null);
+    $latestBpStatusLabel = $bpStatusLabelFor($latestBpStatusSource, $latestBpEntry !== null);
+    $latestBpStatusExplanation = $latestBpEntry['explanation'] ?? $bpStatusExplanationFor($latestBpStatusSource, $latestBpEntry !== null);
+    $latestBpDisplay = $latestBpEntry ? $latestBpEntry['systolic'].' / '.$latestBpEntry['diastolic'] : '-- / --';
+    $latestBpContext = $latestBpEntry
+        ? ($latestBpEntry['pregnancy_week'] ? 'Pregnancy week '.$latestBpEntry['pregnancy_week'] : 'Recorded '.($latestBpEntry['recorded_label'] ?? 'Date not recorded'))
+        : 'No blood pressure record available yet.';
     $bpPointX = 52;
     $bpSystolicY = $latestRecord?->bp_systolic ? max(12, min(84, 100 - (($latestRecord->bp_systolic - 70) / 70 * 90))) : 52;
     $bpDiastolicY = $latestRecord?->bp_diastolic ? max(12, min(84, 100 - (($latestRecord->bp_diastolic - 60) / 70 * 90))) : 76;
     $weightPointY = $weightNumber ? max(12, min(84, 100 - (((float) $weightNumber - 70) / 10 * 90))) : 54;
     $initialRecordDate = $latestDate?->format('Y-m-d') ?? now()->toDateString();
+    $latestRecordedLabel = $latestDate?->format('M j, Y') ?? 'No data available';
+    $learningPercent = (int) ($kaalamanOverallProgress['percentage'] ?? 0);
+    $learningCompleted = (int) ($kaalamanOverallProgress['completed_months'] ?? 0);
+    $learningTotal = (int) ($kaalamanOverallProgress['total_months'] ?? 10);
+    $uploadedFileCount = (int) ($kaalamanOverallProgress['files_uploaded'] ?? $uploads->count());
+    $visitCount = min($records->count(), 8);
+    $visitPercent = $visitCount > 0 ? round(($visitCount / 8) * 100) : 0;
+    $consultations = $consultations ?? collect();
+    $fourPsLabel = $mother->is_4ps_beneficiary ? '4Ps Beneficiary' : 'Not 4Ps beneficiary';
+    $fourPsCopy = $mother->is_4ps_beneficiary ? 'Social support status confirmed' : 'No 4Ps record on file';
+    $maternalAgeRisk = $mother->maternal_age_risk ?? 'Not provided';
+    $obstetricHistory = $mother->gravidity === null && $mother->parity === null
+        ? 'Not provided'
+        : 'G'.($mother->gravidity ?? '—').' P'.($mother->parity ?? '—');
+    $riskCardClass = match ($riskValue) {
+        'urgent_referral_recommended' => 'is-risk',
+        'for_review', 'for_professional_interpretation' => 'is-review',
+        'within_reference_range' => 'is-green',
+        default => 'is-neutral',
+    };
+    $riskDateCopy = $latestDate ? 'Updated '.$latestDate->format('M j, Y') : 'No monitoring record yet';
+    $vitalDateLabels = [
+        'blood_pressure' => ($latestRecord?->bp_systolic && $latestRecord?->bp_diastolic) ? 'Recorded '.$latestRecordedLabel : 'No measurement available',
+        'blood_sugar' => $latestRecord?->blood_sugar === null ? 'No measurement available' : 'Recorded '.$latestRecordedLabel,
+        'weight' => $latestRecord?->weight === null ? 'No measurement available' : 'Recorded '.$latestRecordedLabel,
+        'temperature' => $latestRecord?->temperature === null ? 'No measurement available' : 'Recorded '.$latestRecordedLabel,
+        'heart_rate' => $latestRecord?->heart_rate === null ? 'No measurement available' : 'Recorded '.$latestRecordedLabel,
+    ];
+    $vitalStatus = fn (string $key) => $latestVitals['statuses'][$key] ?? \App\Support\MaternalVitalScreening::STATUS_LOGGED;
+    $vitalExplanation = fn (string $key) => $latestVitals['explanations'][$key] ?? 'No screening explanation available yet.';
+    $vitalGuideline = fn (string $key) => $latestVitals['guidelines'][$key] ?? ['name' => 'Facility-configurable maternal vital screening rule', 'version' => 'Pending partner validation', 'source_url' => null];
+    $vitalCards = [
+        ['key' => 'blood_pressure', 'title' => 'Blood Pressure', 'icon' => $iconHeart, 'tone' => 'is-pink', 'value' => $bpValue, 'unit' => 'mmHg', 'test_type' => 'Not applicable'],
+        ['key' => 'blood_sugar', 'title' => 'Blood Sugar', 'icon' => $iconPulse, 'tone' => 'is-pink', 'value' => $sugarValue, 'unit' => 'mg/dL', 'test_type' => $bloodSugarTestTypeLabel],
+        ['key' => 'weight', 'title' => 'Weight', 'icon' => $iconShield, 'tone' => 'is-green', 'value' => $weightValue, 'unit' => 'kg', 'test_type' => 'Not applicable'],
+        ['key' => 'temperature', 'title' => 'Temperature', 'icon' => $iconPulse, 'tone' => 'is-blue', 'value' => $temperatureValue, 'unit' => 'C', 'test_type' => 'Not applicable'],
+        ['key' => 'heart_rate', 'title' => 'Heart Rate', 'icon' => $iconHeart, 'tone' => 'is-green', 'value' => $heartRateValue, 'unit' => 'bpm', 'test_type' => 'Not applicable'],
+    ];
+    $clinicalReferences = \App\Support\MaternalVitalScreening::references();
+    $safetyNotice = $maternalVitalsPayload['safety_notice'] ?? 'Project INAY provides threshold-based screening alerts for monitoring purposes only. Results must be verified and interpreted by a qualified healthcare professional. The system does not provide a medical diagnosis.';
+    $currentJourneyStage = match (true) {
+        $mother->pregnancy_status === 'postpartum' => 'postpartum',
+        $isCurrentlyPregnant && $pregnancyWeek && $pregnancyWeek >= 28 => 'third',
+        $isCurrentlyPregnant && $pregnancyWeek && $pregnancyWeek >= 14 => 'second',
+        $isCurrentlyPregnant => 'first',
+        default => 'registration',
+    };
+    $journeyStatus = function (string $stage) use ($currentJourneyStage): string {
+        $order = ['registration' => 0, 'first' => 1, 'second' => 2, 'third' => 3, 'delivery' => 4, 'postpartum' => 5];
+
+        if ($stage === $currentJourneyStage) {
+            return 'current';
+        }
+
+        return ($order[$stage] ?? 0) < ($order[$currentJourneyStage] ?? 0) ? 'complete' : 'upcoming';
+    };
+    $journeyStages = [
+        ['key' => 'registration', 'title' => 'Registration', 'description' => 'Patient account created', 'date' => $mother->created_at?->format('M j, Y') ?? 'Date not recorded', 'icon' => $iconUser],
+        ['key' => 'first', 'title' => 'First Trimester', 'description' => 'Weeks 1-13', 'date' => $currentJourneyStage === 'first' ? 'Current stage' : ($pregnancyWeek && $pregnancyWeek >= 14 ? 'Completed' : 'Upcoming'), 'icon' => $iconHeart],
+        ['key' => 'second', 'title' => 'Second Trimester', 'description' => 'Weeks 14-27', 'date' => $currentJourneyStage === 'second' ? 'Current stage' : ($pregnancyWeek && $pregnancyWeek >= 28 ? 'Completed' : 'Upcoming'), 'icon' => $iconPulse],
+        ['key' => 'third', 'title' => 'Third Trimester', 'description' => 'Weeks 28-40', 'date' => $currentJourneyStage === 'third' ? 'Current stage' : ($mother->pregnancy_status === 'postpartum' ? 'Completed' : 'Upcoming'), 'icon' => $iconShield],
+        ['key' => 'delivery', 'title' => 'Delivery', 'description' => 'Birth plan and delivery', 'date' => $mother->pregnancy_status === 'postpartum' ? 'Completed' : 'Upcoming', 'icon' => $iconCalendar],
+        ['key' => 'postpartum', 'title' => 'Postpartum Care', 'description' => 'After delivery follow-up', 'date' => $mother->pregnancy_status === 'postpartum' ? 'Current stage' : 'Upcoming', 'icon' => $iconClock],
+    ];
+    $patientActivities = collect();
+    $patientActivities->push([
+        'title' => 'Patient registered',
+        'description' => 'Mother account was created in Project INAY.',
+        'category' => 'Registration',
+        'date' => $mother->created_at,
+    ]);
+    foreach ($records as $record) {
+        $recordDate = $record->recorded_at ?? $record->created_at;
+        $formattedRecord = $formattedVitalsById->get($record->id);
+        $recordRiskLabel = $screeningStatusLabel($formattedRecord['screening_summary_status'] ?? $record->screening_summary_status ?? $record->risk_level);
+        $patientActivities->push([
+            'title' => 'Maternal monitoring updated',
+            'description' => 'Week '.($record->pregnancy_week ?: 'N/A').' vitals recorded with '.$recordRiskLabel.' screening status.',
+            'category' => 'Monitoring',
+            'date' => $recordDate,
+        ]);
+
+        if ($record->risk_level) {
+            $patientActivities->push([
+                'title' => 'Screening status updated',
+                'description' => 'Maternal vital screening status is '.$recordRiskLabel.'.',
+                'category' => 'Screening Update',
+                'date' => $recordDate,
+            ]);
+        }
+    }
+    foreach ($uploads as $upload) {
+        $patientActivities->push([
+            'title' => 'Prenatal document uploaded',
+            'description' => ($uploadTypeLabels[$upload->record_type] ?? $upload->record_type).' file received: '.$upload->original_name.'.',
+            'category' => 'Documents',
+            'date' => $upload->created_at,
+        ]);
+    }
+    foreach ($consultations as $conversation) {
+        $conversationDate = $conversation->last_message_at ?? $conversation->updated_at ?? $conversation->created_at;
+        $patientActivities->push([
+            'title' => 'Consultation updated',
+            'description' => $conversation->lastMessage ? 'Recent message recorded in the mother-staff consultation.' : 'Consultation channel is available for this patient.',
+            'category' => 'Consultation',
+            'date' => $conversationDate,
+        ]);
+    }
+    if ($learningPercent > 0) {
+        $patientActivities->push([
+            'title' => 'Learning progress updated',
+            'description' => $learningCompleted.'/'.$learningTotal.' INAY Kaalaman months completed.',
+            'category' => 'Learning',
+            'date' => $uploads->first()?->created_at ?? $latestDate ?? $mother->created_at,
+        ]);
+    }
+    $patientActivities = $patientActivities
+        ->sortByDesc(fn ($activity) => $activity['date']?->getTimestamp() ?? 0)
+        ->values();
 @endphp
 
 @push('styles')
     <style>
-        .casefile-learning-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
-        .casefile-learning-summary article { padding: 13px; background: #f8fafc; border: 1px solid #dde6f0; border-radius: 8px; }
-        .casefile-learning-summary span { display: block; color: #7c8ba3; font-size: 10px; font-weight: 900; text-transform: uppercase; }
-        .casefile-learning-summary strong { display: block; margin-top: 6px; color: #030813; font-size: 18px; font-weight: 900; }
-        .casefile-learning-months { display: grid; gap: 12px; margin-top: 14px; }
-        .casefile-learning-month { display: grid; gap: 12px; padding: 14px; background: #ffffff; border: 1px solid #dde6f0; border-radius: 8px; }
-        .casefile-learning-month.is-complete { border-color: #86efac; background: #f0fdf4; }
-        .casefile-learning-month header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-        .casefile-learning-month h3 { margin: 0; color: #030813; font-size: 15px; font-weight: 900; }
-        .casefile-learning-month p { margin: 4px 0 0; color: #52627d; font-size: 12px; font-weight: 800; }
-        .casefile-learning-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 10px; font-weight: 900; white-space: nowrap; }
-        .casefile-learning-badge.is-complete { color: #008f6b; background: #dcfce7; border-color: #86efac; }
-        .casefile-learning-progress { overflow: hidden; height: 8px; background: #e8edf5; border-radius: 999px; }
-        .casefile-learning-progress span { display: block; height: 100%; background: linear-gradient(90deg, #ec0b7d, #00a680); border-radius: inherit; }
-        .casefile-learning-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-        .casefile-learning-grid article { padding: 10px; background: #f8fafc; border: 1px solid #e5edf6; border-radius: 8px; }
-        .casefile-learning-grid span { display: block; color: #7c8ba3; font-size: 10px; font-weight: 900; text-transform: uppercase; }
-        .casefile-learning-grid strong { display: block; margin-top: 5px; color: #030813; font-size: 13px; font-weight: 900; }
-        .casefile-learning-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-        .casefile-learning-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; background: #f8fafc; border: 1px solid #e5edf6; border-radius: 8px; color: #030813; font-size: 12px; font-weight: 800; }
-        .casefile-learning-list small { color: #52627d; font-size: 11px; font-weight: 800; }
-        @media (max-width: 980px) { .casefile-learning-summary, .casefile-learning-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (max-width: 620px) { .casefile-learning-summary, .casefile-learning-grid { grid-template-columns: 1fr; } .casefile-learning-month header { flex-direction: column; } }
+        /* ===== GLOBAL RESET & BASE ===== */
+        .casefile-summary-page {
+            --inay-pink: #ec0a78;
+            --inay-pink-soft: #fff4fa;
+            --inay-pink-border: #ffc7e3;
+            --inay-green: #008f6b;
+            --inay-green-soft: #ecfdf5;
+            --inay-green-border: #9de8c7;
+            --inay-ink: #071225;
+            --inay-muted: #5f6f86;
+            --inay-border: #dce6f1;
+            --inay-panel: #ffffff;
+            --inay-soft: #f8fafc;
+            --inay-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            --inay-radius: 8px;
+
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 20px 24px 40px;
+            color: var(--inay-ink);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .casefile-summary-page * {
+            box-sizing: border-box;
+            letter-spacing: 0;
+        }
+
+        .casefile-summary-page svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        /* Profile card header with kicker + risk badge */
+        .casefile-summary-page .casefile-profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .casefile-summary-page .casefile-profile-header .casefile-risk {
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-profile-card {
+            padding: 24px 28px;
+            gap: 20px;
+        }
+
+        .casefile-summary-page .casefile-profile-main {
+            gap: 24px;
+        }
+
+        .casefile-summary-page .casefile-contact-row {
+            gap: 14px;
+            margin-top: 12px;
+        }
+
+        .casefile-summary-page .casefile-profile-actions {
+            padding-top: 18px;
+            margin-top: 4px;
+        }
+
+        .casefile-summary-page .casefile-profile-facts {
+            gap: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .casefile-summary-page .casefile-profile-header {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .casefile-summary-page .casefile-profile-header .casefile-risk {
+                font-size: 10px;
+                padding: 0 10px;
+                min-height: 24px;
+            }
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        .casefile-summary-page h1,
+        .casefile-summary-page h2,
+        .casefile-summary-page h3,
+        .casefile-summary-page h4 {
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .casefile-summary-page p {
+            margin: 0;
+        }
+
+        /* ===== HEADER ===== */
+        .casefile-summary-page .casefile-detail-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--inay-border);
+            flex-wrap: wrap;
+        }
+
+        .casefile-summary-page .casefile-detail-heading > div {
+            flex: 1 1 auto;
+            min-width: 200px;
+        }
+
+        .casefile-summary-page .casefile-detail-heading h1 {
+            margin-top: 8px;
+            font-size: clamp(24px, 3vw, 34px);
+            line-height: 1.1;
+        }
+
+        .casefile-summary-page .casefile-detail-heading p {
+            max-width: 760px;
+            margin-top: 4px;
+            color: var(--inay-muted);
+            font-size: 14px;
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        .casefile-summary-page .casefile-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #8394ad;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-breadcrumb a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #8394ad;
+            text-decoration: none;
+            transition: color 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-breadcrumb a:hover {
+            color: var(--inay-pink);
+        }
+
+        .casefile-summary-page .casefile-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            color: var(--inay-ink);
+            background: var(--inay-soft);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 160ms ease;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-back-link:hover {
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+            color: var(--inay-pink);
+            transform: translateY(-1px);
+        }
+
+        /* ===== PROFILE CARD ===== */
+        .casefile-summary-page .casefile-profile-card {
+            background: var(--inay-panel);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .casefile-summary-page .casefile-profile-kicker {
+            margin: 0;
+            color: var(--inay-pink);
+            font-size: 11px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .casefile-summary-page .casefile-profile-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .casefile-summary-page .casefile-avatar-wrapper {
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-avatar.is-xl {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--inay-pink-soft);
+            border: 3px solid #ffe2f1;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--inay-pink);
+        }
+
+        .casefile-summary-page .casefile-profile-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .casefile-summary-page .casefile-profile-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2px;
+        }
+
+        .casefile-summary-page .casefile-profile-title h2 {
+            font-size: clamp(21px, 2.1vw, 28px);
+            line-height: 1.15;
+            margin: 0;
+        }
+
+        .casefile-summary-page .casefile-id {
+            display: block;
+            color: var(--inay-muted);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .casefile-summary-page .casefile-risk {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-risk.is-within-reference-range,
+        .casefile-summary-page .casefile-risk.is-logged {
+            color: #007f5f;
+            background: #ecfdf5;
+            border: 1px solid #86efc2;
+        }
+
+        .casefile-summary-page .casefile-risk.is-for-review {
+            color: #975a16;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+        }
+
+        .casefile-summary-page .casefile-risk.is-for-professional-interpretation {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+
+        .casefile-summary-page .casefile-risk.is-urgent-referral-recommended {
+            color: #b42318;
+            background: #fff7f7;
+            border: 1px solid #fecaca;
+        }
+
+        /* ===== CONTACT ROW ===== */
+        .casefile-summary-page .casefile-contact-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .casefile-summary-page .casefile-contact-row article {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--inay-soft);
+            border: 1px solid #e5edf6;
+            border-radius: var(--inay-radius);
+            min-width: 0;
+        }
+
+        .casefile-summary-page .casefile-contact-row article svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: var(--inay-muted);
+            width: 16px;
+            height: 16px;
+        }
+
+        .casefile-summary-page .casefile-contact-row article > div {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .casefile-summary-page .casefile-contact-row span {
+            color: #7e8fa8;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-summary-page .casefile-contact-row strong {
+            color: var(--inay-ink);
+            font-size: 13px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            font-weight: 700;
+        }
+
+        /* ===== PROFILE ACTIONS ===== */
+        .casefile-summary-page .casefile-profile-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            padding-top: 14px;
+            border-top: 1px solid #e8eef5;
+        }
+
+        .casefile-summary-page .casefile-profile-actions button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 0 16px;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: inherit;
+            color: var(--inay-ink);
+            background: transparent;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-profile-actions button:hover {
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.08);
+        }
+
+        .casefile-summary-page .casefile-profile-actions button.is-dark {
+            color: #ffffff;
+            background: var(--inay-ink);
+            border-color: var(--inay-ink);
+        }
+
+        .casefile-summary-page .casefile-profile-actions button.is-dark:hover {
+            background: #1a2a3a;
+            border-color: #1a2a3a;
+            color: #ffffff;
+        }
+
+        /* ===== PROFILE FACTS ===== */
+        .casefile-summary-page .casefile-profile-facts {
+            display: grid;
+            grid-template-columns: repeat(10, minmax(0, 1fr));
+            gap: 10px;
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+
+        .casefile-summary-page .casefile-profile-facts div {
+            padding: 10px 14px;
+            background: var(--inay-soft);
+            border: 1px solid #e5edf6;
+            border-radius: var(--inay-radius);
+            text-align: left;
+        }
+
+        .casefile-summary-page .casefile-profile-facts dt {
+            color: #8797ae;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+    .casefile-summary-page .casefile-profile-facts dd {
+            margin: 4px 0 0;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .casefile-summary-page .casefile-fact-badge {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            padding: 3px 7px;
+            color: #975a16;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 999px;
+            font-size: 11px;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .casefile-summary-page .casefile-fact-badge.is-standard {
+            color: #007f5f;
+            background: #ecfdf5;
+            border-color: #86efc2;
+        }
+
+        .casefile-summary-page .casefile-fact-badge.is-neutral {
+            color: var(--inay-muted);
+            background: #f8fafc;
+            border-color: var(--inay-border);
+        }
+
+        /* ===== STATUS GRID ===== */
+        .casefile-summary-page .casefile-status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .casefile-summary-page .casefile-status-grid article {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 112px;
+            padding: 16px 18px;
+            background: var(--inay-panel);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+        }
+
+        .casefile-summary-page .casefile-status-grid article svg {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 20px;
+            height: 20px;
+            color: currentColor;
+            opacity: 0.6;
+        }
+
+        .casefile-summary-page .casefile-status-grid article.is-pink {
+            color: #c70867;
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+        }
+
+        .casefile-summary-page .casefile-status-grid article.is-green {
+            color: var(--inay-green);
+            background: var(--inay-green-soft);
+            border-color: var(--inay-green-border);
+        }
+
+        .casefile-summary-page .casefile-status-grid article.is-review {
+            color: #975a16;
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .casefile-summary-page .casefile-status-grid article.is-risk {
+            color: #b42318;
+            background: #fff7f7;
+            border-color: #fecaca;
+        }
+
+        .casefile-summary-page .casefile-status-grid article.is-neutral {
+            color: var(--inay-muted);
+        }
+
+        .casefile-summary-page .casefile-status-grid article span {
+            color: #8797ae;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-summary-page .casefile-status-grid article strong {
+            font-size: clamp(19px, 2vw, 25px);
+            line-height: 1.12;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-status-grid article small {
+            color: #52627a;
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-status-grid article em {
+            display: block;
+            height: 6px;
+            margin-top: 8px;
+            background: #e8eef5;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .casefile-summary-page .casefile-status-grid article em::before {
+            display: block;
+            height: 100%;
+            width: var(--progress, 0%);
+            background: currentColor;
+            border-radius: 999px;
+            content: '';
+        }
+
+        /* ===== TABS ===== */
+        .casefile-summary-page .casefile-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 6px;
+            background: #ffffff;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+            scrollbar-width: thin;
+        }
+
+        .casefile-summary-page .casefile-tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .casefile-summary-page .casefile-tabs::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+
+        .casefile-summary-page .casefile-tabs::-webkit-scrollbar-thumb {
+            background: var(--inay-pink);
+            border-radius: 999px;
+        }
+
+        .casefile-summary-page .casefile-tabs button {
+            flex: 0 0 auto;
+            min-width: 154px;
+            min-height: 46px;
+            padding: 8px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            text-align: left;
+            font-family: inherit;
+            color: var(--inay-muted);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-tabs button strong {
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-tabs button small {
+            font-size: 11px;
+            font-weight: 600;
+            opacity: 0.7;
+        }
+
+        .casefile-summary-page .casefile-tabs button.is-active,
+        .casefile-summary-page .casefile-tabs button:hover {
+            color: #ffffff;
+            background: var(--inay-pink);
+            border-color: var(--inay-pink);
+        }
+
+        .casefile-summary-page .casefile-tabs button.is-active small,
+        .casefile-summary-page .casefile-tabs button:hover small {
+            opacity: 0.9;
+        }
+
+        .casefile-summary-page .casefile-tabs span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            font-size: 10px;
+            font-weight: 800;
+            background: rgba(255,255,255,0.2);
+            border-radius: 999px;
+        }
+
+        /* ===== PANELS ===== */
+        .casefile-summary-page [data-casefile-panel][hidden] {
+            display: none !important;
+        }
+
+        .casefile-summary-page [data-casefile-panel="overview"]:not([hidden]) {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .casefile-summary-page .casefile-panel {
+            background: var(--inay-panel);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+            padding: 20px 24px;
+        }
+
+        .casefile-summary-page .casefile-panel-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e8eef5;
+            flex-wrap: wrap;
+        }
+
+        .casefile-summary-page .casefile-panel-title h2 {
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .casefile-summary-page .casefile-panel-title p {
+            color: var(--inay-muted);
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        .casefile-summary-page .casefile-panel-title button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 0 16px;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: inherit;
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border: 1px solid var(--inay-pink-border);
+            border-radius: var(--inay-radius);
+            cursor: pointer;
+            transition: all 160ms ease;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-panel-title button:hover {
+            background: var(--inay-pink);
+            color: #ffffff;
+            border-color: var(--inay-pink);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.12);
+        }
+
+        /* ===== VITAL GRID ===== */
+        .casefile-summary-page .casefile-vital-grid.is-large {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .casefile-summary-page .casefile-vital-grid.is-large article {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 244px;
+            padding: 16px 18px;
+            background: var(--inay-soft);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .casefile-vital-grid .casefile-vital-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .casefile-summary-page .casefile-vital-grid i {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-vital-grid i.is-pink {
+            background: var(--inay-pink-soft);
+            color: var(--inay-pink);
+        }
+
+        .casefile-summary-page .casefile-vital-grid i.is-green {
+            background: var(--inay-green-soft);
+            color: var(--inay-green);
+        }
+
+        .casefile-summary-page .casefile-vital-grid i.is-blue {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b {
+            display: inline-flex;
+            align-items: center;
+            min-height: 25px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="for-review"],
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="review"] {
+            color: #975a16;
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="pending"],
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="logged"] {
+            color: #52627a;
+            background: #f1f5f9;
+            border-color: #dbe5f0;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="within-reference-range"] {
+            color: #007f5f;
+            background: #ecfdf5;
+            border-color: #86efc2;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="for-professional-interpretation"] {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .casefile-summary-page .casefile-vital-grid b[data-status-tone="urgent-referral-recommended"] {
+            color: #b42318;
+            background: #fff7f7;
+            border-color: #fecaca;
+        }
+
+        .casefile-summary-page .casefile-vital-grid span {
+            color: #6d7e96;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-summary-page .casefile-vital-grid.is-large strong {
+            font-size: clamp(20px, 1.9vw, 26px);
+            line-height: 1.1;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
+
+        .casefile-summary-page .casefile-vital-meta {
+            display: grid;
+            gap: 2px;
+            margin-top: 6px;
+            color: #52627a;
+            font-size: 11px;
+            line-height: 1.4;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-vital-explanation {
+            margin: 8px 0 0;
+            color: #334155;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 700;
+            flex: 1 1 auto;
+        }
+
+        .casefile-summary-page .casefile-reference-link {
+            display: inline-flex;
+            width: fit-content;
+            align-items: center;
+            margin-top: 6px;
+            color: #1d4ed8;
+            font-size: 11px;
+            font-weight: 900;
+            text-decoration: none;
+            transition: color 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-reference-link:hover {
+            text-decoration: underline;
+        }
+
+        .casefile-summary-page .casefile-vital-foot {
+            display: grid;
+            gap: 4px;
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid #e7edf5;
+        }
+
+        .casefile-summary-page .casefile-vital-foot small {
+            color: #52627a;
+            font-size: 10px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        /* Mobile-only action. Hidden by default and enabled in the mobile breakpoint below. */
+        .casefile-summary-page .casefile-vital-toggle-details,
+        .casefile-summary-page .casefile-vital-details-close {
+            display: none;
+        }
+
+        /* ===== SAFETY NOTICE ===== */
+        .casefile-summary-page .casefile-safety-notice {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-top: 12px;
+            padding: 13px 16px;
+            color: #334155;
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: var(--inay-radius);
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 750;
+        }
+
+        .casefile-summary-page .casefile-safety-notice svg {
+            flex: 0 0 18px;
+            color: #1d4ed8;
+        }
+
+        /* ===== SECTION KICKER ===== */
+        .casefile-summary-page .casefile-section-kicker {
+            color: var(--inay-pink);
+            font-size: 11px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        .casefile-summary-page .casefile-section-subtitle {
+            color: var(--inay-muted);
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .casefile-summary-page .casefile-panel > h2 {
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .casefile-summary-page .casefile-panel-note {
+            color: var(--inay-muted);
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        /* ===== REFERENCE GRID ===== */
+        .casefile-summary-page .casefile-reference-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .casefile-summary-page .casefile-reference-grid a {
+            display: grid;
+            min-width: 0;
+            gap: 4px;
+            padding: 12px 16px;
+            color: #071225;
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: var(--inay-radius);
+            text-decoration: none;
+            overflow: hidden;
+            transition: border-color 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-reference-grid a:hover {
+            border-color: #bfdbfe;
+        }
+
+        .casefile-summary-page .casefile-reference-grid strong {
+            min-width: 0;
+            font-size: 13px;
+            line-height: 1.35;
+            font-weight: 900;
+            overflow-wrap: anywhere;
+        }
+
+        .casefile-summary-page .casefile-reference-grid span {
+            min-width: 0;
+            max-width: 100%;
+            color: #52627a;
+            font-size: 11px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        /* ===== PROGRESS SECTION ===== */
+        .casefile-summary-page .casefile-progress-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 20px 24px;
+            background: #ffffff;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+        }
+
+        .casefile-summary-page .casefile-progress-section p {
+            color: var(--inay-pink);
+            font-size: 11px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .casefile-summary-page .casefile-progress-section h2 {
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .casefile-summary-page .casefile-progress-section > span {
+            color: var(--inay-muted);
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        .casefile-summary-page .casefile-progress-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .casefile-summary-page .casefile-progress-cards article {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 118px;
+            padding: 16px 18px;
+            background: var(--inay-panel);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+        }
+
+        .casefile-summary-page .casefile-progress-cards article svg {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 18px;
+            height: 18px;
+            color: currentColor;
+            opacity: 0.6;
+        }
+
+        .casefile-summary-page .casefile-progress-cards span {
+            color: #8797ae;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-summary-page .casefile-progress-cards strong {
+            font-size: clamp(22px, 2.2vw, 28px);
+            line-height: 1;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-progress-cards small {
+            color: var(--inay-muted);
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 650;
+        }
+
+        .casefile-summary-page .casefile-progress-cards em {
+            display: block;
+            height: 6px;
+            margin-top: 8px;
+            background: #e8eef5;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .casefile-summary-page .casefile-progress-cards em::before {
+            display: block;
+            height: 100%;
+            width: var(--progress, 0%);
+            background: currentColor;
+            border-radius: 999px;
+            content: '';
+        }
+
+        /* ===== TRENDS SECTION ===== */
+        .casefile-summary-page .casefile-trends-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            order: -1;
+        }
+
+        .casefile-summary-page .casefile-section-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .casefile-summary-page .casefile-section-head h2 {
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .casefile-summary-page .casefile-section-head p {
+            margin-top: 4px;
+            color: var(--inay-muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .casefile-summary-page .casefile-trend-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 18px;
+            color: #ffffff;
+            background: var(--inay-pink);
+            border: 1px solid var(--inay-pink);
+            border-radius: var(--inay-radius);
+            font-size: 12px;
+            font-weight: 850;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .casefile-trend-action:hover {
+            background: #d6076d;
+            border-color: #d6076d;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.12);
+        }
+
+        /* ===== CHART GRID ===== */
+        .casefile-summary-page .casefile-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .casefile-summary-page .casefile-chart-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 16px 20px;
+            background: var(--inay-panel);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+        }
+
+        .casefile-summary-page .casefile-chart-card > span {
+            color: #8797ae;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-summary-page .casefile-chart-card h3 {
+            margin: 0 0 4px;
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        /* ===== CHART SVG ===== */
+        .casefile-summary-page .casefile-chart-canvas > svg {
+            display: block;
+            width: 100%;
+            height: 250px;
+            padding: 8px;
+            background: var(--inay-soft);
+            border: 1px solid #edf2f7;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .axis {
+            stroke: #dce6f1;
+            stroke-width: 1.5;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .grid {
+            stroke: #e8edf5;
+            stroke-width: 0.5;
+            stroke-dasharray: 4 4;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .axis-label {
+            fill: #52627a;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .empty {
+            fill: #94a3b8;
+            font-size: 14px;
+            font-weight: 700;
+            text-anchor: middle;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .weight-line {
+            fill: none;
+            stroke: var(--inay-pink);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg .weight-dot {
+            fill: var(--inay-pink);
+            stroke: #ffffff;
+            stroke-width: 2;
+        }
+
+        .casefile-summary-page .casefile-chart-canvas svg text {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .casefile-summary-page .casefile-legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--inay-muted);
+        }
+
+        .casefile-summary-page .casefile-legend .is-pink {
+            display: block;
+            width: 14px;
+            height: 4px;
+            background: var(--inay-pink);
+            border-radius: 999px;
+        }
+
+        /* ===== BP STATUS ===== */
+        .casefile-summary-page .casefile-bp-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 14px 8px;
+            min-height: 277px;
+        }
+
+        .casefile-summary-page .casefile-bp-ring {
+            display: grid;
+            width: 158px;
+            height: 158px;
+            flex: 0 0 158px;
+            place-items: center;
+            align-content: center;
+            gap: 4px;
+            color: #52627a;
+            background: #f8fafc;
+            border: 12px solid #dbe5f0;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 8px #ffffff, 0 14px 24px rgba(15, 23, 42, 0.08);
+            text-align: center;
+        }
+
+        .casefile-summary-page .casefile-bp-ring [data-bp-status-icon] {
+            display: none;
+            width: 28px;
+            height: 28px;
+            place-items: center;
+            background: transparent;
+            border: 0;
+        }
+
+        .casefile-summary-page .casefile-bp-ring svg {
+            display: block;
+            width: 24px;
+            height: 24px;
+            max-width: none;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .casefile-summary-page .casefile-bp-ring strong {
+            display: block;
+            max-width: 126px;
+            color: currentColor;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1;
+            overflow-wrap: anywhere;
+        }
+
+        .casefile-summary-page .casefile-bp-ring span {
+            display: block;
+            max-width: 110px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1.15;
+            text-transform: uppercase;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-normal .casefile-bp-ring {
+            color: var(--inay-green);
+            background: var(--inay-green-soft);
+            border-color: var(--inay-green-border);
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-monitoring .casefile-bp-ring {
+            color: #c76a06;
+            background: #fffbeb;
+            border-color: #facc15;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-high-risk .casefile-bp-ring {
+            color: #b42318;
+            background: #fff7f7;
+            border-color: #f87171;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-empty .casefile-bp-ring {
+            color: #94a3b8;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-normal [data-bp-status-icon="normal"],
+        .casefile-summary-page .casefile-bp-status.is-monitoring [data-bp-status-icon="monitoring"],
+        .casefile-summary-page .casefile-bp-status.is-high-risk [data-bp-status-icon="high-risk"],
+        .casefile-summary-page .casefile-bp-status.is-empty [data-bp-status-icon="empty"] {
+            display: grid;
+        }
+
+        .casefile-summary-page .casefile-bp-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+            max-width: 520px;
+            flex: 1 1 auto;
+        }
+
+        .casefile-summary-page .casefile-bp-copy small,
+        .casefile-summary-page .casefile-bp-copy em {
+            color: var(--inay-muted);
+            font-size: 12px;
+            line-height: 1.45;
+            font-style: normal;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-bp-copy b {
+            display: inline-flex;
+            width: fit-content;
+            min-height: 28px;
+            align-items: center;
+            padding: 4px 12px;
+            color: #52627a;
+            background: #f1f5f9;
+            border: 1px solid #dbe5f0;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-normal .casefile-bp-copy b {
+            color: #007f5f;
+            background: #ecfdf5;
+            border-color: #86efc2;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-monitoring .casefile-bp-copy b {
+            color: #975a16;
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .casefile-summary-page .casefile-bp-status.is-high-risk .casefile-bp-copy b {
+            color: #b42318;
+            background: #fff7f7;
+            border-color: #fecaca;
+        }
+
+        .casefile-summary-page .casefile-bp-readings {
+            display: grid;
+            width: 100%;
+            max-width: 420px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .casefile-summary-page .casefile-bp-readings span {
+            padding: 8px 12px;
+            color: #52627a;
+            background: var(--inay-soft);
+            border: 1px solid #e5edf6;
+            border-radius: var(--inay-radius);
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .casefile-summary-page .casefile-bp-readings strong {
+            color: var(--inay-ink);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-bp-copy p {
+            margin: 0;
+            color: #1f2937;
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 750;
+        }
+
+        /* ===== HISTORY TRIGGER ===== */
+        .casefile-summary-page .monitoring-history-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            padding: 0 14px;
+            color: var(--inay-pink);
+            background: #ffffff;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            font-size: 12px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+            width: fit-content;
+        }
+
+        .casefile-summary-page .monitoring-history-trigger:hover {
+            border-color: var(--inay-pink-border);
+            background: var(--inay-pink-soft);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.08);
+        }
+
+        .casefile-summary-page .monitoring-history-icon {
+            display: inline-grid;
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            place-items: center;
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border: 1px solid var(--inay-pink-border);
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .monitoring-history-icon svg {
+            display: block;
+            width: 17px;
+            height: 17px;
+            max-width: none;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .casefile-summary-page .monitoring-history-trigger b {
+            padding: 4px 10px;
+            background: var(--inay-pink-soft);
+            border: 1px solid var(--inay-pink-border);
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        /* ===== JOURNEY GRID ===== */
+        .casefile-summary-page .casefile-journey-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .casefile-summary-page .casefile-journey-grid article {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 124px;
+            padding: 14px 16px;
+            background: #ffffff;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            box-shadow: var(--inay-shadow);
+        }
+
+        .casefile-summary-page .casefile-journey-grid i {
+            display: inline-grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            color: #73839b;
+            background: #f1f5f9;
+            border: 1px solid #dbe5f0;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-complete i {
+            color: var(--inay-green);
+            background: var(--inay-green-soft);
+            border-color: var(--inay-green-border);
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-current i {
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-upcoming i {
+            opacity: 0.5;
+        }
+
+        .casefile-summary-page .casefile-journey-grid strong {
+            margin-top: 4px;
+            color: var(--inay-ink);
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        .casefile-summary-page .casefile-journey-grid span {
+            color: var(--inay-muted);
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 650;
+        }
+
+        .casefile-summary-page .casefile-journey-grid small {
+            color: #6d7e96;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-journey-grid em {
+            display: inline-flex;
+            width: fit-content;
+            min-height: 22px;
+            align-items: center;
+            padding: 0 10px;
+            color: #52627a;
+            background: #f1f5f9;
+            border: 1px solid #dbe5f0;
+            border-radius: 999px;
+            font-size: 10px;
+            font-style: normal;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-complete em {
+            color: var(--inay-green);
+            background: var(--inay-green-soft);
+            border-color: var(--inay-green-border);
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-current {
+            color: var(--inay-pink);
+            background: #ffffff;
+            border-color: var(--inay-pink-border);
+            box-shadow: inset 0 0 0 2px #ffe6f2;
+        }
+
+        .casefile-summary-page .casefile-journey-grid article.is-current em {
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+        }
+
+        /* ===== ACTIVITY LIST ===== */
+        .casefile-summary-page .casefile-activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .casefile-summary-page .casefile-activity-list article {
+            padding: 14px 18px;
+            background: var(--inay-soft);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .casefile-activity-list article.is-extra {
+            display: none;
+        }
+
+        .casefile-summary-page .casefile-activity-list.is-expanded article.is-extra {
+            display: block;
+        }
+
+        .casefile-summary-page .casefile-activity-list strong {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            color: var(--inay-ink);
+            font-size: 14px;
+            line-height: 1.35;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-activity-list strong span {
+            padding: 2px 10px;
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border: 1px solid var(--inay-pink-border);
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        .casefile-summary-page .casefile-activity-list p {
+            margin-top: 4px;
+            color: var(--inay-muted);
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 650;
+        }
+
+        .casefile-summary-page .casefile-activity-list time {
+            display: block;
+            margin-top: 4px;
+            color: #8a9bb0;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .casefile-activity-more {
+            justify-self: start;
+            min-height: 38px;
+            margin-top: 10px;
+            padding: 0 18px;
+            color: var(--inay-pink);
+            background: #ffffff;
+            border: 1px solid var(--inay-pink-border);
+            border-radius: var(--inay-radius);
+            font-size: 12px;
+            font-weight: 850;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-activity-more:hover {
+            background: var(--inay-pink-soft);
+            transform: translateY(-1px);
+        }
+
+        /* ===== RECORD ROW ===== */
+        .casefile-summary-page .casefile-record-row {
+            display: grid;
+            grid-template-columns: minmax(180px, 1.25fr) repeat(5, minmax(120px, 1fr)) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--inay-soft);
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            margin-top: 8px;
+        }
+
+        .casefile-summary-page .casefile-record-row strong {
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .casefile-summary-page .casefile-record-row span {
+            font-size: 12px;
+            font-weight: 650;
+            color: var(--inay-muted);
+        }
+
+        .casefile-summary-page .casefile-record-row button {
+            min-height: 34px;
+            padding: 0 14px;
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border: 1px solid var(--inay-pink-border);
+            border-radius: var(--inay-radius);
+            font-size: 11px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .casefile-record-row button:hover {
+            background: var(--inay-pink);
+            color: #ffffff;
+            border-color: var(--inay-pink);
+        }
+
+        /* ===== LEARNING & DOCUMENTS ===== */
+        .casefile-learning-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .casefile-learning-summary article {
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid #dde6f0;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-learning-summary span {
+            display: block;
+            color: #7c8ba3;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-learning-summary strong {
+            display: block;
+            margin-top: 4px;
+            color: #030813;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .casefile-learning-months {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .casefile-learning-month {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px 20px;
+            background: #ffffff;
+            border: 1px solid #dde6f0;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-learning-month.is-complete {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .casefile-learning-month header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .casefile-learning-month h3 {
+            margin: 0;
+            color: #030813;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .casefile-learning-month p {
+            margin: 2px 0 0;
+            color: #52627d;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .casefile-learning-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0 12px;
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 900;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .casefile-learning-badge.is-complete {
+            color: #008f6b;
+            background: #dcfce7;
+            border-color: #86efac;
+        }
+
+        .casefile-learning-progress {
+            overflow: hidden;
+            height: 8px;
+            background: #e8edf5;
+            border-radius: 999px;
+        }
+
+        .casefile-learning-progress span {
+            display: block;
+            height: 100%;
+            background: #00a680;
+            border-radius: inherit;
+            transition: width 400ms ease;
+        }
+
+        .casefile-learning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .casefile-learning-grid article {
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5edf6;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-learning-grid span {
+            display: block;
+            color: #7c8ba3;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .casefile-learning-grid strong {
+            display: block;
+            margin-top: 4px;
+            color: #030813;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .casefile-learning-grid small {
+            display: block;
+            margin-top: 2px;
+            color: #52627d;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .casefile-learning-list {
+            display: grid;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .casefile-learning-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5edf6;
+            border-radius: var(--inay-radius);
+            color: #030813;
+            font-size: 12px;
+            font-weight: 800;
+            flex-wrap: wrap;
+        }
+
+        .casefile-learning-list small {
+            color: #52627d;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .casefile-learning-list a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+            padding: 0 12px;
+            color: #ffffff;
+            background: #071225;
+            border-radius: var(--inay-radius);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 900;
+            white-space: nowrap;
+            transition: background 160ms ease;
+        }
+
+        .casefile-learning-list a:hover {
+            background: #1a2a3a;
+        }
+
+        .casefile-learning-month h4 {
+            margin: 8px 0 4px;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--inay-ink);
+        }
+
+        body.has-vital-detail-modal,
+        body.has-monitoring-history-modal {
+            overflow: hidden;
+        }
+
+        /* ===== MODALS ===== */
+        .casefile-summary-page .vitals-modal,
+        .casefile-summary-page .history-modal,
+        .casefile-summary-page .vital-detail-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(7, 18, 37, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .casefile-summary-page .vitals-modal[hidden],
+        .casefile-summary-page .history-modal[hidden],
+        .casefile-summary-page .vital-detail-modal[hidden] {
+            display: none !important;
+        }
+
+        .casefile-summary-page .vitals-modal-backdrop,
+        .casefile-summary-page .history-modal-backdrop,
+        .casefile-summary-page .vital-detail-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+        }
+
+        .casefile-summary-page .vitals-dialog,
+        .casefile-summary-page .history-dialog,
+        .casefile-summary-page .vital-detail-dialog {
+            position: relative;
+            max-width: 780px;
+            width: 100%;
+            max-height: 90vh;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 24px 48px rgba(7, 18, 37, 0.25);
+            padding: 28px 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .casefile-summary-page .vitals-dialog-header,
+        .casefile-summary-page .history-dialog-header,
+        .casefile-summary-page .vital-detail-dialog-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--inay-border);
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .vitals-dialog-header h2,
+        .casefile-summary-page .history-dialog-title,
+        .casefile-summary-page .vital-detail-dialog-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .casefile-summary-page .vitals-dialog-header button,
+        .casefile-summary-page .history-close,
+        .casefile-summary-page .vital-detail-close {
+            display: grid;
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            place-items: center;
+            color: #475569;
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            font-size: 28px;
+            line-height: 1;
+            font-family: inherit;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .vitals-dialog-header button:hover,
+        .casefile-summary-page .history-close:hover,
+        .casefile-summary-page .vital-detail-close:hover {
+            color: var(--inay-pink);
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.1);
+        }
+
+        .casefile-summary-page .vital-detail-dialog-body {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .casefile-summary-page .vital-detail-dialog-body .casefile-vital-meta {
+            margin-top: 0;
+        }
+
+        .casefile-summary-page .vital-detail-dialog-body .casefile-vital-explanation {
+            margin: 4px 0 0;
+        }
+
+        .casefile-summary-page .vital-detail-dialog-body .casefile-reference-link {
+            margin-top: 2px;
+        }
+
+        .casefile-summary-page .vital-detail-dialog-body .casefile-vital-foot {
+            margin-top: 0;
+            padding-top: 8px;
+        }
+
+        .casefile-summary-page .history-dialog-copy {
+            color: var(--inay-muted);
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .casefile-summary-page .history-dialog-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .casefile-summary-page .history-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1 1 auto;
+            min-width: 180px;
+            padding: 0 12px;
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: var(--inay-radius);
+        }
+
+        .casefile-summary-page .history-search input {
+            flex: 1 1 auto;
+            padding: 10px 0;
+            border: 0;
+            background: transparent;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            min-width: 100px;
+        }
+
+        .casefile-summary-page .history-search input::placeholder {
+            color: #94a3b8;
+        }
+
+        .casefile-summary-page .history-sort {
+            padding: 10px 16px;
+            color: var(--inay-ink);
+            background: #f8fafc;
+            border: 1px solid #dbe5f1;
+            border-radius: var(--inay-radius);
+            font-size: 12px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+            white-space: nowrap;
+        }
+
+        .casefile-summary-page .history-sort:hover {
+            background: var(--inay-pink-soft);
+            border-color: var(--inay-pink-border);
+        }
+
+        .casefile-summary-page .history-count-copy {
+            color: var(--inay-muted);
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .history-dialog-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .casefile-summary-page .history-empty {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .casefile-summary-page .history-table-scroll {
+            overflow-x: auto;
+        }
+
+        .casefile-summary-page .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .casefile-summary-page .history-table th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 850;
+            text-transform: uppercase;
+            color: #8797ae;
+            border-bottom: 2px solid var(--inay-border);
+            background: #f8fafc;
+            white-space: nowrap;
+        }
+
+        .casefile-summary-page .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e8edf5;
+            vertical-align: middle;
+        }
+
+        .casefile-summary-page .history-table td.is-main {
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .history-table td.is-red {
+            color: #dc2626;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .history-table td.is-blue {
+            color: #2563eb;
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .history-status {
+            display: inline-flex;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .casefile-summary-page .history-status.is-within-reference-range {
+            color: #007f5f;
+            background: #ecfdf5;
+        }
+
+        .casefile-summary-page .history-status.is-for-review {
+            color: #975a16;
+            background: #fffbeb;
+        }
+
+        .casefile-summary-page .history-status.is-for-professional-interpretation {
+            color: #1d4ed8;
+            background: #eff6ff;
+        }
+
+        .casefile-summary-page .history-status.is-urgent-referral-recommended {
+            color: #b42318;
+            background: #fff7f7;
+        }
+
+        .casefile-summary-page .history-status.is-logged {
+            color: #52627a;
+            background: #f1f5f9;
+        }
+
+        .casefile-summary-page .history-row-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .casefile-summary-page .history-row-actions button {
+            min-height: 30px;
+            padding: 0 12px;
+            border-radius: var(--inay-radius);
+            font-size: 10px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+            border: 1px solid transparent;
+        }
+
+        .casefile-summary-page .history-row-actions .is-edit {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .casefile-summary-page .history-row-actions .is-edit:hover {
+            background: #1d4ed8;
+            color: #ffffff;
+        }
+
+        .casefile-summary-page .history-row-actions .is-delete {
+            color: #b42318;
+            background: #fff7f7;
+            border-color: #fecaca;
+        }
+
+        .casefile-summary-page .history-row-actions .is-delete:hover {
+            background: #b42318;
+            color: #ffffff;
+        }
+
+        /* ===== VITALS FORM ===== */
+        .casefile-summary-page .vitals-warning {
+            display: flex;
+            gap: 12px;
+            padding: 14px 18px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: var(--inay-radius);
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .vitals-warning svg {
+            flex: 0 0 20px;
+            color: #d97706;
+        }
+
+        .casefile-summary-page .vitals-warning strong {
+            font-size: 13px;
+            font-weight: 800;
+            color: #92400e;
+        }
+
+        .casefile-summary-page .vitals-warning ul {
+            margin: 4px 0 0;
+            padding-left: 20px;
+            color: #78350f;
+            font-size: 13px;
+        }
+
+        .casefile-summary-page .vitals-warning p {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #78350f;
+            font-weight: 600;
+        }
+
+        .casefile-summary-page .vitals-field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            flex: 1 1 auto;
+        }
+
+        .casefile-summary-page .vitals-field-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .casefile-summary-page .vitals-field-grid label.is-wide {
+            grid-column: 1 / -1;
+        }
+
+        .casefile-summary-page .vitals-field-grid span {
+            font-size: 12px;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .casefile-summary-page .vitals-field-grid input,
+        .casefile-summary-page .vitals-field-grid select,
+        .casefile-summary-page .vitals-field-grid textarea {
+            padding: 9px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            border: 1px solid #dbe5f1;
+            border-radius: var(--inay-radius);
+            background: #ffffff;
+            transition: border-color 160ms ease;
+            width: 100%;
+        }
+
+        .casefile-summary-page .vitals-field-grid input:focus,
+        .casefile-summary-page .vitals-field-grid select:focus,
+        .casefile-summary-page .vitals-field-grid textarea:focus {
+            outline: none;
+            border-color: var(--inay-pink);
+            box-shadow: 0 0 0 3px rgba(236, 10, 120, 0.12);
+        }
+
+        .casefile-summary-page .height-controls {
+            display: grid;
+            grid-template-columns: minmax(86px, 0.34fr) minmax(0, 1fr);
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .casefile-summary-page .height-ft-in {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .casefile-summary-page .height-ft-in[hidden] {
+            display: none;
+        }
+
+        .casefile-summary-page .vitals-field-grid input[readonly] {
+            color: #52627d;
+            background: #f8fafc;
+            cursor: not-allowed;
+        }
+
+        .casefile-summary-page .vitals-field-grid textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .casefile-summary-page .vitals-field-grid small {
+            color: #dc2626;
+            font-size: 11px;
+            font-weight: 700;
+            min-height: 16px;
+        }
+
+        .casefile-summary-page .vitals-field-grid label.has-error input,
+        .casefile-summary-page .vitals-field-grid label.has-error select,
+        .casefile-summary-page .vitals-field-grid label.has-error textarea {
+            border-color: #dc2626;
+        }
+
+        .casefile-summary-page .vitals-dialog-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--inay-border);
+            flex-shrink: 0;
+        }
+
+        .casefile-summary-page .vitals-cancel {
+            padding: 10px 20px;
+            color: var(--inay-muted);
+            background: transparent;
+            border: 1px solid var(--inay-border);
+            border-radius: var(--inay-radius);
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .casefile-summary-page .vitals-cancel:hover {
+            background: #f1f5f9;
+        }
+
+        .casefile-summary-page .vitals-save {
+            padding: 10px 24px;
+            color: #ffffff;
+            background: var(--inay-pink);
+            border: 1px solid var(--inay-pink);
+            border-radius: var(--inay-radius);
+            font-size: 13px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 160ms ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .casefile-summary-page .vitals-save:hover:not(:disabled) {
+            background: #d6076d;
+            border-color: #d6076d;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(236, 10, 120, 0.12);
+        }
+
+        .casefile-summary-page .vitals-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .casefile-summary-page .vitals-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: vitals-spin 0.7s linear infinite;
+        }
+
+        .casefile-summary-page .vitals-spinner[hidden] {
+            display: none !important;
+        }
+
+        @keyframes vitals-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .casefile-summary-page .vitals-success {
+            padding: 14px 20px;
+            color: #007f5f;
+            background: #ecfdf5;
+            border: 1px solid #86efc2;
+            border-radius: var(--inay-radius);
+            font-weight: 700;
+        }
+
+        .casefile-summary-page .vitals-success[hidden] {
+            display: none !important;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1280px) {
+            .casefile-summary-page .casefile-status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .casefile-summary-page .casefile-vital-grid.is-large {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .casefile-summary-page .casefile-progress-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .casefile-summary-page .casefile-journey-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .casefile-summary-page .casefile-learning-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .casefile-summary-page .casefile-profile-facts {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .casefile-summary-page .casefile-chart-grid {
+                grid-template-columns: 1fr;
+            }
+            .casefile-summary-page .casefile-contact-row {
+                grid-template-columns: 1fr;
+            }
+            .casefile-summary-page .casefile-reference-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .casefile-summary-page {
+                padding: 14px 16px 32px;
+                gap: 12px;
+            }
+
+            .casefile-summary-page .casefile-detail-heading {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .casefile-summary-page .casefile-back-link {
+                justify-content: center;
+            }
+
+            .casefile-summary-page .casefile-profile-main {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .casefile-summary-page .casefile-profile-title {
+                justify-content: center;
+            }
+
+            .casefile-summary-page .casefile-profile-facts {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .casefile-summary-page .casefile-status-grid,
+            .casefile-summary-page .casefile-progress-cards,
+            .casefile-summary-page .casefile-learning-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-status-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .casefile-summary-page .casefile-status-grid article {
+                min-height: 108px;
+                padding: 13px 12px;
+            }
+
+            .casefile-summary-page .casefile-status-grid article:last-child em {
+                display: none;
+            }
+
+            .casefile-summary-page .casefile-profile-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .casefile-summary-page .casefile-profile-actions button {
+                width: 100%;
+                min-height: 42px;
+            }
+
+            .casefile-summary-page .casefile-tabs {
+                padding: 4px;
+                scrollbar-width: none;
+            }
+
+            .casefile-summary-page .casefile-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .casefile-summary-page .casefile-tabs button {
+                min-width: 120px;
+                min-height: 40px;
+                padding: 6px 12px;
+            }
+
+            .casefile-summary-page .casefile-panel {
+                padding: 16px;
+            }
+
+            .casefile-summary-page .casefile-panel-title {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .casefile-summary-page .casefile-panel-title button {
+                width: 100%;
+                justify-content: center;
+            }
+
+
+            /* =========================================================
+               MATERNAL VITAL SIGNS - MOBILE BOX LAYOUT
+               Two compact cards per row instead of tall full-width cards.
+            ========================================================= */
+            .casefile-summary-page .casefile-vitals-panel {
+                padding: 14px;
+            }
+
+            .casefile-summary-page .casefile-vitals-panel .casefile-panel-title {
+                margin-bottom: 12px;
+                padding-bottom: 12px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                width: 100%;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article {
+                min-width: 0;
+                min-height: 158px;
+                height: auto;
+                padding: 11px;
+                gap: 6px;
+                background: #ffffff;
+                border: 1px solid var(--inay-border);
+                border-radius: 12px;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-head {
+                width: 100%;
+                min-width: 0;
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 6px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-head i {
+                width: 30px;
+                height: 30px;
+                min-width: 30px;
+                flex: 0 0 30px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-head i svg {
+                width: 15px;
+                height: 15px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-head b {
+                min-width: 0;
+                max-width: calc(100% - 36px);
+                min-height: 24px;
+                padding: 4px 7px;
+                font-size: 7px;
+                line-height: 1.15;
+                text-align: center;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                word-break: normal;
+                justify-content: center;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article > span {
+                display: block;
+                margin-top: 1px;
+                color: #6d7e96;
+                font-size: 9px;
+                font-weight: 850;
+                line-height: 1.2;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article > strong {
+                display: block;
+                min-width: 0;
+                color: var(--inay-ink);
+                font-size: clamp(17px, 5vw, 21px);
+                line-height: 1.12;
+                font-weight: 850;
+                overflow-wrap: anywhere;
+            }
+
+            /* Keep the long professional explanation out of the small card. */
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-details {
+                display: none !important;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-toggle-details {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                align-self: flex-start;
+                min-height: 30px;
+                margin-top: auto;
+                padding: 5px 10px;
+                color: var(--inay-pink);
+                background: var(--inay-pink-soft);
+                border: 1px solid var(--inay-pink-border);
+                border-radius: 999px;
+                font-family: inherit;
+                font-size: 9px;
+                font-weight: 850;
+                line-height: 1.2;
+                cursor: pointer;
+                transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-toggle-details:hover,
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-toggle-details:focus-visible {
+                color: #ffffff;
+                background: var(--inay-pink);
+                border-color: var(--inay-pink);
+                outline: none;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-toggle-details:active {
+                transform: scale(0.97);
+            }
+
+            /* Make the mobile details modal feel like a phone sheet/card. */
+            .casefile-summary-page .vital-detail-modal {
+                padding: 12px;
+                align-items: flex-end;
+            }
+
+            .casefile-summary-page .vital-detail-dialog {
+                width: 100%;
+                max-width: 520px;
+                max-height: 82vh;
+                padding: 18px;
+                border-radius: 16px;
+            }
+
+            .casefile-summary-page .vital-detail-dialog-header {
+                margin-bottom: 14px;
+                padding-bottom: 12px;
+            }
+
+            .casefile-summary-page .vital-detail-dialog-title {
+                font-size: 18px;
+            }
+
+            .casefile-summary-page .vital-detail-close {
+                width: 38px;
+                height: 38px;
+                flex-basis: 38px;
+                font-size: 24px;
+            }
+
+            .casefile-summary-page .casefile-section-head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .casefile-summary-page .casefile-trend-action {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .casefile-summary-page .casefile-journey-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .casefile-summary-page .casefile-journey-grid article {
+                min-height: 0;
+                padding: 12px 10px;
+            }
+
+            .casefile-summary-page .casefile-bp-status {
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 0;
+                text-align: center;
+            }
+
+            .casefile-summary-page .casefile-bp-ring {
+                width: 132px;
+                height: 132px;
+                flex-basis: 132px;
+            }
+
+            .casefile-summary-page .casefile-bp-copy {
+                width: 100%;
+                align-items: center;
+            }
+
+            .casefile-summary-page .casefile-bp-ring strong {
+                max-width: 108px;
+                font-size: 19px;
+            }
+
+            .casefile-summary-page .casefile-record-row {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .casefile-summary-page .casefile-chart-canvas > svg {
+                height: 200px;
+            }
+
+            .casefile-summary-page .vitals-dialog,
+            .casefile-summary-page .history-dialog,
+            .casefile-summary-page .vital-detail-dialog {
+                padding: 20px;
+                max-height: 95vh;
+            }
+
+            .casefile-summary-page .vitals-field-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .monitoring-history-trigger {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .casefile-summary-page .casefile-contact-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .casefile-summary-page .casefile-vital-grid.is-large {
+                gap: 8px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article {
+                min-height: 152px;
+                padding: 10px;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article .casefile-vital-head b {
+                font-size: 6.5px;
+                padding: 4px 6px;
+            }
+
+            .casefile-summary-page .casefile-profile-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-profile-facts {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-learning-summary,
+            .casefile-summary-page .casefile-learning-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-learning-month header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .casefile-summary-page .casefile-bp-readings {
+                width: 100%;
+                max-width: 320px;
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-bp-readings span {
+                text-align: center;
+            }
+
+            .casefile-summary-page .casefile-reference-grid {
+                gap: 8px;
+            }
+
+            .casefile-summary-page .casefile-reference-grid a {
+                padding: 11px 12px;
+            }
+
+            .casefile-summary-page .casefile-reference-grid strong {
+                font-size: 11px;
+            }
+
+            .casefile-summary-page .casefile-reference-grid span {
+                font-size: 10px;
+                line-height: 1.45;
+            }
+        }
+
+        @media (max-width: 339px) {
+            .casefile-summary-page .casefile-vital-grid.is-large {
+                grid-template-columns: 1fr;
+            }
+
+            .casefile-summary-page .casefile-vital-grid.is-large article {
+                min-height: 145px;
+            }
+        }
+
+        /* ===== PRINT STYLES ===== */
+        @media print {
+            .casefile-summary-page {
+                padding: 0;
+                gap: 12px;
+                max-width: 100%;
+            }
+
+            .casefile-summary-page .casefile-profile-actions,
+            .casefile-summary-page .casefile-tabs,
+            .casefile-summary-page .casefile-trend-action,
+            .casefile-summary-page .monitoring-history-trigger,
+            .casefile-summary-page .casefile-activity-more,
+            .casefile-summary-page .casefile-panel-title button,
+            .casefile-summary-page .vitals-modal,
+            .casefile-summary-page .history-modal,
+            .casefile-summary-page .vital-detail-modal,
+            .casefile-summary-page .casefile-record-row button,
+            .casefile-summary-page .history-row-actions {
+                display: none !important;
+            }
+
+            .casefile-summary-page .casefile-detail-heading {
+                border-bottom-color: #000;
+            }
+
+            .casefile-summary-page .casefile-profile-card,
+            .casefile-summary-page .casefile-panel,
+            .casefile-summary-page .casefile-chart-card,
+            .casefile-summary-page .casefile-status-grid article,
+            .casefile-summary-page .casefile-progress-cards article {
+                box-shadow: none !important;
+                border-color: #ddd !important;
+            }
+
+            .casefile-summary-page .casefile-activity-list article.is-extra {
+                display: block !important;
+            }
+
+            .casefile-summary-page .casefile-safety-notice {
+                background: #f8fafc !important;
+                border-color: #ddd !important;
+            }
+
+            .casefile-summary-page .casefile-chart-canvas > svg {
+                height: 200px !important;
+            }
+
+            .casefile-summary-page .casefile-bp-ring {
+                border-color: #ccc !important;
+            }
+
+            .casefile-summary-page .vitals-success,
+            .casefile-summary-page .vitals-warning {
+                display: none !important;
+            }
+
+            .casefile-summary-page [data-casefile-panel][hidden] {
+                display: block !important;
+            }
+
+        }
+/* =========================================================
+   CENTER MATERNAL VITAL DETAILS MODAL ON MOBILE
+========================================================= */
+@media (max-width: 768px) {
+
+    .casefile-summary-page .vital-detail-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 20px;
+    }
+
+    /* Dark/blurred background */
+    .casefile-summary-page .vital-detail-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+
+        background: rgba(7, 18, 37, 0.45);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* Actual details box */
+    .casefile-summary-page .vital-detail-dialog {
+        position: relative;
+        z-index: 1;
+
+        width: 100%;
+        max-width: 380px;
+        max-height: 80vh;
+
+        margin: 0;
+        padding: 18px;
+
+        background: #ffffff;
+
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+
+        box-shadow:
+            0 24px 60px rgba(15, 23, 42, 0.25),
+            0 8px 24px rgba(15, 23, 42, 0.12);
+
+        overflow-y: auto;
+    }
+
+    /* Header */
+    .casefile-summary-page .vital-detail-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 12px;
+
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+
+        border-bottom: 1px solid #e5edf6;
+    }
+
+    .casefile-summary-page .vital-detail-dialog-title {
+        margin: 0;
+
+        font-size: 17px;
+        line-height: 1.2;
+        font-weight: 900;
+
+        color: #9d3668;
+    }
+
+    /* Close button */
+    .casefile-summary-page .vital-detail-close {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+
+        display: grid;
+        place-items: center;
+
+        padding: 0;
+
+        font-size: 24px;
+
+        color: #475569;
+        background: #f8fafc;
+
+        border: 1px solid #dbe5f1;
+        border-radius: 50%;
+
+        cursor: pointer;
+    }
+
+    /* Detail body */
+    .casefile-summary-page .vital-detail-dialog-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    /* Keep hidden modal hidden */
+    .casefile-summary-page .vital-detail-modal[hidden] {
+        display: none !important;
+    }
+}
     </style>
 @endpush
 
 @section('content')
-    <section class="casefiles-shell casefile-summary-page" aria-label="Mother care summary">
+    <section class="casefile-summary-page" aria-label="Mother care summary">
+        <!-- ===== HEADER ===== -->
         <header class="casefile-detail-heading">
             <div>
                 <nav class="casefile-breadcrumb" aria-label="Breadcrumb">
@@ -116,55 +3298,96 @@
             <a class="casefile-back-link" href="{{ route('staff.mothers') }}">{!! $iconArrowLeft !!} Back to Casefiles</a>
         </header>
 
+        <!-- ===== PROFILE CARD ===== -->
         <section class="casefile-profile-card">
+            <div class="casefile-profile-header">
+                <p class="casefile-profile-kicker">Mother Profile Summary</p>
+                <span class="casefile-risk {{ $riskClass }}" data-risk-label>{{ $riskLabel }}</span>
+            </div>
+
             <div class="casefile-profile-main">
-                <span class="casefile-avatar is-xl">{{ $initials }}</span>
-                <div>
+                <div class="casefile-avatar-wrapper">
+                    <span class="casefile-avatar is-xl">{{ $initials }}</span>
+                </div>
+
+                <div class="casefile-profile-info">
                     <div class="casefile-profile-title">
                         <h2>{{ $mother->full_name }}</h2>
-                        <span class="casefile-risk {{ $riskClass }}" data-risk-label>{{ $riskLabel }}</span>
                     </div>
-                    <strong>{{ $caseId }}</strong>
+                    <strong class="casefile-id">{{ $caseId }}</strong>
+
                     <div class="casefile-contact-row">
-                        <article>{!! $iconPhone !!}<div><span>Mother Contact</span><strong>{{ $mother->contact_number ?: 'Phone not provided' }}</strong></div></article>
-                        <article>{!! $iconMap !!}<div><span>Barangay</span><strong>{{ $mother->barangay ?: 'No address recorded' }}</strong></div></article>
-                        <article>{!! $iconUser !!}<div><span>Assigned Program Staff</span><strong>{{ $staff->full_name }}</strong></div></article>
+                        <article>
+                            {!! $iconPhone !!}
+                            <div>
+                                <span>Mother Contact</span>
+                                <strong>{{ $mother->contact_number ?: 'Phone not provided' }}</strong>
+                            </div>
+                        </article>
+                        <article>
+                            {!! $iconMap !!}
+                            <div>
+                                <span>Barangay</span>
+                                <strong>{{ $mother->barangay ?: 'No address recorded' }}</strong>
+                            </div>
+                        </article>
+                        <article>
+                            {!! $iconUser !!}
+                            <div>
+                                <span>Assigned Program Staff</span>
+                                <strong>{{ $staff->full_name }}</strong>
+                            </div>
+                        </article>
                     </div>
                 </div>
             </div>
+
             <div class="casefile-profile-actions">
                 <button type="button">{!! $iconEdit !!} Edit Information</button>
-                <button type="button">{!! $iconCalendar !!} Schedule Visit</button>
-                <button type="button" data-casefile-print>{!! $iconPrinter !!} Print Record</button>
-                <button type="button" class="is-dark" data-casefile-print>{!! $iconDownload !!} Export PDF</button>
+                <button type="button" data-casefile-record="print" data-record-url="{{ route('staff.mothers.print', $mother) }}">{!! $iconPrinter !!} Print Record</button>
+                <button type="button" class="is-dark" data-casefile-record="pdf" data-record-url="{{ route('staff.mothers.pdf', $mother) }}">{!! $iconDownload !!} Export PDF</button>
             </div>
+            <p class="vitals-warning" data-record-error role="alert" hidden></p>
+            <p data-record-ready role="status" hidden><span data-record-status></span> <a data-record-open target="_blank" rel="noopener">Open generated record</a></p>
+
             <dl class="casefile-profile-facts">
                 <div><dt>Age</dt><dd>{{ $mother->age ? $mother->age.' years old' : 'Not provided' }}</dd></div>
+                <div><dt>Obstetric History</dt><dd>{{ $obstetricHistory }}</dd></div>
                 <div><dt>Blood Type</dt><dd>{{ $mother->blood_type ?: 'Unknown' }}</dd></div>
+                <div><dt>Civil Status</dt><dd>{{ $mother->civil_status ?: 'Not provided' }}</dd></div>
+                <div>
+                    <dt>Maternal Age Risk</dt>
+                    <dd>
+                        <span class="casefile-fact-badge {{ $maternalAgeRisk === 'Standard Maternal Age' ? 'is-standard' : ($maternalAgeRisk === 'Not provided' ? 'is-neutral' : '') }}">{{ $maternalAgeRisk }}</span>
+                    </dd>
+                </div>
                 <div><dt>Pregnancy Status</dt><dd>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</dd></div>
                 <div><dt>Current Trimester</dt><dd>{{ $trimester }}</dd></div>
-                <div><dt>Estimated Due Date</dt><dd>Not provided</dd></div>
-                <div><dt>Next Appointment</dt><dd>Not provided</dd></div>
-                <div><dt>Previous Deliveries</dt><dd>Not recorded</dd></div>
-                <div><dt>Co-monitoring</dt><dd>Not provided</dd></div>
+                <div><dt>4Ps Status</dt><dd>{{ $fourPsLabel }}</dd></div>
+                <div><dt>Latest Vitals</dt><dd>{{ $latestRecordedLabel }}</dd></div>
+                <div><dt>Monitoring Records</dt><dd>{{ $records->count() }} {{ $records->count() === 1 ? 'record' : 'records' }}</dd></div>
             </dl>
         </section>
 
+        <!-- ===== STATUS GRID ===== -->
         <div class="casefile-status-grid">
-            <article class="is-pink"><span>Care Status</span><strong>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</strong><small>{{ $trimester }}</small>{!! $iconHeart !!}</article>
-            <article class="is-green"><span>Risk Assessment</span><strong data-summary-risk>{{ $riskLabel }}</strong><small>Updated by monitoring records</small>{!! $iconShield !!}</article>
-            <article><span>Next Appointment</span><strong>Not provided</strong><small>No follow-up date scheduled</small>{!! $iconClock !!}</article>
-            <article class="is-green"><span>Care Completion</span><strong>{{ $completion }}%</strong><small>Monitoring, learning, and documents</small><em style="--progress: {{ $completion }}%"></em>{!! $iconPulse !!}</article>
+            <article class="is-pink"><span>Pregnancy Status</span><strong>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</strong><small>{{ $trimester }}</small>{!! $iconHeart !!}</article>
+            <article class="{{ $riskCardClass }}" data-risk-card><span>Screening Status</span><strong data-summary-risk>{{ $riskLabel }}</strong><small data-risk-date>{{ $riskDateCopy }}</small>{!! $iconShield !!}</article>
+            <article class="{{ $mother->is_4ps_beneficiary ? 'is-green' : 'is-neutral' }}"><span>4Ps Status</span><strong>{{ $fourPsLabel }}</strong><small>{{ $fourPsCopy }}</small>{!! $iconUser !!}</article>
+            <article class="is-green"><span>Learning Progress</span><strong>{{ $learningPercent }}%</strong><small>{{ $learningCompleted }}/{{ $learningTotal }} months completed</small><em style="--progress: {{ $learningPercent }}%"></em>{!! $iconFile !!}</article>
         </div>
 
+        <!-- ===== TABS ===== -->
         <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
-            <button class="is-active" type="button" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
-            <button type="button" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
-            <button type="button" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $kaalamanOverallProgress['completed_months'] ?? 0 }}/{{ $kaalamanOverallProgress['total_months'] ?? 10 }} months done</small></button>
-            <button type="button" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
+            <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $learningCompleted }}/{{ $learningTotal }} months done</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
         </div>
 
+        <!-- ===== OVERVIEW PANEL ===== -->
         <section data-casefile-panel="overview">
+            <!-- Vitals Panel -->
             <section class="casefile-panel casefile-vitals-panel">
                 <div class="casefile-panel-title">
                     <div>
@@ -174,116 +3397,191 @@
                     <button type="button" data-vitals-open>{!! $iconPulse !!} Update Vitals</button>
                 </div>
                 <div class="casefile-vital-grid is-large">
-                    <article>
-                        <div class="casefile-vital-head"><i class="is-pink">{!! $iconHeart !!}</i><b data-vital-status="blood_pressure">Normal</b></div>
-                        <span>Blood Pressure</span>
-                        <strong data-vital-value="blood_pressure">{{ $bpValue }}</strong>
-                        <small>Target below 140/90 mmHg</small>
-                    </article>
-                    <article>
-                        <div class="casefile-vital-head"><i class="is-pink">{!! $iconPulse !!}</i><b data-vital-status="blood_sugar">Normal</b></div>
-                        <span>Blood Sugar</span>
-                        <strong data-vital-value="blood_sugar">{{ $sugarValue }}</strong>
-                        <small>Healthy range: 70 - 140 mg/dL</small>
-                    </article>
-                    <article>
-                        <div class="casefile-vital-head"><i class="is-green">{!! $iconShield !!}</i><b data-vital-status="weight">Normal</b></div>
-                        <span>Weight</span>
-                        <strong data-vital-value="weight">{{ $weightValue }}</strong>
-                        <small>Review gain against baseline</small>
-                    </article>
-                    <article>
-                        <div class="casefile-vital-head"><i class="is-blue">{!! $iconShield !!}</i><b data-vital-status="hemoglobin">Normal</b></div>
-                        <span>Hemoglobin</span>
-                        <strong data-vital-value="hemoglobin">{{ $hemoValue }}</strong>
-                        <small>11.0 g/dL and above</small>
-                    </article>
+                    @foreach($vitalCards as $card)
+                        @php
+                            $cardStatus = $vitalStatus($card['key']);
+                            $cardGuideline = $vitalGuideline($card['key']);
+                        @endphp
+                        <article data-vital-card="{{ $card['key'] }}">
+                            <!-- Always visible (compact) part -->
+                            <div class="casefile-vital-head">
+                                <i class="{{ $card['tone'] }}">{!! $card['icon'] !!}</i>
+                                <b data-vital-status="{{ $card['key'] }}" data-status-tone="{{ \App\Support\MaternalVitalScreening::statusSlug($cardStatus) }}">{{ $cardStatus }}</b>
+                            </div>
+                            <span>{{ $card['title'] }}</span>
+                            <strong data-vital-value="{{ $card['key'] }}">{{ $card['value'] }}</strong>
+
+                            <!-- Toggle button (mobile only) – opens modal -->
+                            <button type="button" class="casefile-vital-toggle-details" data-vital-toggle="{{ $card['key'] }}">
+                                View Details
+                            </button>
+
+                            <!-- Detailed content – hidden on mobile, visible on desktop -->
+                            <div class="casefile-vital-details">
+                                <div class="casefile-vital-meta">
+                                    <small data-vital-date="{{ $card['key'] }}">{{ $vitalDateLabels[$card['key']] }}</small>
+                                    <small data-vital-week="{{ $card['key'] }}">Pregnancy week {{ $pregnancyWeek ?: 'N/A' }}</small>
+                                    <small data-vital-unit="{{ $card['key'] }}">Unit: {{ $card['unit'] }}</small>
+                                    <small data-vital-test-type="{{ $card['key'] }}">Test type: {{ $card['test_type'] }}</small>
+                                </div>
+                                <p class="casefile-vital-explanation" data-vital-explanation="{{ $card['key'] }}">{{ $vitalExplanation($card['key']) }}</p>
+                                @if(! empty($cardGuideline['source_url']))
+                                    <a class="casefile-reference-link" data-vital-reference="{{ $card['key'] }}" href="{{ $cardGuideline['source_url'] }}" target="_blank" rel="noopener">View Reference</a>
+                                @else
+                                    <span class="casefile-reference-link" data-vital-reference="{{ $card['key'] }}">Reference pending</span>
+                                @endif
+                                <div class="casefile-vital-foot">
+                                    <small data-vital-guideline="{{ $card['key'] }}">{{ $cardGuideline['name'] ?? 'Facility-configurable screening rule' }} / {{ $cardGuideline['version'] ?? 'Pending validation' }}</small>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
-                <div class="casefile-safe-banner" data-vitals-banner>{!! $iconShield !!} All available maternal indicators are within healthy pregnancy thresholds.</div>
+                <div class="casefile-safety-notice">{!! $iconShield !!} {{ $safetyNotice }}</div>
             </section>
 
-            <section class="casefile-progress-section">
-                <p>Statistics</p>
-                <h2>Maternal Health Progress</h2>
-                <span>Charts and indicators update from stored monitoring records and uploaded documents.</span>
-                <div class="casefile-progress-cards">
-                    <article><span>Prenatal Visit Completion</span><strong data-visit-count>{{ min($records->count(), 8) }}/8</strong><small data-visit-copy>{{ $records->count() > 0 ? round(min($records->count(), 8) / 8 * 100) : 0 }}% of expected visits logged</small><em data-visit-progress style="--progress: {{ min(100, $records->count() / 8 * 100) }}%"></em>{!! $iconCalendar !!}</article>
-                    <article><span>Missed Appointments</span><strong>0</strong><small>No missed visit detected</small><em style="--progress: 0%"></em>{!! $iconAlert !!}</article>
-                    <article><span>Vaccination Status</span><strong>Pending</strong><small>0 vaccination record(s)</small><em style="--progress: 0%"></em>{!! $iconCalendar !!}</article>
-                    <article><span>Prenatal Checkups</span><strong>{{ $checkupUploads }}/8</strong><small>{{ round(min($checkupUploads, 8) / 8 * 100) }}% completion from uploaded records</small><em style="--progress: {{ min(100, $checkupUploads / 8 * 100) }}%"></em>{!! $iconCalendar !!}</article>
-                </div>
-            </section>
-
-            <section class="casefile-chart-grid">
-                <article class="casefile-chart-card">
-                    <span>Trend Chart</span>
-                    <h3>Weight Progression</h3>
-                    <div class="casefile-chart-canvas" data-chart="weight"></div>
-                    <div class="casefile-legend"><span class="is-pink"></span> Weight (kg)</div>
-                    <button type="button" class="monitoring-history-trigger" data-history-open="weight">
-                        {!! $iconHistory !!}
-                        <span>View Weight History</span>
-                        <b data-history-count="weight">{{ $weightRecords->count() }} Record{{ $weightRecords->count() === 1 ? '' : 's' }}</b>
-                    </button>
-                </article>
-                <article class="casefile-chart-card">
-                    <span>Trend Chart</span>
-                    <h3>Blood Pressure Trends</h3>
-                    <div class="casefile-chart-canvas" data-chart="bp"></div>
-                    <div class="casefile-legend"><span class="is-red"></span> Systolic <span class="is-blue"></span> Diastolic</div>
-                    <button type="button" class="monitoring-history-trigger" data-history-open="bp">
-                        {!! $iconHistory !!}
-                        <span>View Blood Pressure History</span>
-                        <b data-history-count="bp">{{ $bpRecords->count() }} Record{{ $bpRecords->count() === 1 ? '' : 's' }}</b>
-                    </button>
-                </article>
-            </section>
-
+            <!-- Journey Section -->
             <section class="casefile-panel">
                 <p class="casefile-section-kicker">Pregnancy Timeline</p>
                 <h2>Care Journey</h2>
                 <p class="casefile-section-subtitle">Registration, trimester progression, delivery, and postpartum milestones.</p>
                 <div class="casefile-journey-grid">
-                    <article class="is-complete"><strong>Registration</strong><span>Patient account created</span><small>{{ $mother->created_at?->format('M j, Y') ?? 'Unknown' }}</small></article>
-                    <article class="{{ $pregnancyWeek && $pregnancyWeek >= 1 ? 'is-complete' : '' }}"><strong>First Trimester</strong><span>Weeks 1-13</span><small>{{ $pregnancyWeek && $pregnancyWeek >= 14 ? 'Completed' : 'Current or pending' }}</small></article>
-                    <article class="{{ $pregnancyWeek && $pregnancyWeek >= 14 ? 'is-complete' : '' }}"><strong>Second Trimester</strong><span>Weeks 14-27</span><small>{{ $pregnancyWeek && $pregnancyWeek >= 28 ? 'Completed' : 'Current or pending' }}</small></article>
-                    <article class="{{ $pregnancyWeek && $pregnancyWeek >= 28 ? 'is-current' : '' }}"><strong>Third Trimester</strong><span>Weeks 28-40</span><small>{{ $trimester === 'Third Trimester' ? 'Current' : 'Future' }}</small></article>
-                    <article><strong>Delivery</strong><span>Birth plan and delivery</span><small>Future</small></article>
-                    <article><strong>Postpartum Care</strong><span>After delivery follow-up</span><small>Future</small></article>
+                    @foreach ($journeyStages as $stage)
+                        @php $stageStatus = $journeyStatus($stage['key']); @endphp
+                        <article class="is-{{ $stageStatus }}">
+                            <i>{!! $stage['icon'] !!}</i>
+                            <strong>{{ $stage['title'] }}</strong>
+                            <span>{{ $stage['description'] }}</span>
+                            <small>{{ $stage['date'] }}</small>
+                            <em>{{ $stageStatus === 'complete' ? 'Completed' : ucfirst($stageStatus) }}</em>
+                        </article>
+                    @endforeach
                 </div>
             </section>
 
+            <!-- Progress Section -->
+            <section class="casefile-progress-section">
+                <p>Statistics</p>
+                <h2>Maternal Health Progress</h2>
+                <span>Charts and indicators update from stored monitoring records and uploaded documents.</span>
+                <div class="casefile-progress-cards">
+                    <article><span>Prenatal Visit Completion</span><strong data-visit-count>{{ $visitCount }}/8</strong><small data-visit-copy>{{ $visitPercent }}% of expected visits logged</small><em data-visit-progress style="--progress: {{ $visitPercent }}%"></em>{!! $iconCalendar !!}</article>
+                    <article><span>Vaccination Status</span><strong>Pending</strong><small>No maternal vaccine record available</small><em style="--progress: 0%"></em>{!! $iconCalendar !!}</article>
+                    <article><span>Care Completion</span><strong>{{ $completion }}%</strong><small>{{ $uploadedFileCount }} uploaded {{ $uploadedFileCount === 1 ? 'file' : 'files' }} included</small><em style="--progress: {{ $completion }}%"></em>{!! $iconPulse !!}</article>
+                </div>
+            </section>
+
+            <!-- Trends Section -->
+            <section class="casefile-trends-section">
+                <div class="casefile-section-head">
+                    <div>
+                        <p class="casefile-section-kicker">Health Monitoring</p>
+                        <h2>Weight Progress and Blood Pressure Trends</h2>
+                        <p>Saved monitoring records for clinical review.</p>
+                    </div>
+                    <button type="button" class="casefile-trend-action" data-vitals-open>{!! $iconPulse !!} Update Vitals</button>
+                </div>
+                <div class="casefile-chart-grid">
+                    <article class="casefile-chart-card">
+                        <span>Weight Progress</span>
+                        <h3>Weight Progression</h3>
+                        <div class="casefile-chart-canvas" data-chart="weight"></div>
+                        <div class="casefile-legend"><span class="is-pink"></span> Weight (kg) by date or pregnancy week</div>
+                        <button type="button" class="monitoring-history-trigger" data-history-open="weight">
+                            <span class="monitoring-history-icon" aria-hidden="true">{!! $iconHistory !!}</span>
+                            <span>View Weight History</span>
+                            <b data-history-count="weight">{{ $weightRecords->count() }} Record{{ $weightRecords->count() === 1 ? '' : 's' }}</b>
+                        </button>
+                    </article>
+                    <article class="casefile-chart-card">
+                        <span>Blood Pressure Monitoring</span>
+                        <h3>Blood Pressure Status</h3>
+                        <div class="casefile-bp-status {{ $latestBpStatusState }}" data-bp-status-card aria-live="polite">
+                            <div class="casefile-bp-ring" data-bp-status-indicator aria-label="Blood pressure status: {{ $latestBpStatusLabel }}">
+                                <i data-bp-status-icon="normal">{!! $iconCheck !!}</i>
+                                <i data-bp-status-icon="monitoring">{!! $iconAlert !!}</i>
+                                <i data-bp-status-icon="high-risk">{!! $iconHighRisk !!}</i>
+                                <i data-bp-status-icon="empty">{!! $iconPulse !!}</i>
+                                <strong data-bp-status-value>{{ $latestBpDisplay }}</strong>
+                                <span>mmHg</span>
+                            </div>
+                            <div class="casefile-bp-copy">
+                                <small data-bp-status-context>{{ $latestBpContext }}</small>
+                                <b data-bp-status-label>{{ $latestBpStatusLabel }}</b>
+                                <div class="casefile-bp-readings">
+                                    <span>Systolic: <strong data-bp-systolic>{{ $latestBpEntry['systolic'] ?? '--' }} mmHg</strong></span>
+                                    <span>Diastolic: <strong data-bp-diastolic>{{ $latestBpEntry['diastolic'] ?? '--' }} mmHg</strong></span>
+                                </div>
+                                <p data-bp-status-explanation>{{ $latestBpStatusExplanation }}</p>
+                                <em>This status summarizes recorded monitoring information and does not replace professional clinical assessment.</em>
+                            </div>
+                        </div>
+                        <button type="button" class="monitoring-history-trigger" data-history-open="bp">
+                            <span class="monitoring-history-icon" aria-hidden="true">{!! $iconHistory !!}</span>
+                            <span>View Blood Pressure History</span>
+                            <b data-history-count="bp">{{ $bpRecords->count() }} Record{{ $bpRecords->count() === 1 ? '' : 's' }}</b>
+                        </button>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Activity Section -->
             <section class="casefile-panel">
                 <p class="casefile-section-kicker">Activity Timeline</p>
                 <h2>Patient Activity</h2>
                 <p class="casefile-section-subtitle">Registration, checkups, monitoring, learning, consultation, scheduling, and risk updates.</p>
-                <div class="casefile-activity-list">
-                    @forelse ($records->take(4) as $record)
-                        <article>
-                            <strong>Maternal monitoring submitted <span>Monitoring</span></strong>
-                            <p>Week {{ $record->pregnancy_week ?: 'N/A' }} vitals recorded with {{ $riskLabels[strtolower((string) $record->risk_level)] ?? 'Pending' }} assessment.</p>
-                            <time>{{ ($record->recorded_at ?? $record->created_at)?->format('M j, Y, g:i A') ?? 'Date not recorded' }}</time>
+                <div class="casefile-activity-list" data-activity-list>
+                    @forelse ($patientActivities as $activity)
+                        <article class="{{ $loop->iteration > 6 ? 'is-extra' : '' }}">
+                            <strong>{{ $activity['title'] }} <span>{{ $activity['category'] }}</span></strong>
+                            <p>{{ $activity['description'] }}</p>
+                            <time>{{ $activity['date']?->format('M j, Y, g:i A') ?? 'Date not recorded' }}</time>
                         </article>
                     @empty
                         <article>
-                            <strong>Patient registered <span>Registration</span></strong>
-                            <p>Mother account was created in Project INAY.</p>
-                            <time>{{ $mother->created_at?->format('M j, Y, g:i A') ?? 'Date not recorded' }}</time>
+                            <strong>No activity available <span>No Data</span></strong>
+                            <p>No patient activity has been recorded yet.</p>
+                            <time>No data available</time>
                         </article>
                     @endforelse
+                </div>
+                @if ($patientActivities->count() > 6)
+                    <button type="button" class="casefile-activity-more" data-activity-toggle data-more-label="View More" data-less-label="View Less">View More</button>
+                @endif
+            </section>
+
+            <!-- Clinical References -->
+            <section class="casefile-panel">
+                <p class="casefile-section-kicker">Clinical Guide References</p>
+                <h2>Clinical Guide References</h2>
+                <p class="casefile-section-subtitle">Reference materials used for configurable screening thresholds and professional review workflows.</p>
+                <div class="casefile-reference-grid">
+                    @foreach($clinicalReferences as $reference)
+                        <a href="{{ $reference['url'] }}" target="_blank" rel="noopener">
+                            <strong>{{ $reference['title'] }}</strong>
+                            <span>{{ $reference['url'] }}</span>
+                        </a>
+                    @endforeach
                 </div>
             </section>
         </section>
 
+        <!-- ===== MONITORING PANEL ===== -->
         <section class="casefile-panel" data-casefile-panel="monitoring" hidden>
             <h2>Monitoring Records</h2>
             <div data-record-list>
             @forelse ($records as $record)
+                @php
+                    $formattedRecord = $formattedVitalsById->get($record->id);
+                @endphp
                 <div class="casefile-record-row">
                     <strong>Week {{ $record->pregnancy_week ?: 'N/A' }} &middot; Month {{ $record->pregnancy_month ?: 'N/A' }}</strong>
                     <span>BP {{ $record->bp_systolic && $record->bp_diastolic ? $record->bp_systolic.'/'.$record->bp_diastolic.' mmHg' : 'Not logged' }}</span>
                     <span>Weight {{ $record->weight === null ? 'Not logged' : rtrim(rtrim(number_format((float) $record->weight, 2), '0'), '.').' kg' }}</span>
+                    <span>{{ $record->blood_sugar_test_type ? ($bloodSugarTestTypes[$record->blood_sugar_test_type] ?? 'Test type not recorded') : 'Test type not recorded' }}</span>
+                    <span>{{ $screeningStatusLabel($formattedRecord['screening_summary_status'] ?? $record->screening_summary_status ?? $record->risk_level) }}</span>
                     <span>{{ ($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded' }}</span>
+                    <button type="button" data-edit-record="{{ $record->id }}">Edit</button>
                 </div>
             @empty
                 <p class="casefile-panel-note">No maternal monitoring record has been saved yet.</p>
@@ -291,6 +3589,7 @@
             </div>
         </section>
 
+        <!-- ===== LEARNING & DOCUMENTS PANEL ===== -->
         <section class="casefile-panel" data-casefile-panel="learning-documents" hidden>
             <h2>{!! $iconFile !!} INAY Kaalaman Learning & Documents</h2>
             <p class="casefile-panel-note">Actual saved reading, video, infographic, and uploaded-document progress from this mother.</p>
@@ -304,6 +3603,13 @@
 
             <div class="casefile-learning-months">
                 @foreach (($kaalamanMonthlyProgress['months'] ?? []) as $progressMonth)
+                    @php
+                        $monthUploadsForStaff = $uploads->where('month', $progressMonth['month'])->values();
+                        $requiredVideoTotal = (int) ($progressMonth['total_videos'] ?? 0);
+                        $requiredVideoWatched = (int) ($progressMonth['watched_videos'] ?? 0);
+                        $videoProgressLabel = $requiredVideoTotal > 0 ? "{$requiredVideoWatched}/{$requiredVideoTotal} watched" : 'No video posted';
+                        $videoProgressNote = $requiredVideoTotal > 0 ? ($requiredVideoTotal - $requiredVideoWatched).' pending' : 'No video posted this month';
+                    @endphp
                     <article class="casefile-learning-month {{ $progressMonth['is_complete'] ? 'is-complete' : '' }}">
                         <header>
                             <div>
@@ -319,7 +3625,7 @@
 
                         <div class="casefile-learning-grid">
                             <article><span>Reading</span><strong>{{ $progressMonth['reading']['label'] }}</strong><small>{{ $progressMonth['reading']['completed_at'] ?: 'Not completed' }}</small></article>
-                            <article><span>Videos</span><strong>{{ $progressMonth['watched_videos'] }}/{{ $progressMonth['total_videos'] }} watched</strong><small>{{ $progressMonth['total_videos'] - $progressMonth['watched_videos'] }} pending</small></article>
+                            <article><span>Required Video</span><strong>{{ $videoProgressLabel }}</strong><small>{{ $videoProgressNote }}</small></article>
                             <article><span>Infographic</span><strong>{{ $progressMonth['infographic']['label'] }}</strong><small>{{ $progressMonth['infographic']['completed_at'] ?: 'Not completed' }}</small></article>
                             <article><span>Documents</span><strong>{{ $progressMonth['uploaded_required_documents'] }}/{{ $progressMonth['required_documents'] }} uploaded</strong><small>{{ count($progressMonth['uploaded_documents']) }} file{{ count($progressMonth['uploaded_documents']) === 1 ? '' : 's' }} total</small></article>
                         </div>
@@ -330,27 +3636,36 @@
                             @endforeach
                         </ul>
 
-                        @if (count($progressMonth['uploaded_documents']) > 0)
+                        @if ($monthUploadsForStaff->isNotEmpty())
+                            <h4>Prenatal Records and Receipts History</h4>
                             <ul class="casefile-learning-list">
-                                @foreach ($progressMonth['uploaded_documents'] as $document)
-                                    <li><span>{{ $document['label'] }}: {{ $document['filename'] }}</span><small>Uploaded {{ $document['uploaded_at'] ?: 'date not recorded' }}</small></li>
+                                @foreach ($monthUploadsForStaff as $upload)
+                                    <li>
+                                        <span>{{ $uploadTypeLabels[$upload->record_type] ?? $upload->record_type }}: {{ $upload->original_name }}</span>
+                                        <small>Uploaded {{ $upload->created_at?->format('M j, Y') ?? 'date not recorded' }}</small>
+                                        <a href="{{ route('staff.mothers.kaalaman-uploads.download', [$mother, $upload]) }}">Download</a>
+                                    </li>
                                 @endforeach
                             </ul>
                         @else
-                            <p class="casefile-panel-note">No uploaded documents for this month yet.</p>
+                            <h4>Prenatal Records and Receipts History</h4>
+                            <p class="casefile-panel-note">No prenatal records or receipts have been sent for this month yet.</p>
                         @endif
                     </article>
                 @endforeach
             </div>
         </section>
 
+        <!-- ===== NOTES PANEL ===== -->
         <section class="casefile-panel" data-casefile-panel="notes" hidden>
             <h2>Clinical Notes</h2>
             <p class="casefile-panel-note">{{ $latestRecord?->notes ?: 'No staff notes recorded for this patient yet.' }}</p>
         </section>
 
+        <!-- ===== VITALS SUCCESS ===== -->
         <div class="vitals-success" data-vitals-success hidden>Maternal vitals saved.</div>
 
+        <!-- ===== HISTORY MODAL ===== -->
         <div class="history-modal" data-history-modal hidden>
             <div class="history-modal-backdrop" data-history-close></div>
             <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
@@ -374,10 +3689,26 @@
             </section>
         </div>
 
+        <!-- ===== VITAL DETAIL MODAL (mobile) ===== -->
+        <div class="vital-detail-modal" data-vital-detail-modal hidden>
+            <div class="vital-detail-modal-backdrop" data-vital-detail-close></div>
+            <section class="vital-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="vital-detail-title">
+                <header class="vital-detail-dialog-header">
+                    <h2 class="vital-detail-dialog-title" id="vital-detail-title">Vital Details</h2>
+                    <button type="button" class="vital-detail-close" data-vital-detail-close aria-label="Close details">&times;</button>
+                </header>
+                <div class="vital-detail-dialog-body" data-vital-detail-body>
+                    <!-- Populated by JavaScript -->
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== VITALS MODAL ===== -->
         <div class="vitals-modal" data-vitals-modal hidden>
             <div class="vitals-modal-backdrop" data-vitals-close></div>
             <form class="vitals-dialog" data-vitals-form novalidate>
                 <input type="hidden" name="record_id" data-vitals-record-id>
+                <input type="hidden" name="confirmed_unusual" value="" data-vitals-confirmed>
                 <header class="vitals-dialog-header">
                     <h2 data-vitals-title>Add Maternal Vitals</h2>
                     <button type="button" data-vitals-close aria-label="Close update vitals modal">&times;</button>
@@ -403,39 +3734,71 @@
                         <input type="number" name="pregnancy_week" min="1" max="42" value="{{ $pregnancyWeek ?: '' }}">
                         <small data-field-error="pregnancy_week"></small>
                     </label>
+                    <label class="height-field">
+                        <span>Height (cm / ft-in)</span>
+                        <div class="height-controls">
+                            <select name="height_unit" data-height-unit aria-label="Height unit">
+                                <option value="cm">cm</option>
+                                <option value="ft_in">ft / in</option>
+                            </select>
+                            <input type="number" name="height_cm" data-height-cm step="0.01" min="0.01" value="{{ $heightNumber === null ? '' : number_format((float) $heightNumber, 2, '.', '') }}" placeholder="Height (cm)">
+                            <div class="height-ft-in" data-height-ft-in hidden>
+                                <input type="number" name="height_feet" data-height-feet min="1" step="1" placeholder="Feet" aria-label="Height in feet">
+                                <input type="number" name="height_inches" data-height-inches min="0" max="11.99" step="0.01" placeholder="Inches" aria-label="Height in inches">
+                            </div>
+                        </div>
+                        <small data-field-error="height_cm"></small>
+                        <small data-field-error="height_feet"></small>
+                        <small data-field-error="height_inches"></small>
+                    </label>
                     <label>
                         <span>Weight (kg)</span>
-                        <input type="number" name="weight" step="0.1" min="0.1" value="{{ $weightNumber ?: '' }}">
+                        <input type="number" name="weight" step="0.1" min="25" max="250" value="{{ $weightNumber ?: '' }}">
                         <small data-field-error="weight"></small>
                     </label>
                     <label>
+                        <span>Pre-pregnancy Weight (kg)</span>
+                        <input type="number" name="pre_pregnancy_weight" step="0.1" min="25" max="250" value="{{ $prePregnancyWeightNumber ?: '' }}">
+                        <small data-field-error="pre_pregnancy_weight"></small>
+                    </label>
+                    <label>
+                        <span>Pre-pregnancy BMI</span>
+                        <input type="number" name="pre_pregnancy_bmi" data-pre-pregnancy-bmi step="0.01" min="10" max="70" value="{{ $prePregnancyBmiNumber === null ? '' : number_format($prePregnancyBmiNumber, 2, '.', '') }}" readonly aria-readonly="true" placeholder="Calculated automatically">
+                        <small data-field-error="pre_pregnancy_bmi"></small>
+                    </label>
+                    <label>
                         <span>Systolic BP</span>
-                        <input type="number" name="bp_systolic" min="60" max="220" value="{{ $latestRecord?->bp_systolic ?: '' }}">
+                        <input type="number" name="bp_systolic" min="50" max="260" value="{{ $latestRecord?->bp_systolic ?: '' }}">
                         <small data-field-error="bp_systolic"></small>
                     </label>
                     <label>
                         <span>Diastolic BP</span>
-                        <input type="number" name="bp_diastolic" min="40" max="140" value="{{ $latestRecord?->bp_diastolic ?: '' }}">
+                        <input type="number" name="bp_diastolic" min="30" max="160" value="{{ $latestRecord?->bp_diastolic ?: '' }}">
                         <small data-field-error="bp_diastolic"></small>
                     </label>
                     <label>
+                        <span>Blood Sugar Test Type</span>
+                        <select name="blood_sugar_test_type" required>
+                            <option value="">Select test type</option>
+                            @foreach($bloodSugarTestTypes as $value => $label)
+                                <option value="{{ $value }}" @selected($latestRecord?->blood_sugar_test_type === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <small data-field-error="blood_sugar_test_type"></small>
+                    </label>
+                    <label>
                         <span>Blood Sugar (mg/dL)</span>
-                        <input type="number" name="blood_sugar" step="0.1" min="40" max="400" value="{{ $latestRecord?->blood_sugar ?: '' }}">
+                        <input type="number" name="blood_sugar" step="0.1" min="20" max="700" value="{{ $latestRecord?->blood_sugar ?: '' }}">
                         <small data-field-error="blood_sugar"></small>
                     </label>
                     <label>
-                        <span>Hemoglobin (g/dL)</span>
-                        <input type="number" name="hemoglobin" step="0.1" min="5" max="25" value="{{ $latestRecord?->hemoglobin ?: '' }}">
-                        <small data-field-error="hemoglobin"></small>
-                    </label>
-                    <label>
                         <span>Temperature (C)</span>
-                        <input type="number" name="temperature" step="0.1" min="34" max="43" value="{{ $latestRecord?->temperature ?: '' }}">
+                        <input type="number" name="temperature" step="0.1" min="30" max="45" value="{{ $latestRecord?->temperature ?: '' }}">
                         <small data-field-error="temperature"></small>
                     </label>
                     <label>
                         <span>Heart Rate</span>
-                        <input type="number" name="heart_rate" min="40" max="180" value="{{ $latestRecord?->heart_rate ?: '' }}">
+                        <input type="number" name="heart_rate" min="30" max="220" value="{{ $latestRecord?->heart_rate ?: '' }}">
                         <small data-field-error="heart_rate"></small>
                     </label>
                     <label class="is-wide">
@@ -456,11 +3819,13 @@
         </div>
     </section>
 
+    <!-- ===== JAVASCRIPT ===== -->
     <script>
         (() => {
             const tabs = Array.from(document.querySelectorAll('[data-casefile-tab]'));
             const panels = Array.from(document.querySelectorAll('[data-casefile-panel]'));
             let vitalsState = @json($maternalVitalsPayload);
+            const bloodSugarTestTypes = @json($bloodSugarTestTypes);
 
             const csrfToken = '{{ csrf_token() }}';
             const motherVitalsUrl = '{{ route('api.staff.maternal-vitals.store', $mother) }}';
@@ -481,9 +3846,22 @@
             const historySort = document.querySelector('[data-history-sort]');
             const historyCountCopy = document.querySelector('[data-history-count-copy]');
             const historyContent = document.querySelector('[data-history-content]');
+            const heightUnitInput = form?.querySelector('[data-height-unit]');
+            const heightCmInput = form?.querySelector('[data-height-cm]');
+            const heightFtIn = form?.querySelector('[data-height-ft-in]');
+            const heightFeetInput = form?.querySelector('[data-height-feet]');
+            const heightInchesInput = form?.querySelector('[data-height-inches]');
+            const prePregnancyWeightInput = form?.querySelector('[name="pre_pregnancy_weight"]');
+            const prePregnancyBmiInput = form?.querySelector('[data-pre-pregnancy-bmi]');
             let activeHistoryType = 'weight';
             let historySortDirection = 'desc';
             const touched = new Set();
+            let previousHeightUnit = heightUnitInput?.value || 'cm';
+
+            // Vital detail modal elements
+            const vitalDetailModal = document.querySelector('[data-vital-detail-modal]');
+            const vitalDetailBody = document.querySelector('[data-vital-detail-body]');
+            const vitalDetailTitle = document.querySelector('#vital-detail-title');
 
             const number = (value, decimals = 0) => {
                 if (value === null || value === undefined || value === '') return null;
@@ -510,21 +3888,37 @@
                 });
             };
 
-            const setRiskClass = (node, risk) => {
+            const statusSlug = (label) => String(label || 'Logged')
+                .trim()
+                .toLowerCase()
+                .replaceAll('&', 'and')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '') || 'logged';
+
+            const updateStatusBadge = (key, label) => {
+                const node = document.querySelector(`[data-vital-status="${key}"]`);
                 if (!node) return;
-                node.classList.remove('is-low', 'is-medium', 'is-high', 'is-pending');
-                node.classList.add(['low', 'medium', 'high'].includes(risk) ? `is-${risk}` : 'is-pending');
+                node.textContent = label;
+                node.dataset.statusTone = statusSlug(label);
+            };
+
+            const setRiskClass = (node, status) => {
+                if (!node) return;
+                node.classList.remove('is-low', 'is-medium', 'is-high', 'is-pending', 'is-logged', 'is-within-reference-range', 'is-for-review', 'is-for-professional-interpretation', 'is-urgent-referral-recommended');
+                node.classList.add(`is-${statusSlug(status)}`);
+            };
+
+            const setRiskCardClass = (status) => {
+                const node = document.querySelector('[data-risk-card]');
+                if (!node) return;
+                node.classList.remove('is-green', 'is-review', 'is-risk', 'is-neutral');
+                const slug = statusSlug(status);
+                node.classList.add(slug === 'urgent-referral-recommended' ? 'is-risk' : (['for-review', 'for-professional-interpretation'].includes(slug) ? 'is-review' : (slug === 'within-reference-range' ? 'is-green' : 'is-neutral')));
             };
 
             const statusFor = (latest, key) => {
-                if (!latest) return 'Pending';
-                if (key === 'blood_pressure') {
-                    return latest.bp_systolic < 140 && latest.bp_diastolic < 90 ? 'Normal' : 'Review';
-                }
-                if (key === 'blood_sugar') return latest.blood_sugar >= 70 && latest.blood_sugar <= 140 ? 'Normal' : 'Review';
-                if (key === 'hemoglobin') return latest.hemoglobin >= 11 ? 'Normal' : 'Review';
-                if (key === 'weight') return 'Logged';
-                return 'Logged';
+                if (!latest) return 'Logged';
+                return latest.statuses?.[key] || 'Logged';
             };
 
             const recordCountLabel = (count) => `${count} Record${count === 1 ? '' : 's'}`;
@@ -534,22 +3928,129 @@
                 return formatted === null ? 'N/A' : `${formatted} ${unit}`;
             };
 
-            const weightStatus = (weight) => {
-                const value = Number(weight);
-                if (!Number.isFinite(value) || value <= 0) return { label: 'Warning', className: 'is-warning' };
-                if (value < 35 || value > 180) return { label: 'Critical', className: 'is-critical' };
-                if (value < 45 || value > 130) return { label: 'Warning', className: 'is-warning' };
-                return { label: 'Normal', className: 'is-good' };
+            const readHeightCm = (unit = heightUnitInput?.value || 'cm') => {
+                if (unit === 'ft_in') {
+                    const feet = heightFeetInput?.value;
+                    const inches = heightInchesInput?.value;
+                    const feetNumber = Number(feet);
+                    const inchesNumber = Number(inches);
+                    if (feet === '' || inches === '' || !Number.isInteger(feetNumber) || feetNumber < 1 || !Number.isFinite(inchesNumber) || inchesNumber < 0 || inchesNumber > 11.99) return null;
+                    return (feetNumber * 30.48) + (inchesNumber * 2.54);
+                }
+
+                const centimeters = Number(heightCmInput?.value);
+                return heightCmInput?.value !== '' && Number.isFinite(centimeters) && centimeters > 0 ? centimeters : null;
             };
 
-            const bpStatus = (systolic, diastolic) => {
-                const sys = Number(systolic);
-                const dia = Number(diastolic);
-                if (!Number.isFinite(sys) || !Number.isFinite(dia)) return { label: 'Warning', className: 'is-warning' };
-                if (sys >= 160 || dia >= 110) return { label: 'Critical', className: 'is-critical' };
-                if (sys >= 140 || dia >= 90) return { label: 'Warning', className: 'is-warning' };
-                return { label: 'Normal', className: 'is-good' };
+            const writeHeight = (heightCm, unit) => {
+                if (!Number.isFinite(heightCm) || heightCm <= 0) return;
+
+                if (unit === 'ft_in') {
+                    let feet = Math.floor(heightCm / 30.48);
+                    let inches = (heightCm - (feet * 30.48)) / 2.54;
+                    inches = Math.round(inches * 100) / 100;
+                    if (inches >= 12) {
+                        feet += 1;
+                        inches = 0;
+                    }
+                    heightFeetInput.value = String(feet);
+                    heightInchesInput.value = inches.toFixed(2).replace(/\.00$/, '');
+                    return;
+                }
+
+                heightCmInput.value = heightCm.toFixed(2).replace(/\.00$/, '');
             };
+
+            const syncHeightControls = () => {
+                const isFeetAndInches = heightUnitInput?.value === 'ft_in';
+                if (!heightCmInput || !heightFtIn || !heightFeetInput || !heightInchesInput) return;
+                heightCmInput.hidden = isFeetAndInches;
+                heightCmInput.disabled = isFeetAndInches;
+                heightFtIn.hidden = !isFeetAndInches;
+                heightFeetInput.disabled = !isFeetAndInches;
+                heightInchesInput.disabled = !isFeetAndInches;
+            };
+
+            const syncPrePregnancyBmi = () => {
+                if (!prePregnancyBmiInput) return;
+                const heightCm = readHeightCm();
+                const prePregnancyWeight = Number(prePregnancyWeightInput?.value);
+                if (heightCm === null || !Number.isFinite(prePregnancyWeight) || prePregnancyWeight <= 0) {
+                    prePregnancyBmiInput.value = '';
+                    return;
+                }
+
+                const heightMeters = heightCm / 100;
+                prePregnancyBmiInput.value = (prePregnancyWeight / (heightMeters * heightMeters)).toFixed(2);
+            };
+
+            const latestBloodPressureRecord = (payload) => {
+                const history = Array.isArray(payload?.blood_pressure_history) ? payload.blood_pressure_history : [];
+                const rows = history.filter((item) => item && item.systolic !== null && item.systolic !== undefined && item.diastolic !== null && item.diastolic !== undefined);
+                return rows.length ? rows[rows.length - 1] : null;
+            };
+
+            const bloodPressureStatusProfile = (status, hasRecord) => {
+                if (!hasRecord) {
+                    return {
+                        className: 'is-empty',
+                        label: 'No Record',
+                        explanation: 'No blood pressure record available yet.',
+                    };
+                }
+
+                const rawStatus = String(status || '').trim().toLowerCase();
+                const slug = statusSlug(status);
+
+                if (['urgent-referral-recommended', 'high-risk', 'critical'].includes(slug) || rawStatus === 'high risk') {
+                    return {
+                        className: 'is-high-risk',
+                        label: 'High Risk',
+                        explanation: 'A high-risk blood pressure status was recorded. Professional clinical assessment is required.',
+                    };
+                }
+
+                if (['within-reference-range', 'normal-stable', 'normal', 'stable'].includes(slug)) {
+                    return {
+                        className: 'is-normal',
+                        label: 'Normal / Stable',
+                        explanation: 'Latest recorded blood pressure is within the configured screening review range.',
+                    };
+                }
+
+                return {
+                    className: 'is-monitoring',
+                    label: 'Needs Monitoring',
+                    explanation: 'Blood pressure requires further monitoring and professional assessment.',
+                };
+            };
+
+            const renderBloodPressureStatus = (payload) => {
+                const card = document.querySelector('[data-bp-status-card]');
+                if (!card) return;
+
+                const record = latestBloodPressureRecord(payload);
+                const profile = bloodPressureStatusProfile(record?.raw_status || record?.status, Boolean(record));
+                const context = record
+                    ? (record.pregnancy_week ? `Pregnancy week ${record.pregnancy_week}` : `Recorded ${record.recorded_label || 'Date not recorded'}`)
+                    : 'No blood pressure record available yet.';
+
+                card.classList.remove('is-empty', 'is-normal', 'is-monitoring', 'is-high-risk');
+                card.classList.add(profile.className);
+                setText('[data-bp-status-value]', record ? `${record.systolic} / ${record.diastolic}` : '-- / --');
+                setText('[data-bp-status-context]', context);
+                setText('[data-bp-status-label]', profile.label);
+                setText('[data-bp-systolic]', record ? `${record.systolic} mmHg` : '-- mmHg');
+                setText('[data-bp-diastolic]', record ? `${record.diastolic} mmHg` : '-- mmHg');
+                setText('[data-bp-status-explanation]', record?.explanation || profile.explanation);
+
+                const indicator = document.querySelector('[data-bp-status-indicator]');
+                if (indicator) {
+                    indicator.setAttribute('aria-label', `Blood pressure status: ${profile.label}`);
+                }
+            };
+
+            const statusInfo = (label) => ({ label: label || 'Logged', className: `is-${statusSlug(label || 'Logged')}` });
 
             const normalizeDate = (value) => {
                 if (!value) return 0;
@@ -607,7 +4108,7 @@
                 if (!historyModal || !historyContent) return;
                 const config = historyConfig();
                 const rows = sortedHistoryRows(config.rows).filter((item) => {
-                    const status = activeHistoryType === 'weight' ? weightStatus(item.weight) : bpStatus(item.systolic, item.diastolic);
+                    const status = statusInfo(item.status);
                     return historyMatches(item, status);
                 });
 
@@ -629,7 +4130,7 @@
                 const actionHeader = '<th>Actions</th>';
                 const tableRows = rows.map((item) => {
                     if (activeHistoryType === 'weight') {
-                        const status = weightStatus(item.weight);
+                        const status = statusInfo(item.status);
                         return `
                             <tr>
                                 <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
@@ -646,7 +4147,7 @@
                         `;
                     }
 
-                    const status = bpStatus(item.systolic, item.diastolic);
+                    const status = statusInfo(item.status);
                     return `
                         <tr>
                             <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
@@ -690,10 +4191,44 @@
                 document.body.classList.remove('has-monitoring-history-modal');
             };
 
+            // === Vital Detail Modal ===
+            const openVitalDetailModal = (cardKey) => {
+                if (!vitalDetailModal || !vitalDetailBody) return;
+                // Find the card
+                const card = document.querySelector(`[data-vital-card="${cardKey}"]`);
+                if (!card) return;
+
+                // Clone the details content from the card
+                const details = card.querySelector('.casefile-vital-details');
+                if (!details) return;
+
+                // Set title
+                const title = card.querySelector('span')?.textContent || 'Vital Details';
+                vitalDetailTitle.textContent = title;
+
+                // Clone body content
+                const clone = details.cloneNode(true);
+                // Remove any leftover toggle buttons (just in case)
+                clone.querySelectorAll('.casefile-vital-toggle-details, .casefile-vital-details-close').forEach(el => el.remove());
+                vitalDetailBody.innerHTML = '';
+                vitalDetailBody.appendChild(clone);
+
+                vitalDetailModal.hidden = false;
+                document.body.classList.add('has-vital-detail-modal');
+            };
+
+            const closeVitalDetailModal = () => {
+                if (!vitalDetailModal) return;
+                vitalDetailModal.hidden = true;
+                document.body.classList.remove('has-vital-detail-modal');
+            };
+
             const renderChartEmpty = (message) => `
                 <svg viewBox="0 0 640 260" role="img" aria-label="${escapeHtml(message)}">
                     <path d="M70 26v190h520" class="axis"/>
                     <path d="M70 58h520M70 102h520M70 146h520M70 190h520" class="grid"/>
+                    <text x="18" y="24" class="axis-label">Value</text>
+                    <text x="520" y="240" class="axis-label">Date</text>
                     <text x="260" y="130" class="empty">${escapeHtml(message)}</text>
                 </svg>
             `;
@@ -722,52 +4257,45 @@
                 return { x, y };
             };
 
+            const chronologicalWeightHistory = (history) => [...history].sort((a, b) => {
+                const weekA = Number(a.pregnancy_week);
+                const weekB = Number(b.pregnancy_week);
+                const hasWeekA = Number.isFinite(weekA) && weekA > 0;
+                const hasWeekB = Number.isFinite(weekB) && weekB > 0;
+
+                if (hasWeekA && hasWeekB && weekA !== weekB) return weekA - weekB;
+                if (hasWeekA !== hasWeekB) return hasWeekA ? -1 : 1;
+
+                const dateDiff = normalizeDate(a.recorded_at) - normalizeDate(b.recorded_at);
+                if (dateDiff !== 0) return dateDiff;
+
+                return Number(a.id || 0) - Number(b.id || 0);
+            });
+
             const renderWeightChart = (history) => {
                 const target = document.querySelector('[data-chart="weight"]');
                 if (!target) return;
-                if (!history.length) {
+                const chartHistory = chronologicalWeightHistory(history)
+                    .filter((item) => Number.isFinite(Number(item.weight)));
+                if (!chartHistory.length) {
                     target.innerHTML = renderChartEmpty('No weight record yet');
                     return;
                 }
-                const values = history.map((item) => Number(item.weight));
+                const values = chartHistory.map((item) => Number(item.weight));
                 const { min, max } = chartScales(values, 70, 80);
                 const labels = [max, Math.round((max + min) / 2), min];
-                const points = history.map((item, index) => ({ ...item, ...chartPoint(index, history.length, Number(item.weight), min, max) }));
+                const points = chartHistory.map((item, index) => ({ ...item, ...chartPoint(index, chartHistory.length, Number(item.weight), min, max) }));
                 const polyline = points.map((point) => `${point.x},${point.y}`).join(' ');
                 target.innerHTML = `
                     <svg viewBox="0 0 640 260" role="img" aria-label="Weight progression chart">
                         <path d="M76 30v188h516" class="axis"/>
                         <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
+                        <text x="18" y="24" class="axis-label">Weight</text>
+                        <text x="258" y="255" class="axis-label">Date / Pregnancy Week</text>
                         ${labels.map((label, index) => `<text x="24" y="${66 + index * 74}">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${polyline}" class="weight-line"/>` : ''}
                         ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="weight-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
                         ${points.map((point) => `<text x="${point.x - 18}" y="244">${escapeHtml(point.label)}</text>`).join('')}
-                    </svg>
-                `;
-            };
-
-            const renderBpChart = (history) => {
-                const target = document.querySelector('[data-chart="bp"]');
-                if (!target) return;
-                if (!history.length) {
-                    target.innerHTML = renderChartEmpty('No blood pressure record yet');
-                    return;
-                }
-                const values = history.flatMap((item) => [Number(item.systolic), Number(item.diastolic)]);
-                const { min, max } = chartScales(values, 70, 130);
-                const labels = [max, Math.round((max + min) / 2), min];
-                const systolic = history.map((item, index) => ({ ...item, ...chartPoint(index, history.length, Number(item.systolic), min, max) }));
-                const diastolic = history.map((item, index) => ({ ...item, ...chartPoint(index, history.length, Number(item.diastolic), min, max) }));
-                target.innerHTML = `
-                    <svg viewBox="0 0 640 260" role="img" aria-label="Blood pressure trends chart">
-                        <path d="M76 30v188h516" class="axis"/>
-                        <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
-                        ${labels.map((label, index) => `<text x="32" y="${66 + index * 74}">${label}</text>`).join('')}
-                        ${systolic.length > 1 ? `<polyline points="${systolic.map((point) => `${point.x},${point.y}`).join(' ')}" class="systolic-line"/>` : ''}
-                        ${diastolic.length > 1 ? `<polyline points="${diastolic.map((point) => `${point.x},${point.y}`).join(' ')}" class="diastolic-line"/>` : ''}
-                        ${systolic.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="systolic-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
-                        ${diastolic.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="diastolic-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
-                        ${systolic.map((point) => `<text x="${point.x - 18}" y="244">${escapeHtml(point.label)}</text>`).join('')}
                     </svg>
                 `;
             };
@@ -784,6 +4312,8 @@
                         <strong>Week ${record.pregnancy_week || 'N/A'} &middot; Month ${record.pregnancy_month || 'N/A'}</strong>
                         <span>BP ${record.blood_pressure ? `${record.blood_pressure} mmHg` : 'Not logged'}</span>
                         <span>Weight ${record.weight === null ? 'Not logged' : `${number(record.weight, 1)} kg`}</span>
+                        <span>${escapeHtml(record.blood_sugar_test_type_label || 'Test type not recorded')}</span>
+                        <span>${escapeHtml(record.screening_summary_status || 'Logged')}</span>
                         <span>${escapeHtml(record.recorded_label || 'Date not recorded')}</span>
                         <button type="button" data-edit-record="${record.id}">Edit</button>
                     </div>
@@ -793,20 +4323,40 @@
             const renderVitals = (payload) => {
                 vitalsState = payload;
                 const latest = payload.latest;
-                const risk = latest?.risk_level || 'pending';
-                const riskLabel = payload.risk_label || latest?.risk_label || 'Pending';
+                const screeningStatus = latest?.screening_summary_status || payload.risk_label || 'Logged';
                 const recordCount = payload.records?.length || 0;
                 const visitCount = Math.min(recordCount, 8);
                 const visitPercent = Math.min(100, Math.round((visitCount / 8) * 100));
 
                 setText('[data-vital-value="blood_pressure"]', latest?.blood_pressure ? `${latest.blood_pressure} mmHg` : 'Not logged');
-                setText('[data-vital-value="blood_sugar"]', latest?.blood_sugar === null || !latest ? 'Not logged' : `${number(latest.blood_sugar, 1)} mg/dL`);
-                setText('[data-vital-value="weight"]', latest?.weight === null || !latest ? 'Not logged' : `${number(latest.weight, 1)} kg`);
-                setText('[data-vital-value="hemoglobin"]', latest?.hemoglobin === null || !latest ? 'Not logged' : `${number(latest.hemoglobin, 1)} g/dL`);
-                ['blood_pressure', 'blood_sugar', 'weight', 'hemoglobin'].forEach((key) => setText(`[data-vital-status="${key}"]`, statusFor(latest, key)));
-                setText('[data-risk-label]', riskLabel);
-                setText('[data-summary-risk]', riskLabel);
-                setRiskClass(document.querySelector('[data-risk-label]'), risk);
+                setText('[data-vital-value="blood_sugar"]', latest && latest.blood_sugar !== null && latest.blood_sugar !== undefined ? `${number(latest.blood_sugar, 1)} mg/dL` : 'Not logged');
+                setText('[data-vital-value="weight"]', latest && latest.weight !== null && latest.weight !== undefined ? `${number(latest.weight, 1)} kg` : 'Not logged');
+                setText('[data-vital-value="temperature"]', latest && latest.temperature !== null && latest.temperature !== undefined ? `${number(latest.temperature, 1)} C` : 'Not logged');
+                setText('[data-vital-value="heart_rate"]', latest && latest.heart_rate !== null && latest.heart_rate !== undefined ? `${number(latest.heart_rate)} bpm` : 'Not logged');
+                ['blood_pressure', 'blood_sugar', 'weight', 'temperature', 'heart_rate'].forEach((key) => {
+                    updateStatusBadge(key, statusFor(latest, key));
+                    setText(`[data-vital-week="${key}"]`, latest?.pregnancy_week ? `Pregnancy week ${latest.pregnancy_week}` : 'Pregnancy week N/A');
+                    setText(`[data-vital-explanation="${key}"]`, latest?.explanations?.[key] || 'No screening explanation available yet.');
+                    const guideline = latest?.guidelines?.[key];
+                    setText(`[data-vital-guideline="${key}"]`, guideline ? `${guideline.name || 'Facility-configurable screening rule'} / ${guideline.version || 'Pending validation'}` : 'Facility-configurable screening rule / Pending validation');
+                    const reference = document.querySelector(`[data-vital-reference="${key}"]`);
+                    if (reference && guideline?.source_url) {
+                        reference.setAttribute('href', guideline.source_url);
+                        reference.textContent = 'View Reference';
+                    }
+                });
+                setText('[data-vital-date="blood_pressure"]', latest?.blood_pressure && latest?.recorded_label ? `Recorded ${latest.recorded_label}` : 'No measurement available');
+                setText('[data-vital-date="blood_sugar"]', latest && latest.blood_sugar !== null && latest.blood_sugar !== undefined && latest?.recorded_label ? `Recorded ${latest.recorded_label}` : 'No measurement available');
+                setText('[data-vital-date="weight"]', latest && latest.weight !== null && latest.weight !== undefined && latest?.recorded_label ? `Recorded ${latest.recorded_label}` : 'No measurement available');
+                setText('[data-vital-date="temperature"]', latest && latest.temperature !== null && latest.temperature !== undefined && latest?.recorded_label ? `Recorded ${latest.recorded_label}` : 'No measurement available');
+                setText('[data-vital-date="heart_rate"]', latest && latest.heart_rate !== null && latest.heart_rate !== undefined && latest?.recorded_label ? `Recorded ${latest.recorded_label}` : 'No measurement available');
+                setText('[data-vital-test-type="blood_sugar"]', `Test type: ${latest?.blood_sugar_test_type_label || 'Test type not recorded'}`);
+                ['blood_pressure', 'weight', 'temperature', 'heart_rate'].forEach((key) => setText(`[data-vital-test-type="${key}"]`, 'Test type: Not applicable'));
+                setText('[data-risk-label]', screeningStatus);
+                setText('[data-summary-risk]', screeningStatus);
+                setText('[data-risk-date]', latest?.recorded_label ? `Updated ${latest.recorded_label}` : 'No monitoring record yet');
+                setRiskClass(document.querySelector('[data-risk-label]'), screeningStatus);
+                setRiskCardClass(screeningStatus);
                 setText('[data-monitoring-count]', recordCount);
                 setAllText('[data-history-count="weight"]', recordCountLabel(payload.weight_history?.length || 0));
                 setAllText('[data-history-count="bp"]', recordCountLabel(payload.blood_pressure_history?.length || 0));
@@ -814,14 +4364,8 @@
                 setText('[data-visit-copy]', `${visitPercent}% of expected visits logged`);
                 const visitProgress = document.querySelector('[data-visit-progress]');
                 if (visitProgress) visitProgress.style.setProperty('--progress', `${visitPercent}%`);
-                const banner = document.querySelector('[data-vitals-banner]');
-                if (banner) {
-                    banner.textContent = risk === 'low'
-                        ? 'All available maternal indicators are within healthy pregnancy thresholds.'
-                        : 'Review the latest maternal indicators and follow up as needed.';
-                }
                 renderWeightChart(payload.weight_history || []);
-                renderBpChart(payload.blood_pressure_history || []);
+                renderBloodPressureStatus(payload);
                 renderRecordList(payload.records || []);
                 if (historyModal && !historyModal.hidden) renderHistoryModal();
             };
@@ -829,17 +4373,28 @@
             const fieldRules = {
                 recorded_at: (value) => value ? '' : 'Record date is required.',
                 pregnancy_week: (value) => Number(value) >= 1 && Number(value) <= 42 ? '' : 'Pregnancy week must be between 1 and 42.',
-                weight: (value) => Number(value) > 0 ? '' : 'Weight must be a valid positive number.',
-                bp_systolic: (value) => Number(value) >= 60 && Number(value) <= 220 ? '' : 'Systolic BP must be from 60 to 220 mmHg.',
+                height_cm: (value, values) => values.height_unit === 'ft_in' || value === '' || Number(value) > 0 ? '' : 'Height must be greater than 0 cm.',
+                height_feet: (value, values) => {
+                    if (values.height_unit !== 'ft_in' || (value === '' && values.height_inches === '')) return '';
+                    return Number.isInteger(Number(value)) && Number(value) >= 1 ? '' : 'Feet must be a positive whole number.';
+                },
+                height_inches: (value, values) => {
+                    if (values.height_unit !== 'ft_in' || (value === '' && values.height_feet === '')) return '';
+                    return value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 11.99 ? '' : 'Inches must be between 0 and 11.99.';
+                },
+                weight: (value) => Number(value) >= 25 && Number(value) <= 250 ? '' : 'Weight must be from 25 to 250 kg.',
+                pre_pregnancy_weight: (value) => value === '' || value === null || value === undefined || (Number(value) >= 25 && Number(value) <= 250) ? '' : 'Pre-pregnancy weight must be from 25 to 250 kg.',
+                pre_pregnancy_bmi: (value) => value === '' || value === null || value === undefined || (Number(value) >= 10 && Number(value) <= 70) ? '' : 'Calculated pre-pregnancy BMI must be from 10 to 70.',
+                bp_systolic: (value) => Number(value) >= 50 && Number(value) <= 260 ? '' : 'Systolic BP must be from 50 to 260 mmHg.',
                 bp_diastolic: (value, values) => {
-                    if (!(Number(value) >= 40 && Number(value) <= 140)) return 'Diastolic BP must be from 40 to 140 mmHg.';
+                    if (!(Number(value) >= 30 && Number(value) <= 160)) return 'Diastolic BP must be from 30 to 160 mmHg.';
                     if (Number(value) >= Number(values.bp_systolic)) return 'Diastolic BP should be lower than systolic BP.';
                     return '';
                 },
-                blood_sugar: (value) => Number(value) >= 40 && Number(value) <= 400 ? '' : 'Blood sugar must be from 40 to 400 mg/dL.',
-                hemoglobin: (value) => Number(value) >= 5 && Number(value) <= 25 ? '' : 'Hemoglobin must be from 5 to 25 g/dL.',
-                temperature: (value) => Number(value) >= 34 && Number(value) <= 43 ? '' : 'Body temperature must be entered in Celsius from 34 to 43 C.',
-                heart_rate: (value) => Number(value) >= 40 && Number(value) <= 180 ? '' : 'Heart rate must be from 40 to 180 bpm.',
+                blood_sugar_test_type: (value) => bloodSugarTestTypes[value] ? '' : 'Blood Sugar Test Type is required.',
+                blood_sugar: (value) => Number(value) >= 20 && Number(value) <= 700 ? '' : 'Blood sugar must be from 20 to 700 mg/dL.',
+                temperature: (value) => Number(value) >= 30 && Number(value) <= 45 ? '' : 'Body temperature must be entered in Celsius from 30 to 45 C.',
+                heart_rate: (value) => Number(value) >= 30 && Number(value) <= 220 ? '' : 'Heart rate must be from 30 to 220 bpm.',
             };
 
             const formValues = () => Object.fromEntries(new FormData(form).entries());
@@ -877,11 +4432,20 @@
             const fillForm = (record = null) => {
                 form.reset();
                 form.querySelector('[data-vitals-record-id]').value = record?.id || '';
+                form.querySelector('[data-vitals-confirmed]').value = '';
                 form.querySelector('[name="recorded_at"]').value = record?.recorded_at || new Date().toISOString().slice(0, 10);
                 form.querySelector('[name="pregnancy_week"]').value = record?.pregnancy_week || vitalsState.latest?.pregnancy_week || '';
-                ['weight', 'bp_systolic', 'bp_diastolic', 'blood_sugar', 'hemoglobin', 'temperature', 'heart_rate', 'notes'].forEach((field) => {
+                heightUnitInput.value = 'cm';
+                previousHeightUnit = 'cm';
+                heightCmInput.value = record?.height_cm ?? vitalsState.defaults?.height_cm ?? '';
+                heightFeetInput.value = '';
+                heightInchesInput.value = '';
+                ['weight', 'bp_systolic', 'bp_diastolic', 'blood_sugar_test_type', 'blood_sugar', 'temperature', 'heart_rate', 'notes'].forEach((field) => {
                     form.querySelector(`[name="${field}"]`).value = record?.[field] ?? '';
                 });
+                prePregnancyWeightInput.value = record?.pre_pregnancy_weight ?? vitalsState.defaults?.pre_pregnancy_weight ?? '';
+                syncHeightControls();
+                syncPrePregnancyBmi();
                 document.querySelector('[data-vitals-title]').textContent = record ? 'Edit Maternal Vitals' : 'Add Maternal Vitals';
                 saveText.textContent = record ? 'Update Vitals' : 'Save Vitals';
                 touched.clear();
@@ -911,20 +4475,62 @@
             tabs.forEach((tab) => {
                 tab.addEventListener('click', () => {
                     const target = tab.dataset.casefileTab;
-                    tabs.forEach((item) => item.classList.toggle('is-active', item === tab));
+                    tabs.forEach((item) => {
+                        const isActive = item === tab;
+                        item.classList.toggle('is-active', isActive);
+                        item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    });
                     panels.forEach((panel) => {
                         panel.hidden = panel.dataset.casefilePanel !== target;
                     });
                 });
             });
 
-            document.querySelectorAll('[data-casefile-print]').forEach((button) => {
-                button.addEventListener('click', () => window.print());
+            document.querySelector('[data-activity-toggle]')?.addEventListener('click', (event) => {
+                const list = document.querySelector('[data-activity-list]');
+                if (!list) return;
+                const isExpanded = list.classList.toggle('is-expanded');
+                event.currentTarget.textContent = isExpanded
+                    ? event.currentTarget.dataset.lessLabel
+                    : event.currentTarget.dataset.moreLabel;
             });
 
-            document.querySelector('[data-vitals-open]')?.addEventListener('click', () => openModal());
+            document.querySelectorAll('[data-vitals-open]').forEach((button) => {
+                button.addEventListener('click', () => openModal());
+            });
+            heightUnitInput?.addEventListener('change', () => {
+                const nextUnit = heightUnitInput.value;
+                const currentHeightCm = readHeightCm(previousHeightUnit);
+                if (currentHeightCm !== null) {
+                    writeHeight(currentHeightCm, nextUnit);
+                } else if (nextUnit === 'ft_in') {
+                    heightFeetInput.value = '';
+                    heightInchesInput.value = '';
+                } else {
+                    heightCmInput.value = '';
+                }
+                previousHeightUnit = nextUnit;
+                syncHeightControls();
+                syncPrePregnancyBmi();
+                touched.add('height_cm');
+                validateClient(false);
+            });
+            [heightCmInput, heightFeetInput, heightInchesInput, prePregnancyWeightInput].forEach((input) => {
+                input?.addEventListener('input', () => {
+                    syncPrePregnancyBmi();
+                    if (input.name) {
+                        touched.add(input.name);
+                        validateClient(false);
+                    }
+                });
+            });
             modal?.querySelectorAll('[data-vitals-close]').forEach((button) => button.addEventListener('click', closeModal));
             historyModal?.querySelectorAll('[data-history-close]').forEach((button) => button.addEventListener('click', closeHistoryModal));
+
+            // Vital detail modal close events
+            vitalDetailModal?.querySelectorAll('[data-vital-detail-close]').forEach(el => el.addEventListener('click', closeVitalDetailModal));
+            vitalDetailModal?.querySelector('[data-vital-detail-modal-backdrop]')?.addEventListener('click', closeVitalDetailModal);
+
             historySearch?.addEventListener('input', renderHistoryModal);
             historySort?.addEventListener('click', () => {
                 historySortDirection = historySortDirection === 'desc' ? 'asc' : 'desc';
@@ -936,7 +4542,17 @@
                     validateClient(false);
                 }
             });
+
             document.addEventListener('click', async (event) => {
+                // Handle vital detail toggle (mobile) – open modal
+                const toggleButton = event.target.closest('[data-vital-toggle]');
+                if (toggleButton) {
+                    event.preventDefault();
+                    const cardKey = toggleButton.dataset.vitalToggle;
+                    openVitalDetailModal(cardKey);
+                    return;
+                }
+
                 const historyButton = event.target.closest('[data-history-open]');
                 if (historyButton) {
                     event.preventDefault();
@@ -995,14 +4611,20 @@
                 const record = (vitalsState.records || []).find((item) => String(item.id) === String(editButton.dataset.editRecord));
                 if (record) openModal(record);
             });
+
             document.addEventListener('keydown', (event) => {
                 if (event.key !== 'Escape') return;
+                if (vitalDetailModal && !vitalDetailModal.hidden) {
+                    closeVitalDetailModal();
+                    return;
+                }
                 if (historyModal && !historyModal.hidden) {
                     closeHistoryModal();
                     return;
                 }
                 if (modal && !modal.hidden) closeModal();
             });
+
             form?.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const clientErrors = validateClient(true);
@@ -1012,7 +4634,7 @@
                 setSaving(true);
 
                 try {
-                    const response = await fetch(recordId ? updateVitalsUrl(recordId) : motherVitalsUrl, {
+                    let response = await fetch(recordId ? updateVitalsUrl(recordId) : motherVitalsUrl, {
                         method: recordId ? 'PUT' : 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -1021,7 +4643,32 @@
                         },
                         body: JSON.stringify(formValues()),
                     });
-                    const data = await response.json();
+                    let data = await response.json();
+
+                    if (response.status === 409 && data.requires_confirmation) {
+                        const warnings = (data.warnings || []).map((warning) => `- ${warning}`).join('\n');
+                        const approved = confirm(`${data.message || 'Confirm flagged values before saving.'}\n\n${warnings}`);
+
+                        if (!approved) {
+                            setErrors({ form: [data.message || 'Confirm flagged values before saving.'] }, true);
+                            return;
+                        }
+
+                        const confirmedValues = formValues();
+                        confirmedValues.confirmed_unusual = '1';
+                        form.querySelector('[data-vitals-confirmed]').value = '1';
+
+                        response = await fetch(recordId ? updateVitalsUrl(recordId) : motherVitalsUrl, {
+                            method: recordId ? 'PUT' : 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
+                            body: JSON.stringify(confirmedValues),
+                        });
+                        data = await response.json();
+                    }
 
                     if (!response.ok) {
                         setErrors(data.errors || { form: [data.message || 'Unable to save maternal vitals.'] }, true);
@@ -1045,4 +4692,5 @@
             renderVitals(vitalsState);
         })();
     </script>
+    <script src="{{ asset('js/mother-care-record.js') }}?v={{ filemtime(public_path('js/mother-care-record.js')) }}" defer></script>
 @endsection

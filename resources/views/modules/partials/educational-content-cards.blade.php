@@ -1,5 +1,5 @@
 @php
-    $items = collect($items ?? []);
+    $items = collect($items ?? [])->filter(fn ($content) => ! $content->has_infographic || $content->youtube_url || $content->uploaded_video_path);
     $heading = $heading ?? 'Published educational content';
 @endphp
 

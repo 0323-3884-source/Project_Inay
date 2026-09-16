@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Project INAY')</title>
+    <meta name="theme-color" content="#ec0a78">
+    <meta name="application-name" content="Project INAY">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Project INAY">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('pwa/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('pwa/icon-192.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('pwa/apple-touch-icon.png') }}">
     <style>
         :root {
             --inay-pink: #ec0a78;
@@ -131,6 +141,42 @@
             text-decoration: none;
         }
 
+        .pwa-install-button {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 120;
+            display: inline-flex;
+            min-height: 44px;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+            color: #ffffff;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .pwa-install-button[hidden] {
+            display: none;
+        }
+
+        .pwa-install-button:hover {
+            background: var(--inay-pink);
+        }
+
+        .pwa-install-button svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
         form {
             margin: 0;
         }
@@ -211,6 +257,10 @@
         body.portal-shell {
             color: #12213c;
             background: #f8fafc;
+        }
+
+        body.kaalaman-page.portal-shell {
+            background: linear-gradient(90deg, #ffe8f2 0%, #fff4fa 13%, #ffffff 30%, #ffffff 70%, #fff4fa 87%, #ffe8f2 100%);
         }
 
         .portal-drawer-check {
@@ -2780,6 +2830,36 @@
             border: 1px solid #fecaca;
         }
 
+        .history-status.is-logged {
+            color: #52627a;
+            background: #f1f5f9;
+            border: 1px solid #dbe5f0;
+        }
+
+        .history-status.is-within-reference-range {
+            color: #008a61;
+            background: #ecfdf5;
+            border: 1px solid #8cecc0;
+        }
+
+        .history-status.is-for-review {
+            color: #a16207;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+        }
+
+        .history-status.is-for-professional-interpretation {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+
+        .history-status.is-urgent-referral-recommended {
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
         .history-row-actions {
             display: flex;
             flex-wrap: wrap;
@@ -3345,9 +3425,44 @@
             border-color: #fecaca;
         }
 
+        .maternal-mini-badge.is-logged,
+        .maternal-risk-badge.is-logged {
+            color: #64748b;
+            background: #f8fafc;
+            border-color: #dbe5f0;
+        }
+
+        .maternal-mini-badge.is-within-reference-range,
+        .maternal-risk-badge.is-within-reference-range {
+            color: #008a61;
+            background: #ecfdf5;
+            border-color: #90f0c5;
+        }
+
+        .maternal-mini-badge.is-for-review,
+        .maternal-risk-badge.is-for-review {
+            color: #b45309;
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .maternal-mini-badge.is-for-professional-interpretation,
+        .maternal-risk-badge.is-for-professional-interpretation {
+            color: #1d4ed8;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .maternal-mini-badge.is-urgent-referral-recommended,
+        .maternal-risk-badge.is-urgent-referral-recommended {
+            color: #dc2626;
+            background: #fff1f2;
+            border-color: #fecaca;
+        }
+
         .maternal-vitals-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 14px;
             padding-top: 16px;
         }
@@ -3363,7 +3478,7 @@
 
         .maternal-vital-card {
             display: grid;
-            min-height: 154px;
+            min-height: 292px;
             padding: 16px;
         }
 
@@ -3415,9 +3530,9 @@
         }
 
         .maternal-vital-card strong {
-            margin-top: 24px;
+            margin-top: 16px;
             color: #030813;
-            font-size: 30px;
+            font-size: 27px;
             font-weight: 600;
             line-height: 1;
         }
@@ -3437,11 +3552,51 @@
             border-top: 1px solid #e8eef5;
         }
 
+        .maternal-vital-card > div:not(.maternal-vital-top) {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
         .maternal-vital-card b {
             color: #061125;
             font-size: 11px;
             font-weight: 900;
             text-align: right;
+        }
+
+        .maternal-vital-explanation {
+            margin: 12px 0 0;
+            color: #334155 !important;
+            font-size: 12px !important;
+            line-height: 1.45;
+            font-weight: 700 !important;
+            text-transform: none !important;
+        }
+
+        .maternal-reference-link {
+            display: inline-flex;
+            width: fit-content;
+            align-items: center;
+            margin-top: 9px;
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .maternal-reference-link:hover {
+            text-decoration: underline;
+        }
+
+        .maternal-guideline-note {
+            display: block;
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.35;
         }
 
         .maternal-good-banner,
@@ -3808,6 +3963,31 @@
             background: #fff1f2;
         }
 
+        .maternal-risk-box.is-logged {
+            border-color: #dbe5f0;
+            background: #f8fafc;
+        }
+
+        .maternal-risk-box.is-within-reference-range {
+            border-color: #baf0d7;
+            background: #ecfdf5;
+        }
+
+        .maternal-risk-box.is-for-review {
+            border-color: #fed7aa;
+            background: #fff7ed;
+        }
+
+        .maternal-risk-box.is-for-professional-interpretation {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .maternal-risk-box.is-urgent-referral-recommended {
+            border-color: #fecaca;
+            background: #fff1f2;
+        }
+
         .maternal-risk-box strong {
             display: block;
             margin: 8px 0 12px;
@@ -3824,6 +4004,26 @@
             color: #dc2626;
         }
 
+        .maternal-risk-box.is-logged strong {
+            color: #475569;
+        }
+
+        .maternal-risk-box.is-within-reference-range strong {
+            color: #008a61;
+        }
+
+        .maternal-risk-box.is-for-review strong {
+            color: #b45309;
+        }
+
+        .maternal-risk-box.is-for-professional-interpretation strong {
+            color: #1d4ed8;
+        }
+
+        .maternal-risk-box.is-urgent-referral-recommended strong {
+            color: #dc2626;
+        }
+
         .maternal-risk-box p {
             margin: 0;
             color: #007f59;
@@ -3837,6 +4037,26 @@
         }
 
         .maternal-risk-box.is-high p {
+            color: #991b1b;
+        }
+
+        .maternal-risk-box.is-logged p {
+            color: #475569;
+        }
+
+        .maternal-risk-box.is-within-reference-range p {
+            color: #007f59;
+        }
+
+        .maternal-risk-box.is-for-review p {
+            color: #7c2d12;
+        }
+
+        .maternal-risk-box.is-for-professional-interpretation p {
+            color: #1e3a8a;
+        }
+
+        .maternal-risk-box.is-urgent-referral-recommended p {
             color: #991b1b;
         }
 
@@ -3895,11 +4115,11 @@
             gap: 18px;
             align-items: center;
             padding: 26px;
-            color: #ffffff;
-            background: #07091a;
-            border: 1px solid #1d2340;
+            color: #172033;
+            background: linear-gradient(180deg, #ffffff 0%, #fffafd 100%);
+            border: 1px solid #f6cddd;
             border-radius: 12px;
-            box-shadow: 0 14px 28px rgba(7, 9, 26, 0.18);
+            box-shadow: 0 16px 34px rgba(236, 10, 120, 0.10);
         }
 
         .kaalaman-hero h1,
@@ -3911,7 +4131,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #ffffff;
+            color: #111827;
             font-size: 22px;
             font-weight: 900;
         }
@@ -3919,10 +4139,14 @@
         .kaalaman-hero p {
             margin-top: 12px;
             max-width: 720px;
-            color: #eef2ff;
+            color: #475569;
             font-size: 13px;
             font-weight: 800;
             line-height: 1.6;
+        }
+
+        .kaalaman-hero h1 svg {
+            color: #ec0a78;
         }
 
         .kaalaman-hero svg,
@@ -3941,15 +4165,17 @@
         .kaalaman-focus-card {
             min-height: 78px;
             padding: 16px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #172033;
+            background: #fff5fa;
+            border: 1px solid #ffd8e9;
             border-radius: 9px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
         }
 
         .kaalaman-eyebrow {
             display: block;
             margin-bottom: 7px;
-            color: #d8dff7;
+            color: #b91c5c;
             font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
@@ -3957,6 +4183,7 @@
 
         .kaalaman-focus-card strong {
             display: block;
+            color: #111827;
             font-size: 16px;
             font-weight: 900;
         }
@@ -3964,7 +4191,7 @@
         .kaalaman-focus-card small {
             display: block;
             margin-top: 8px;
-            color: #ffffff;
+            color: #64748b;
             font-size: 11px;
             font-weight: 900;
         }
@@ -5348,6 +5575,38 @@
             margin-top: 20px;
         }
 
+        @media (max-width: 540px) {
+            .kaalaman-video-modal {
+                align-items: end;
+                justify-items: stretch;
+                padding: 12px;
+            }
+
+            .kaalaman-video-dialog {
+                width: 100%;
+                max-height: calc(100vh - 24px);
+                max-height: calc(100dvh - 24px);
+                overflow-y: auto;
+                padding: 24px;
+                border-radius: 18px;
+            }
+
+            .kaalaman-video-dialog h2 {
+                font-size: 22px;
+                line-height: 1.18;
+            }
+
+            .kaalaman-modal-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .kaalaman-modal-actions .kaalaman-button {
+                width: 100%;
+            }
+        }
+
         .portal-overlay {
             position: fixed;
             inset: 0;
@@ -5818,14 +6077,14 @@
             }
 
             .maternal-vitals-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: 1fr;
                 gap: 10px;
             }
 
             .maternal-vital-card {
-                min-height: 158px;
+                min-height: 0;
                 padding: 12px;
-                border-radius: 12px;
+                border-radius: 8px;
             }
 
             .maternal-vital-top {
@@ -6298,10 +6557,16 @@
 
         body.portal-shell {
             overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
         }
 
         body.portal-drawer-open {
             overflow: hidden;
+        }
+
+        body.portal-shell .portal-header {
+            max-width: 100vw;
         }
 
         .portal-main > *,
@@ -6372,17 +6637,60 @@
             .portal-header {
                 height: auto;
                 min-height: 70px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-width: 100vw;
+                gap: 8px;
                 padding: 10px 12px;
+                overflow: visible;
+            }
+
+            .portal-header-left {
+                flex: 1 1 auto;
+                min-width: 0;
+                gap: 10px;
+                overflow: hidden;
+            }
+
+            .portal-header-right {
+                flex: 0 0 auto;
+                min-width: max-content;
+                gap: 7px;
+            }
+
+            .portal-menu-button,
+            .portal-header-icon {
+                width: 42px;
+                height: 42px;
+                min-width: 42px;
+                min-height: 42px;
+                padding: 0;
+            }
+
+            .portal-profile-menu,
+            .portal-profile-summary {
+                flex: 0 0 auto;
+            }
+
+            .portal-profile-summary {
+                width: 42px;
+                height: 42px;
+                min-width: 42px;
+                min-height: 42px;
+                padding: 0;
             }
 
             .portal-main {
                 width: 100%;
+                max-width: 100vw;
                 padding: 92px 12px 28px;
             }
 
             .portal-page-title {
                 display: -webkit-box;
-                max-width: calc(100vw - 180px);
+                max-width: none;
+                min-width: 0;
                 overflow: hidden;
                 white-space: normal;
                 -webkit-box-orient: vertical;
@@ -6419,10 +6727,10 @@
 
             .portal-header-right {
                 flex: 0 0 auto;
+                gap: 6px;
             }
 
             .portal-page-title {
-                max-width: calc(100vw - 150px);
                 font-size: 16px;
             }
 
@@ -6487,8 +6795,12 @@
         @media (max-width: 380px) {
             .portal-header {
                 gap: 8px;
-                padding-right: 8px;
-                padding-left: 8px;
+                padding-right: 10px;
+                padding-left: 10px;
+            }
+
+            .portal-header-left {
+                gap: 8px;
             }
 
             .portal-header-icon,
@@ -6496,10 +6808,11 @@
             .portal-profile-summary {
                 width: 38px;
                 height: 38px;
+                min-width: 38px;
+                min-height: 38px;
             }
 
             .portal-page-title {
-                max-width: calc(100vw - 138px);
                 font-size: 15px;
             }
 
@@ -6647,7 +6960,7 @@
     $monitoringStatus = $pregnancyStatus === 'pregnant'
         ? 'Pregnancy monitoring active'
         : 'Care profile active';
-    $sectionPortalTitle = trim($__env->yieldContent('portal_title'));
+    $sectionPortalTitle = html_entity_decode(trim($__env->yieldContent('portal_title')), ENT_QUOTES, 'UTF-8');
     $pageTitle = $sectionPortalTitle ?: ($isStaffPortal ? 'Program Staff Dashboard' : 'Mother Dashboard');
     $portalKicker = $isStaffPortal ? 'Program Staff Portal' : 'Mother Portal';
     $portalBrandTitle = $isStaffPortal ? 'Program Staff Portal' : 'Project INAY';
@@ -6660,6 +6973,8 @@
             ->whereNull('read_at')
             ->count()
         : 0;
+    $isConsultationRoute = request()->routeIs('mother.consultation') || request()->routeIs('staff.consultation');
+    $portalConsultationUrl = $isStaffPortal ? route('staff.consultation') : route('mother.consultation');
     $portalIconSvgs = [
         'heart' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 5.6a5.4 5.4 0 0 0-7.6 0L12 6.8l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6l1.2 1.2L12 22l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg>',
         'hospital' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v4"/><path d="M14 9h-4"/><path d="M18 21V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/><path d="M18 11h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h2"/></svg>',
@@ -6687,7 +7002,7 @@
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('mother.dashboard'), 'active' => request()->routeIs('mother.dashboard')],
         ['label' => 'Maternal Monitoring', 'icon' => 'activity', 'href' => route('maternal-monitoring'), 'active' => request()->routeIs('maternal-monitoring')],
         ['label' => 'Child Health', 'icon' => 'baby', 'href' => route('child-health'), 'active' => request()->routeIs('child-health')],
-        ['label' => 'Clinic Schedule', 'icon' => 'calendar', 'href' => route('mother.clinic-schedule.index'), 'active' => request()->routeIs('mother.clinic-schedule.*')],
+        ['label' => 'My Appointments', 'icon' => 'calendar', 'href' => route('mother.clinic-schedule.index'), 'active' => request()->routeIs('mother.clinic-schedule.*')],
         ['label' => 'INAY Kaalaman', 'icon' => 'book', 'href' => route('inay-kaalaman'), 'active' => request()->routeIs('inay-kaalaman*')],
         ['label' => 'Health Services', 'icon' => 'services', 'href' => route('health-services'), 'active' => request()->routeIs('health-services')],
         [
@@ -6703,7 +7018,7 @@
         ['label' => 'Monitor Desk', 'icon' => 'dashboard', 'href' => route('staff.dashboard'), 'active' => request()->routeIs('staff.dashboard')],
         ['label' => 'Mothers Casefiles', 'icon' => 'users', 'href' => route('staff.mothers'), 'active' => request()->routeIs('staff.mothers*')],
         ['label' => 'Neonatal & Vaccines', 'icon' => 'baby', 'href' => route('staff.neonatal'), 'active' => request()->routeIs('staff.neonatal*')],
-        ['label' => 'Clinic Schedule', 'icon' => 'calendar', 'href' => route('staff.clinic-schedule.index'), 'active' => request()->routeIs('staff.clinic-schedule.*')],
+        ['label' => 'Appointments', 'icon' => 'calendar', 'href' => route('staff.clinic-schedule.index'), 'active' => request()->routeIs('staff.clinic-schedule.*')],
         [
             'label' => 'Messages',
             'icon' => 'message',
@@ -6714,7 +7029,7 @@
                 ['label' => 'Admin Messages', 'icon' => 'message', 'href' => route('staff.admin-messages'), 'active' => request()->routeIs('staff.admin-messages')],
             ],
         ],
-        ['label' => 'Dynamic Reports', 'icon' => 'report'],
+        ['label' => 'Dynamic Reports', 'icon' => 'report', 'href' => route('staff.dynamic-reports'), 'active' => request()->routeIs('staff.dynamic-reports')],
     ];
     $portalNavItems = $isStaffPortal ? $staffNavItems : $motherNavItems;
 @endphp
@@ -6790,10 +7105,10 @@
                             {!! $portalIconSvgs['chevron'] !!}
                         </summary>
                         <div class="portal-dropdown">
-                            <button class="portal-dropdown-item is-muted" type="button" aria-disabled="true">
+                            <a class="portal-dropdown-item" href="{{ route($isMotherPortal ? 'mother.profile.show' : 'staff.profile.show') }}">
                                 {!! $portalIconSvgs['user'] !!}
                                 My Profile
-                            </button>
+                            </a>
                             <button class="portal-dropdown-item is-muted" type="button" aria-disabled="true">
                                 {!! $portalIconSvgs['settings'] !!}
                                 Settings
@@ -6933,6 +7248,17 @@
         <script src="{{ asset('js/portal-responsive.js') }}?v={{ filemtime(public_path('js/portal-responsive.js')) }}" defer></script>
         <script src="{{ asset('js/app-notifications.js') }}?v={{ filemtime(public_path('js/app-notifications.js')) }}" defer></script>
     @endif
+    @if (request()->routeIs('login', 'mother.register', 'staff.register'))
+        <button class="pwa-install-button" type="button" data-pwa-install hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12"/>
+                <path d="m7 10 5 5 5-5"/>
+                <path d="M5 21h14"/>
+            </svg>
+            <span>Install App</span>
+        </button>
+    @endif
+    <script src="{{ asset('js/pwa.js') }}?v={{ filemtime(public_path('js/pwa.js')) }}" defer></script>
     @if ($hasPortalShell)
         <div class="photo-crop-modal" data-photo-crop-modal hidden>
             <div class="photo-crop-backdrop" data-photo-crop-cancel></div>

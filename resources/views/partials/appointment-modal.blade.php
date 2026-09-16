@@ -40,6 +40,26 @@
                 </label>
 
                 <label>
+                    Available slot
+                    <select name="staff_availability_id" data-availability-select>
+                        <option value="">Select a saved slot</option>
+                        @foreach (($staffAvailabilities ?? collect()) as $availability)
+                            <option
+                                value="{{ $availability->id }}"
+                                data-day="{{ $availability->day_of_week }}"
+                                data-appointment-type="{{ $availability->appointment_type }}"
+                                data-meeting-type="{{ $availability->meeting_type }}"
+                                data-start-time="{{ substr((string) $availability->start_time, 0, 5) }}"
+                                data-end-time="{{ substr((string) $availability->end_time, 0, 5) }}"
+                                data-location="{{ $availability->location }}"
+                            >
+                                {{ $availability->dayLabel() }} - {{ $availability->timeLabel() }} - {{ $availability->typeLabel() }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label>
                     Meeting type
                     <select name="meeting_type" required>
                         @foreach ($meetingTypeLabels as $meetingValue => $meetingLabel)

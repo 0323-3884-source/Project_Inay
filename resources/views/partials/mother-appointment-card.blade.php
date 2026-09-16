@@ -2,14 +2,15 @@
     <div class="clinic-card-top">
         <div>
             <h3>{{ $appointment->typeLabel() }}</h3>
-            <p>{{ $appointment->appointment_date->format('M j, Y') }} · {{ $timeLabel($appointment->start_time) }} - {{ $timeLabel($appointment->end_time) }}</p>
+            <p>{{ $appointment->appointment_date->format('M j, Y') }} &middot; {{ $timeLabel($appointment->start_time) }} - {{ $timeLabel($appointment->end_time) }}</p>
         </div>
         <span class="clinic-pill {{ $statusClass($appointment->status) }}">{{ $appointment->statusLabel() }}</span>
     </div>
 
     <div class="clinic-facts">
-        <div class="clinic-fact"><span>Program Staff</span><strong>{{ $appointment->staff->full_name }}</strong></div>
-        <div class="clinic-fact"><span>Meeting</span><strong>{{ $appointment->meetingLabel() }}</strong></div>
+        <div class="clinic-fact"><span>Healthcare worker</span><strong>{{ $appointment->staff->full_name }}</strong></div>
+        <div class="clinic-fact"><span>Role</span><strong>{{ $appointment->staff->role_label }}</strong></div>
+        <div class="clinic-fact"><span>Consultation type</span><strong>{{ $appointment->meetingLabel() }}</strong></div>
         <div class="clinic-fact"><span>Location</span><strong>{{ $appointment->location ?: 'Not provided' }}</strong></div>
         <div class="clinic-fact"><span>Status</span><strong>{{ $appointment->statusLabel() }}</strong></div>
     </div>
@@ -28,23 +29,37 @@
         </div>
     @endif
 
+    @if ($appointment->status === \App\Models\Appointment::STATUS_RESCHEDULED && $appointment->reschedule_reason)
+        <div class="clinic-request">
+            New schedule suggested: {{ $appointment->reschedule_reason }}
+        </div>
+    @endif
+
     <div class="clinic-actions">
-        @if (! $isHistory && in_array($appointment->status, [\App\Models\Appointment::STATUS_PENDING, \App\Models\Appointment::STATUS_RESCHEDULE_REQUESTED], true))
+        @if (! $isHistory && $appointment->status === \App\Models\Appointment::STATUS_RESCHEDULED)
             <form method="POST" action="{{ route('mother.clinic-schedule.confirm', $appointment) }}">
                 @csrf
                 @method('PATCH')
-                <button class="clinic-success" type="submit">Confirm</button>
+                <button class="clinic-success" type="submit">Accept New Schedule</button>
             </form>
 
             <form method="POST" action="{{ route('mother.clinic-schedule.decline', $appointment) }}" data-decline-form>
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="decline_reason" value="">
-                <button class="clinic-danger" type="submit">Decline</button>
+                <button class="clinic-danger" type="submit">Reject New Schedule</button>
             </form>
         @endif
 
         @if (! $isHistory && in_array($appointment->status, [\App\Models\Appointment::STATUS_PENDING, \App\Models\Appointment::STATUS_CONFIRMED], true))
+            <form method="POST" action="{{ route('mother.clinic-schedule.cancel', $appointment) }}">
+                @csrf
+                @method('PATCH')
+                <button class="clinic-danger" type="submit">{{ $appointment->status === \App\Models\Appointment::STATUS_PENDING ? 'Cancel Request' : 'Cancel Appointment' }}</button>
+            </form>
+        @endif
+
+        @if (! $isHistory && $appointment->status === \App\Models\Appointment::STATUS_CONFIRMED)
             <button
                 class="clinic-secondary"
                 type="button"

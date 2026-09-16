@@ -9,6 +9,7 @@ use App\Models\Message;
 use App\Models\Mother;
 use App\Models\ProgramStaff;
 use App\Models\StaffMotherCasefile;
+use App\Support\MaternalVitalScreening;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -311,16 +312,11 @@ trait AuthorizesConsultations
                 ->orderByDesc('recorded_at')
                 ->orderByDesc('created_at')
                 ->first() : null);
-        $level = strtolower((string) ($latest?->risk_level ?? 'pending'));
+        $status = MaternalVitalScreening::normalizeStatus($latest?->screening_summary_status ?? $latest?->risk_level);
 
         return [
-            'level' => in_array($level, ['low', 'medium', 'high'], true) ? $level : 'pending',
-            'label' => match ($level) {
-                'low' => 'Low Risk',
-                'medium' => 'Needs Review',
-                'high' => 'High Risk',
-                default => 'Pending',
-            },
+            'level' => $latest ? MaternalVitalScreening::statusKey($status) : 'logged',
+            'label' => $latest ? $status : MaternalVitalScreening::STATUS_LOGGED,
         ];
     }
 

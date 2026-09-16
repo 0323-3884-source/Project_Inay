@@ -1245,7 +1245,7 @@
         justify-items: start;
     }
 
-    .consultation-call-actions button:last-child {
+    .consultation-call-actions button[aria-label="More options"] {
         display: none;
     }
 

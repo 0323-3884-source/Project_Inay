@@ -3,6 +3,7 @@
 @section('title', 'Login - Project INAY')
 @section('body_class', 'auth-body')
 @section('auth_screen', 'true')
+@include('auth.partials.password-visibility')
 
 @php
     $selectedRole = old('role', 'mother');
@@ -86,12 +87,15 @@
 
             <div class="auth-field">
                 <label class="auth-label" for="password">Password</label>
-                <input class="auth-input" id="password" type="password" name="password" placeholder="Password" required>
+                <input class="auth-input" id="password" type="password" name="password" placeholder="Password" autocomplete="current-password" required>
                 @error('password')
                     <span class="field-error">{{ $message }}</span>
                 @enderror
             </div>
 
+            <div class="auth-footer-link" style="margin: 0 0 18px; text-align: right;">
+                <a id="forgotPasswordLink" href="{{ route('password.request', ['role' => $selectedRole]) }}">Forgot password?</a>
+            </div>
             <button class="auth-submit login-submit" id="loginSubmit" type="submit">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="5" y="11" width="14" height="10" rx="2" />
@@ -128,6 +132,9 @@
             button.addEventListener('click', () => {
                 roleInput.value = button.dataset.role;
                 registerLink.href = button.dataset.registerUrl;
+                const forgotUrl = new URL(document.getElementById('forgotPasswordLink').href);
+                forgotUrl.searchParams.set('role', button.dataset.role);
+                document.getElementById('forgotPasswordLink').href = forgotUrl;
 
                 roleButtons.forEach((item) => {
                     const isActive = item === button;

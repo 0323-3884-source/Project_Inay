@@ -11,6 +11,7 @@ class AppNotification extends Model
         'recipient_id',
         'recipient_role',
         'appointment_id',
+        'mother_id',
         'type',
         'title',
         'body',
@@ -29,5 +30,10 @@ class AppNotification extends Model
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    public function mother(): BelongsTo
+    {
+        return $this->belongsTo(Mother::class);
     }
 }

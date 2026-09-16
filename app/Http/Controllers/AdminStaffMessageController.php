@@ -389,7 +389,7 @@ class AdminStaffMessageController extends Controller
             'name' => $name,
             'initials' => $this->initials($name),
             'staff_id' => null,
-            'contact_number' => null,
+            'contact_number' => config('contacts.admin_phone'),
             'online' => $this->isOnline($admin),
             'status_text' => $this->isOnline($admin) ? 'Online' : 'Offline',
         ];

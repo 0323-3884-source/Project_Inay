@@ -1,0 +1,28 @@
+/* Staff-scoped adaptation of the Admin summary, ranking bars and 4Ps donut. */
+.staff-statistics { width:100%; min-width:0; color:#071127; }
+.staff-statistics * { box-sizing:border-box; min-width:0; overflow-wrap:anywhere; }
+.staff-statistics p { color:#52627d; font-size:13px; line-height:1.5; }
+.staff-stat-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:16px 0; }
+.staff-stat-tile { padding:18px; border:1px solid #dbe5f1; border-radius:8px; background:#fff; }
+.staff-stat-tile span { color:#64748b; font-size:12px; font-weight:800; text-transform:uppercase; }
+.staff-stat-tile strong { display:block; margin-top:10px; font-size:26px; line-height:1.2; }
+.staff-stat-panels { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.staff-stat-panel { padding:20px; border:1px solid #dbe5f1; border-radius:8px; background:#fff; }
+.staff-stat-panel h2 { font-size:19px; margin:0; line-height:1.3; }
+.staff-stat-row { margin:14px 0; font-size:13px; }
+.staff-stat-row > div:first-child { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+.staff-stat-row small { font-size:12px; color:#52627d; }
+.staff-stat-track { height:10px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
+.staff-stat-track i { display:block; height:100%; background:linear-gradient(90deg,#00856a,#2dd4bf); border-radius:inherit; }
+.staff-stat-donut { display:grid; place-items:center; width:min(190px,100%); aspect-ratio:1; margin:18px auto; border-radius:50%; background:conic-gradient(#00856a var(--share),#e2e8f0 0); }
+.staff-stat-donut > div { display:grid; place-content:center; width:68%; height:68%; background:white; border-radius:50%; text-align:center; }
+.staff-stat-donut strong { font-size:28px; }
+.staff-stat-donut span { font-size:12px; color:#64748b; }
+@media(max-width:1199px) { .staff-stat-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .staff-stat-panels { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:767px) { .staff-stat-summary { grid-template-columns:minmax(0,1fr); } }
+@media print {
+    .staff-stat-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .staff-stat-panels { display:block; }
+    .staff-stat-panel, .staff-stat-tile { break-inside:avoid; page-break-inside:avoid; margin-bottom:12pt; }
+    .staff-statistics { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+}

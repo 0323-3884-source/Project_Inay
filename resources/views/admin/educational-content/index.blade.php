@@ -122,6 +122,21 @@
                         </label>
 
                         <label class="edu-field is-wide">
+                            <span class="edu-label">Infographic Category</span>
+                            <input class="edu-input" name="category" value="{{ old('category') }}" maxlength="100" placeholder="e.g. Nutrition, Maternal Care, Vaccination">
+                            @error('category') <span class="edu-error">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="edu-field is-wide">
+                            <span class="edu-label">Health Campaign Month (optional)</span>
+                            <select class="edu-select" name="calendar_month">
+                                <option value="">Any time of year</option>
+                                @foreach(range(1, 12) as $calendarMonth)
+                                    <option value="{{ $calendarMonth }}" @selected((int) old('calendar_month') === $calendarMonth)>{{ \Carbon\Carbon::createFromDate(2000, $calendarMonth, 1)->format('F') }}</option>
+                                @endforeach
+                            </select>
+                            @error('calendar_month') <span class="edu-error">{{ $message }}</span> @enderror
+                        </label>
+                        <label class="edu-field is-wide">
                             <span class="edu-label">Description</span>
                             <textarea class="edu-textarea" name="description" data-preview-description>{{ old('description') }}</textarea>
                             @error('description') <span class="edu-error">{{ $message }}</span> @enderror
@@ -262,6 +277,19 @@
                                         <input class="edu-input" type="text" name="title" value="{{ $content->title }}" maxlength="180" required>
                                     </label>
 
+                                    <label class="edu-field is-wide">
+                                        <span class="edu-label">Infographic Category</span>
+                                        <input class="edu-input" name="category" value="{{ $content->category }}" maxlength="100">
+                                    </label>
+                                    <label class="edu-field is-wide">
+                                        <span class="edu-label">Health Campaign Month (optional)</span>
+                                        <select class="edu-select" name="calendar_month">
+                                            <option value="">Any time of year</option>
+                                            @foreach(range(1, 12) as $calendarMonth)
+                                                <option value="{{ $calendarMonth }}" @selected($content->calendar_month === $calendarMonth)>{{ \Carbon\Carbon::createFromDate(2000, $calendarMonth, 1)->format('F') }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
                                     <label class="edu-field is-wide">
                                         <span class="edu-label">Description</span>
                                         <textarea class="edu-textarea" name="description">{{ $content->description }}</textarea>

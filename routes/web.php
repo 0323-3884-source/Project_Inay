@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminStatisticsController;
 use App\Http\Controllers\Admin\EducationalContentController;
+use App\Http\Controllers\Admin\MaternalVitalThresholdController;
 use App\Http\Controllers\Admin\ProgramStaffController;
 use App\Http\Controllers\AppNotificationController;
 use App\Http\Controllers\AdminStaffMessageController;
@@ -20,6 +21,10 @@ Route::get('/', function () {
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'requestForm'])->name('password.request');
+Route::post('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
+Route::get('/reset-password/{token}', [\App\Http\Controllers\ForgotPasswordController::class, 'resetForm'])->name('password.reset');
+Route::post('/reset-password', [\App\Http\Controllers\ForgotPasswordController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.store');
@@ -33,6 +38,8 @@ Route::middleware('admin.auth')->group(function () {
     Route::patch('/admin/educational-content/{educationalContent}/publish', [EducationalContentController::class, 'publish'])->name('admin.educational-content.publish');
     Route::patch('/admin/educational-content/{educationalContent}/unpublish', [EducationalContentController::class, 'unpublish'])->name('admin.educational-content.unpublish');
     Route::delete('/admin/educational-content/{educationalContent}', [EducationalContentController::class, 'destroy'])->name('admin.educational-content.destroy');
+    Route::get('/admin/maternal-vital-thresholds', [MaternalVitalThresholdController::class, 'index'])->name('admin.maternal-vital-thresholds.index');
+    Route::patch('/admin/maternal-vital-thresholds', [MaternalVitalThresholdController::class, 'update'])->name('admin.maternal-vital-thresholds.update');
     Route::get('/admin/staff-messages', [AdminStaffMessageController::class, 'adminIndex'])->name('admin.staff-messages.index');
     Route::get('/admin/program-staff', [ProgramStaffController::class, 'index'])->name('admin.program-staff.index');
     Route::get('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'show'])->name('admin.program-staff.show');
@@ -58,7 +65,25 @@ Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::post('/{notification}/read', [AppNotificationController::class, 'markRead'])->name('read');
 });
 
+$disabledMotherScheduling = static function () {
+    $message = 'Appointment scheduling has been removed from the mother portal.';
+
+    if (request()->expectsJson()) {
+        return response()->json(['message' => $message], 410);
+    }
+
+    return redirect()->route('mother.dashboard')->with('status', $message);
+};
+
 Route::get('/mother/dashboard', [AuthController::class, 'motherDashboard'])->name('mother.dashboard');
+Route::get('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('mother.profile.show');
+Route::patch('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('mother.profile.update');
+Route::get('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('staff.profile.show');
+Route::patch('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('staff.profile.update');
+Route::get('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('mother.profile.show');
+Route::patch('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('mother.profile.update');
+Route::get('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('staff.profile.show');
+Route::patch('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('staff.profile.update');
 Route::get('/maternal-monitoring', [AuthController::class, 'maternalMonitoring'])->name('maternal-monitoring');
 Route::get('/child-health', [AuthController::class, 'childHealth'])->name('child-health');
 Route::post('/child-health/children', [AuthController::class, 'storeMotherChild'])->name('child-health.children.store');
@@ -69,9 +94,13 @@ Route::get('/inay-kaalaman', [AuthController::class, 'inayKaalaman'])->name('ina
 Route::get('/health-services', [AuthController::class, 'healthServices'])->name('health-services');
 Route::get('/mother/consultation', [ConsultationController::class, 'mother'])->name('mother.consultation');
 Route::get('/mother/clinic-schedule', [AppointmentController::class, 'motherIndex'])->name('mother.clinic-schedule.index');
-Route::patch('/mother/clinic-schedule/{appointment}/confirm', [AppointmentController::class, 'confirm'])->name('mother.clinic-schedule.confirm');
-Route::patch('/mother/clinic-schedule/{appointment}/decline', [AppointmentController::class, 'decline'])->name('mother.clinic-schedule.decline');
-Route::patch('/mother/clinic-schedule/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('mother.clinic-schedule.reschedule');
+Route::get('/mother/clinic-schedule/workers', $disabledMotherScheduling)->name('mother.clinic-schedule.workers');
+Route::get('/mother/clinic-schedule/availability', $disabledMotherScheduling)->name('mother.clinic-schedule.availability');
+Route::post('/mother/clinic-schedule', [AppointmentController::class, 'bookFromMother'])->name('mother.clinic-schedule.store');
+Route::patch('/mother/clinic-schedule/{appointment}/confirm', $disabledMotherScheduling)->name('mother.clinic-schedule.confirm');
+Route::patch('/mother/clinic-schedule/{appointment}/decline', $disabledMotherScheduling)->name('mother.clinic-schedule.decline');
+Route::patch('/mother/clinic-schedule/{appointment}/cancel', [AppointmentController::class, 'motherCancel'])->name('mother.clinic-schedule.cancel');
+Route::patch('/mother/clinic-schedule/{appointment}/reschedule', $disabledMotherScheduling)->name('mother.clinic-schedule.reschedule');
 Route::get('/inay-kaalaman/videos/{month}', [AuthController::class, 'inayKaalamanVideos'])->name('inay-kaalaman.videos');
 Route::get('/inay-kaalaman/infographics/{month}/pdf', [AuthController::class, 'inayKaalamanInfographicPdf'])->name('inay-kaalaman.infographic.pdf');
 Route::post('/inay-kaalaman/progress', [AuthController::class, 'saveInayKaalamanProgress'])->name('inay-kaalaman.progress');
@@ -80,12 +109,23 @@ Route::delete('/inay-kaalaman/uploads/{upload}', [AuthController::class, 'delete
 Route::get('/staff/dashboard', [AuthController::class, 'staffDashboard'])->name('staff.dashboard');
 Route::get('/staff/mothers', [AuthController::class, 'staffMothers'])->name('staff.mothers');
 Route::get('/staff/neonatal-vaccines', [AuthController::class, 'staffNeonatalVaccines'])->name('staff.neonatal');
+Route::get('/staff/dynamic-reports', [AuthController::class, 'staffDynamicReports'])->name('staff.dynamic-reports');
 Route::get('/staff/consultation', [ConsultationController::class, 'staff'])->name('staff.consultation');
 Route::get('/staff/staff-coordination', [StaffCoordinationController::class, 'index'])->name('staff.coordination');
 Route::get('/staff/admin-messages', [AdminStaffMessageController::class, 'staffIndex'])->name('staff.admin-messages');
 Route::get('/staff/clinic-schedule', [AppointmentController::class, 'staffIndex'])->name('staff.clinic-schedule.index');
+Route::patch('/staff/clinic-schedule/profile', [AppointmentController::class, 'updateSchedulingProfile'])->name('staff.clinic-schedule.profile.update');
+Route::post('/staff/clinic-schedule/availability', [AppointmentController::class, 'storeAvailability'])->name('staff.clinic-schedule.availability.store');
+Route::patch('/staff/clinic-schedule/availability/{availability}', [AppointmentController::class, 'updateAvailability'])->name('staff.clinic-schedule.availability.update');
+Route::patch('/staff/clinic-schedule/availability/{availability}/toggle', [AppointmentController::class, 'toggleAvailability'])->name('staff.clinic-schedule.availability.toggle');
+Route::delete('/staff/clinic-schedule/availability/{availability}', [AppointmentController::class, 'destroyAvailability'])->name('staff.clinic-schedule.availability.destroy');
+Route::post('/staff/clinic-schedule/blocks', [AppointmentController::class, 'storeAvailabilityBlock'])->name('staff.clinic-schedule.blocks.store');
+Route::delete('/staff/clinic-schedule/blocks/{block}', [AppointmentController::class, 'destroyAvailabilityBlock'])->name('staff.clinic-schedule.blocks.destroy');
 Route::post('/staff/clinic-schedule', [AppointmentController::class, 'store'])->name('staff.clinic-schedule.store');
 Route::patch('/staff/clinic-schedule/{appointment}', [AppointmentController::class, 'update'])->name('staff.clinic-schedule.update');
+Route::patch('/staff/clinic-schedule/{appointment}/confirm', [AppointmentController::class, 'staffConfirm'])->name('staff.clinic-schedule.confirm');
+Route::patch('/staff/clinic-schedule/{appointment}/reject', [AppointmentController::class, 'reject'])->name('staff.clinic-schedule.reject');
+Route::patch('/staff/clinic-schedule/{appointment}/suggest-schedule', [AppointmentController::class, 'suggestSchedule'])->name('staff.clinic-schedule.suggest-schedule');
 Route::patch('/staff/clinic-schedule/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('staff.clinic-schedule.cancel');
 Route::patch('/staff/clinic-schedule/{appointment}/complete', [AppointmentController::class, 'complete'])->name('staff.clinic-schedule.complete');
 Route::post('/staff/neonatal-vaccines/infants', [AuthController::class, 'storeStaffInfant'])->name('staff.neonatal.infants.store');
@@ -101,6 +141,11 @@ Route::post('/staff/neonatal-vaccines/infants/{infant}/alerts', [AuthController:
 Route::patch('/staff/neonatal-vaccines/alerts/{alert}/resolve', [AuthController::class, 'resolveStaffChildAlert'])->name('staff.neonatal.alerts.resolve');
 Route::post('/staff/mothers', [AuthController::class, 'storeStaffMothers'])->name('staff.mothers.store');
 Route::get('/staff/mothers/{mother}', [AuthController::class, 'staffMotherCasefile'])->name('staff.mothers.show');
+Route::get('/staff/neonatal/{infant}/print', [AuthController::class, 'staffChildRecord'])->defaults('format', 'print')->name('staff.neonatal.print');
+Route::get('/staff/neonatal/{infant}/pdf', [AuthController::class, 'staffChildRecord'])->defaults('format', 'pdf')->name('staff.neonatal.pdf');
+Route::get('/staff/mothers/{mother}/print', [AuthController::class, 'staffMotherRecord'])->defaults('format', 'print')->name('staff.mothers.print');
+Route::get('/staff/mothers/{mother}/pdf', [AuthController::class, 'staffMotherRecord'])->defaults('format', 'pdf')->name('staff.mothers.pdf');
+Route::get('/staff/mothers/{mother}/inay-kaalaman/uploads/{upload}/download', [AuthController::class, 'downloadStaffInayKaalamanUpload'])->name('staff.mothers.kaalaman-uploads.download');
 
 Route::get('/api/program-staff/mothers/{mother}/maternal-vitals', [AuthController::class, 'getStaffMaternalVitals'])->name('api.staff.maternal-vitals.index');
 Route::post('/api/program-staff/mothers/{mother}/maternal-vitals', [AuthController::class, 'storeStaffMaternalVitals'])->name('api.staff.maternal-vitals.store');

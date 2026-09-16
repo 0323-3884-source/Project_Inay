@@ -3,17 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mother;
+use App\Models\Conversation;
 use App\Models\InayKaalamanProgress;
 use App\Models\InayKaalamanUpload;
 use App\Models\AdminUser;
+use App\Models\Appointment;
 use App\Models\ChildHealthAlert;
 use App\Models\EducationalContent;
 use App\Models\InfantVaccineRecord;
 use App\Models\InfantGrowthRecord;
 use App\Models\Infant;
+use App\Models\MaternalMonitoringRecordAudit;
 use App\Models\MaternalMonitoringRecord;
+use App\Models\Message;
 use App\Models\ProgramStaff;
 use App\Models\StaffMotherCasefile;
+use App\Support\AppNotificationService;
+use App\Support\MaternalVitalScreening;
+use App\Support\MotherCareRecordPdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,18 +28,60 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuthController extends Controller
 {
     private const SAN_PABLO_BARANGAYS = [
-        'Bagong Bayan',
+        'Bagong Bayan II-A',
+        'Bagong Pook VI-C',
+        'Barangay I-A',
+        'Barangay I-B',
+        'Barangay II-A',
+        'Barangay II-B',
+        'Barangay II-C',
+        'Barangay II-D',
+        'Barangay II-E',
+        'Barangay II-F',
+        'Barangay III-A',
+        'Barangay III-B',
+        'Barangay III-C',
+        'Barangay III-D',
+        'Barangay III-E',
+        'Barangay III-F',
+        'Barangay IV-A',
+        'Barangay IV-B',
+        'Barangay IV-C',
+        'Barangay V-A',
+        'Barangay V-B',
+        'Barangay V-C',
+        'Barangay V-D',
+        'Barangay VI-A',
+        'Barangay VI-B',
+        'Barangay VI-D',
+        'Barangay VI-E',
+        'Barangay VII-A',
+        'Barangay VII-B',
+        'Barangay VII-C',
+        'Barangay VII-D',
+        'Barangay VII-E',
+        'Bautista',
         'Concepcion',
         'Del Remedio',
+        'Dolores',
+        'San Antonio 1',
+        'San Antonio 2',
+        'San Bartolome',
+        'San Buenaventura',
+        'San Crispin',
+        'San Cristobal',
+        'San Diego',
         'San Francisco',
         'San Gabriel',
         'San Gregorio',
@@ -41,6 +90,7 @@ class AuthController extends Controller
         'San Joaquin',
         'San Jose',
         'San Juan',
+        'San Lorenzo',
         'San Lucas 1',
         'San Lucas 2',
         'San Marcos',
@@ -54,21 +104,28 @@ class AuthController extends Controller
         'Santa Ana',
         'Santa Catalina',
         'Santa Cruz',
-        'Santa Elena',
-        'Santa Filomena',
+        'Santa Felomina',
         'Santa Isabel',
-        'Santa Maria',
-        'Santa Monica',
+        'Santa Maria Magdalena',
         'Santa Veronica',
+        'Santiago I',
+        'Santiago II',
+        'Santisimo Rosario',
         'Santo Angel',
         'Santo Cristo',
-        'Santo Nino',
+        'Santo Niño',
         'Soledad',
+        'Atisan',
+        'Santa Elena',
+        'Santa Maria',
+        'Santa Monica',
     ];
 
     private const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
 
     private const PREGNANCY_STATUSES = ['not_pregnant', 'pregnant', 'postpartum', 'planning'];
+
+    private const CIVIL_STATUSES = ['Single', 'Married', 'Widowed', 'Separated'];
 
     public function showLogin(Request $request): View|RedirectResponse
     {
@@ -105,6 +162,9 @@ class AuthController extends Controller
             'barangay' => ['required', 'string', 'max:255'],
             'contact_number' => ['required', 'string', 'max:30'],
             'age' => ['nullable', 'integer', 'between:10,60'],
+            'civil_status' => ['nullable', Rule::in(self::CIVIL_STATUSES)],
+            'gravidity' => ['nullable', 'integer', 'min:0'],
+            'parity' => ['nullable', 'integer', 'min:0'],
             'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
             'pregnancy_status' => ['nullable', Rule::in(self::PREGNANCY_STATUSES)],
             'location_latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -112,9 +172,22 @@ class AuthController extends Controller
             'location_accuracy' => ['nullable', 'integer', 'min:0'],
             'privacy_policy' => ['accepted'],
             'is_4ps_beneficiary' => ['required', Rule::in(['yes', 'no'])],
+        ], [
+            'gravidity.integer' => 'Gravidity must be a non-negative whole number.',
+            'gravidity.min' => 'Gravidity must be a non-negative whole number.',
+            'parity.integer' => 'Parity must be a non-negative whole number.',
+            'parity.min' => 'Parity must be a non-negative whole number.',
         ]);
 
-        Mother::create([
+        if (($validated['gravidity'] ?? null) !== null
+            && ($validated['parity'] ?? null) !== null
+            && (int) $validated['parity'] > (int) $validated['gravidity']) {
+            throw ValidationException::withMessages([
+                'parity' => 'Parity cannot be greater than Gravidity.',
+            ]);
+        }
+
+        $mother = Mother::create([
             'first_name' => $validated['first_name'],
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
@@ -123,6 +196,9 @@ class AuthController extends Controller
             'barangay' => $validated['barangay'],
             'contact_number' => $validated['contact_number'],
             'age' => $validated['age'] ?? null,
+            'civil_status' => $validated['civil_status'] ?? null,
+            'gravidity' => $validated['gravidity'] ?? null,
+            'parity' => $validated['parity'] ?? null,
             'blood_type' => $validated['blood_type'] ?? null,
             'pregnancy_status' => $validated['pregnancy_status'] ?? null,
             'location_latitude' => $validated['location_latitude'] ?? null,
@@ -130,6 +206,8 @@ class AuthController extends Controller
             'location_accuracy' => $validated['location_accuracy'] ?? null,
             'is_4ps_beneficiary' => ($validated['is_4ps_beneficiary'] ?? 'no') === 'yes',
         ]);
+
+        $this->notifyProgramStaffOfNewMother($mother);
 
         return redirect()
             ->route('login')
@@ -263,7 +341,15 @@ class AuthController extends Controller
             return redirect()->route('login')->with('status', 'Please login again.');
         }
 
-        return view('dashboards.mother', compact('mother'));
+        $latestRecord = $mother->maternalMonitoringRecords()->orderByDesc('recorded_at')->orderByDesc('created_at')->first();
+        $monitoringCount = $mother->maternalMonitoringRecords()->count();
+        $careTeam = $mother->casefileStaff()->orderBy('last_name')->get();
+        $childCount = Infant::where('mother_id', $mother->id)->count();
+        $unreadMessageCount = Message::where('receiver_id', $mother->id)
+            ->where('receiver_role', Message::ROLE_MOTHER)->where('is_read', false)
+            ->where('is_unsent', false)->count();
+
+        return view('dashboards.mother', compact('mother', 'latestRecord', 'monitoringCount', 'careTeam', 'childCount', 'unreadMessageCount'));
     }
 
     public function maternalMonitoring(Request $request): View|RedirectResponse
@@ -549,6 +635,9 @@ class AuthController extends Controller
             ->groupBy('month');
         $kaalamanMonthlyProgress = $this->inayKaalamanProgressSummary($mother, $kaalamanUploads, $kaalamanProgressRecords);
         $kaalamanOverallProgress = $kaalamanMonthlyProgress['overall'];
+        $infographicsByMonth = $publishedEducationalContents
+            ->filter(fn ($content) => $content->has_infographic && $content->month !== null)->groupBy('month');
+        $infographicProgressByKey = $kaalamanProgressRecords->where('activity_type', 'infographic')->keyBy('item_key');
 
         return view('modules.inay-kaalaman', compact(
             'mother',
@@ -557,6 +646,8 @@ class AuthController extends Controller
             'kaalamanOverallProgress',
             'publishedEducationalContentByStage',
             'publishedEducationalContentByMonth',
+            'infographicsByMonth',
+            'infographicProgressByKey',
         ));
     }
 
@@ -726,26 +817,44 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid progress status for this activity.'], 422);
         }
 
-        $progress = InayKaalamanProgress::firstOrNew([
-            'mother_id' => $mother->id,
-            'month' => (int) $validated['month'],
-            'activity_type' => $activityType,
-            'item_key' => $validated['item_key'],
-        ]);
+        if ($activityType === 'infographic') {
+            $content = EducationalContent::published()->infographics()->get()
+                ->first(fn ($content) => $content->infographic_progress_key === $validated['item_key']
+                    && $content->infographic_progress_month === (int) $validated['month']);
 
-        $isAlreadyComplete = $progress->exists && $progress->status === $finalStatuses[$activityType];
-        $nextStatus = $isAlreadyComplete ? $progress->status : $requestedStatus;
-        $now = now();
+            if (! $content) {
+                return response()->json(['message' => 'This infographic is unavailable. Refresh the learning page.'], 422);
+            }
 
-        $progress->fill([
-            'item_title' => $validated['item_title'] ?? $progress->item_title,
-            'status' => $nextStatus,
-            'started_at' => $progress->started_at ?: $now,
-            'completed_at' => $nextStatus === $finalStatuses[$activityType]
-                ? ($progress->completed_at ?: $now)
-                : $progress->completed_at,
-        ]);
-        $progress->save();
+            $validated['item_title'] = $content->title;
+        }
+
+        $progress = DB::transaction(function () use ($mother, $validated, $activityType, $requestedStatus, $finalStatuses) {
+            // Serialize writes for this mother, including simultaneous first views.
+            Mother::whereKey($mother->id)->lockForUpdate()->firstOrFail();
+            $progress = InayKaalamanProgress::firstOrCreate([
+                'mother_id' => $mother->id,
+                'month' => (int) $validated['month'],
+                'activity_type' => $activityType,
+                'item_key' => $validated['item_key'],
+            ]);
+
+            $isAlreadyComplete = $progress->exists && $progress->status === $finalStatuses[$activityType];
+            $nextStatus = $isAlreadyComplete ? $progress->status : $requestedStatus;
+            $now = now();
+
+            $progress->fill([
+                'item_title' => $validated['item_title'] ?? $progress->item_title,
+                'status' => $nextStatus,
+                'started_at' => $progress->started_at ?: $now,
+                'completed_at' => $nextStatus === $finalStatuses[$activityType]
+                    ? ($progress->completed_at ?: $now)
+                    : $progress->completed_at,
+            ]);
+            $progress->save();
+
+            return $progress;
+        }, 3);
 
         $uploads = InayKaalamanUpload::where('mother_id', $mother->id)->latest()->get()->groupBy('month');
         $progressRecords = InayKaalamanProgress::where('mother_id', $mother->id)->get();
@@ -798,7 +907,33 @@ class AuthController extends Controller
             return redirect()->route('login')->with('status', 'Please login again.');
         }
 
-        return view('dashboards.staff', compact('staff'));
+        $registeredMotherCount = Mother::count();
+        $assignedMotherIds = StaffMotherCasefile::where('staff_id', $staff->id)->pluck('mother_id');
+        $assignedMotherCount = $assignedMotherIds->unique()->count();
+        $staffAppointments = Appointment::where('staff_id', $staff->id)
+            ->whereIn('mother_id', $assignedMotherIds);
+        $pendingAppointmentCount = (clone $staffAppointments)
+            ->whereIn('status', [Appointment::STATUS_PENDING, Appointment::STATUS_RESCHEDULE_REQUESTED])
+            ->count();
+        $todayAppointments = (clone $staffAppointments)->with('mother')
+            ->whereDate('appointment_date', today())
+            ->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_RESCHEDULED])
+            ->orderBy('start_time')->get();
+        $upcomingAppointments = (clone $staffAppointments)->with('mother')
+            ->whereDate('appointment_date', '>', today())
+            ->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_RESCHEDULED])
+            ->orderBy('appointment_date')->orderBy('start_time')->limit(5)->get();
+        $withoutMonitoring = Mother::whereIn('id', $assignedMotherIds)->doesntHave('maternalMonitoringRecords');
+        $withoutMonitoringCount = (clone $withoutMonitoring)->count();
+        $mothersWithoutMonitoring = $withoutMonitoring->orderBy('last_name')->orderBy('first_name')->limit(5)->get();
+        $recentMonitoring = MaternalMonitoringRecord::with('mother')->whereIn('mother_id', $assignedMotherIds)
+            ->orderByDesc('recorded_at')->orderByDesc('created_at')->limit(5)->get();
+
+        return view('dashboards.staff', compact(
+            'staff', 'registeredMotherCount', 'assignedMotherCount', 'pendingAppointmentCount',
+            'todayAppointments', 'upcomingAppointments', 'withoutMonitoringCount',
+            'mothersWithoutMonitoring', 'recentMonitoring',
+        ));
     }
 
     public function staffMothers(Request $request): View|RedirectResponse
@@ -816,12 +951,11 @@ class AuthController extends Controller
         }
 
         $search = trim((string) $request->query('q', ''));
-        $status = (string) $request->query('status', 'all');
-        $risk = (string) $request->query('risk', 'all');
-        $assignedMotherIds = StaffMotherCasefile::where('staff_id', $staff->id)->pluck('mother_id');
+        $fourPs = (string) $request->query('four_ps', 'all');
+        $allowedFourPsFilters = ['all', 'beneficiary', 'non_4ps'];
+        $fourPs = in_array($fourPs, $allowedFourPsFilters, true) ? $fourPs : 'all';
 
         $mothersQuery = Mother::query()
-            ->whereIn('id', $assignedMotherIds)
             ->with(['maternalMonitoringRecords' => fn ($query) => $query
                 ->orderByDesc('recorded_at')
                 ->orderByDesc('created_at')]);
@@ -832,49 +966,43 @@ class AuthController extends Controller
             foreach ($tokens as $token) {
                 $like = '%'.$token.'%';
 
-                $mothersQuery->where(function ($query) use ($like) {
+                $patientIds = $this->patientIdsFromSearchToken($token);
+
+                $mothersQuery->where(function ($query) use ($like, $patientIds) {
                     $query->where('first_name', 'like', $like)
                         ->orWhere('middle_name', 'like', $like)
                         ->orWhere('last_name', 'like', $like)
                         ->orWhere('email', 'like', $like)
                         ->orWhere('contact_number', 'like', $like)
                         ->orWhere('barangay', 'like', $like);
+
+                    if ($patientIds !== []) {
+                        $query->orWhereIn('id', $patientIds);
+                    }
                 });
             }
         }
 
-        if (in_array($status, self::PREGNANCY_STATUSES, true)) {
-            $mothersQuery->where('pregnancy_status', $status);
-        }
-
-        if (in_array($risk, ['low', 'medium', 'high'], true)) {
-            $mothersQuery->whereHas('maternalMonitoringRecords', fn ($query) => $query->where('risk_level', $risk));
+        if ($fourPs === 'beneficiary') {
+            $mothersQuery->where('is_4ps_beneficiary', true);
+        } elseif ($fourPs === 'non_4ps') {
+            $mothersQuery->where('is_4ps_beneficiary', false);
         }
 
         $mothers = $mothersQuery
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        $allRegisteredMothers = Mother::query()
-            ->with(['maternalMonitoringRecords' => fn ($query) => $query
-                ->orderByDesc('recorded_at')
-                ->orderByDesc('created_at')])
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
-        $assignedMotherIds = $assignedMotherIds->map(fn ($id) => (int) $id)->all();
         $totalMothers = Mother::count();
-        $withMonitoring = MaternalMonitoringRecord::whereIn('mother_id', $assignedMotherIds)->distinct('mother_id')->count('mother_id');
+        $withMonitoring = MaternalMonitoringRecord::query()->distinct('mother_id')->count('mother_id');
 
         return view('modules.staff-mothers', compact(
             'staff',
             'mothers',
-            'allRegisteredMothers',
-            'assignedMotherIds',
             'search',
-            'status',
-            'risk',
+            'fourPs',
             'totalMothers',
             'withMonitoring',
         ));
@@ -931,15 +1059,10 @@ class AuthController extends Controller
             return redirect()->route('login')->with('status', 'Please login again.');
         }
 
-        $casefile = StaffMotherCasefile::where('staff_id', $staff->id)
-            ->where('mother_id', $mother->id)
-            ->first();
-
-        if (! $casefile) {
-            return redirect()
-                ->route('staff.mothers')
-                ->with('status', 'Add this mother to your patient list before opening the casefile.');
-        }
+        $casefile = StaffMotherCasefile::firstOrCreate([
+            'staff_id' => $staff->id,
+            'mother_id' => $mother->id,
+        ]);
 
         $records = MaternalMonitoringRecord::where('mother_id', $mother->id)
             ->orderByDesc('recorded_at')
@@ -952,6 +1075,13 @@ class AuthController extends Controller
         $kaalamanOverallProgress = $kaalamanMonthlyProgress['overall'];
         $careCompletion = $this->careCompletionPercentage($records, $kaalamanOverallProgress);
         $maternalVitalsPayload = $this->maternalVitalsPayload($mother);
+        $consultations = Conversation::with('lastMessage')
+            ->where('mother_id', $mother->id)
+            ->where('program_staff_id', $staff->id)
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
+            ->take(5)
+            ->get();
 
         return view('modules.staff-mother-casefile', compact(
             'staff',
@@ -964,7 +1094,125 @@ class AuthController extends Controller
             'kaalamanOverallProgress',
             'careCompletion',
             'maternalVitalsPayload',
+            'consultations',
         ));
+    }
+
+    public function staffMotherRecord(Request $request, Mother $mother, string $format = 'print'): Response|JsonResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        abort_unless($staff, 401);
+        abort_unless($staff->is_approved && $this->casefileForStaffMother($staff, $mother), 403);
+
+        $request->validate(['section' => ['sometimes', 'string', 'in:overview,monitoring,learning-documents,notes']]);
+        $section = $request->query('section', 'overview');
+        $sectionTitle = ['overview' => 'Overview', 'monitoring' => 'Monitoring', 'learning-documents' => 'Learning & Documents', 'notes' => 'Notes'][$section];
+
+        try {
+            $mother->load([
+                'casefileStaff',
+                'maternalMonitoringRecords' => fn ($query) => $query->orderBy('recorded_at')->orderBy('created_at')->orderBy('id'),
+                'maternalMonitoringRecords.recorder',
+                'maternalMonitoringRecords.unusualConfirmer',
+                'inayKaalamanProgress',
+                'inayKaalamanUploads',
+                'inayKaalamanCheckups' => fn ($query) => $query->orderBy('checkup_date')->orderBy('id'),
+                'inayKaalamanCheckups.recordedByStaff',
+                'inayKaalamanCheckups.verifiedByStaff',
+            ]);
+
+            $records = $mother->maternalMonitoringRecords;
+            $latestRecord = $records->last();
+            $learningSummary = $this->inayKaalamanProgressSummary(
+                $mother,
+                $mother->inayKaalamanUploads->groupBy('month'),
+                $mother->inayKaalamanProgress,
+            );
+            $learning = $learningSummary['overall'];
+            $careCompletion = $this->careCompletionPercentage($records, $learning);
+            $generatedAt = now()->timezone(config('app.timezone'));
+            $recordNumber = 'INAY-'.str_pad((string) $mother->id, 5, '0', STR_PAD_LEFT);
+            $images = $this->careRecordImages();
+
+            $html = view('records.mother-care', compact(
+                'section', 'sectionTitle', 'learningSummary', 'careCompletion', 'mother', 'staff', 'records', 'latestRecord', 'learning', 'generatedAt', 'recordNumber', 'images',
+            ))->render();
+            $pdf = app(MotherCareRecordPdf::class)->render($html);
+
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => ($format === 'pdf' ? 'attachment' : 'inline').'; filename="'.$recordNumber.'-mother-'.$section.'.pdf"',
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Unable to generate the mother record. Please try again.'], 500, [
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ]);
+        }
+    }
+
+    public function staffChildRecord(Request $request, Infant $infant, string $format = 'print'): Response|JsonResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        abort_unless($staff, 401);
+        abort_unless($staff->is_approved && $infant->mother && $this->casefileForStaffMother($staff, $infant->mother), 403);
+
+        try {
+            $infant->load(['mother', 'growthRecords.recorder', 'vaccineRecords.recorder', 'healthAlerts']);
+            $generatedAt = now()->timezone(config('app.timezone'));
+            $recordNumber = 'INAY-CHILD-'.str_pad((string) $infant->id, 5, '0', STR_PAD_LEFT);
+            $images = $this->careRecordImages();
+            $assessment = $this->infantGrowthAssessment($infant);
+            $html = view('records.child-care', compact('infant', 'staff', 'generatedAt', 'recordNumber', 'images', 'assessment'))->render();
+            $pdf = app(MotherCareRecordPdf::class)->render($html);
+
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => ($format === 'pdf' ? 'attachment' : 'inline').'; filename="'.$recordNumber.'-child-record.pdf"',
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Unable to generate the child record. Please try again.'], 500, [
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ]);
+        }
+    }
+
+    private function careRecordImages(): array
+    {
+        $letterheadPath = public_path('assets/images/mother-record/template-letterhead.jpg');
+        $footerPath = public_path('assets/images/mother-record/template-footer.jpg');
+        return [
+            'letterhead' => 'data:image/jpeg;base64,'.base64_encode(file_get_contents($letterheadPath)),
+            'footer' => 'data:image/jpeg;base64,'.base64_encode(file_get_contents($footerPath)),
+        ];
+    }
+
+    public function downloadStaffInayKaalamanUpload(Request $request, Mother $mother, InayKaalamanUpload $upload): StreamedResponse|RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+
+        if (! $staff) {
+            return redirect()->route('login')->with('status', 'Please login as Program Staff first.');
+        }
+
+        if ((int) $upload->mother_id !== (int) $mother->id || ! $this->casefileForStaffMother($staff, $mother)) {
+            abort(403);
+        }
+
+        if (! Storage::disk('public')->exists($upload->path)) {
+            abort(404);
+        }
+
+        $fileName = str_replace(['\\', '/', '"'], '', $upload->original_name ?: 'prenatal-record');
+
+        return Storage::disk('public')->download($upload->path, $fileName);
     }
 
     public function getStaffMaternalVitals(Request $request, Mother $mother): JsonResponse
@@ -996,7 +1244,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Add this mother to your patient list before opening the casefile.'], 403);
         }
 
-        $validator = $this->maternalVitalsValidator($request);
+        $validator = $this->maternalVitalsValidator($request, $mother);
 
         if ($validator->fails()) {
             return response()->json([
@@ -1006,8 +1254,15 @@ class AuthController extends Controller
         }
 
         $validated = $validator->validated();
+        $validated = $this->applyMaternalVitalsDerivedValues($validated, $request, $mother);
+        $screening = MaternalVitalScreening::screen($validated, $mother);
 
-        MaternalMonitoringRecord::create($this->maternalVitalsAttributes($validated, $mother, $staff, $casefile));
+        if ($confirmation = $this->maternalVitalsConfirmationResponse($request, $screening)) {
+            return $confirmation;
+        }
+
+        $record = MaternalMonitoringRecord::create($this->maternalVitalsAttributes($validated, $mother, $staff, $casefile, $screening));
+        $this->auditMaternalVitals($record, 'created', null, $record->fresh()->toArray(), $staff);
 
         return response()->json([
             'message' => 'Maternal vitals saved.',
@@ -1035,7 +1290,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'You cannot update a record outside your patient list.'], 403);
         }
 
-        $validator = $this->maternalVitalsValidator($request);
+        $validator = $this->maternalVitalsValidator($request, $mother);
 
         if ($validator->fails()) {
             return response()->json([
@@ -1044,7 +1299,18 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $record->update($this->maternalVitalsAttributes($validator->validated(), $mother, $staff, $casefile));
+        $validated = $validator->validated();
+        $validated = $this->applyMaternalVitalsDerivedValues($validated, $request, $mother);
+        $screening = MaternalVitalScreening::screen($validated, $mother, $record->id);
+
+        if ($confirmation = $this->maternalVitalsConfirmationResponse($request, $screening)) {
+            return $confirmation;
+        }
+
+        $before = $record->fresh()->toArray();
+        $record->update($this->maternalVitalsAttributes($validated, $mother, $staff, $casefile, $screening));
+        $record->refresh();
+        $this->auditMaternalVitals($record, 'updated', $before, $record->toArray(), $staff);
 
         return response()->json([
             'message' => 'Maternal vitals updated.',
@@ -1066,6 +1332,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'You cannot delete a record outside your patient list.'], 403);
         }
 
+        $before = $record->fresh()->toArray();
+        $this->auditMaternalVitals($record, 'deleted', $before, null, $staff);
         $record->delete();
 
         return response()->json([
@@ -1124,15 +1392,49 @@ class AuthController extends Controller
             ->get();
 
         $selectedChildId = (int) $request->query('child', 0);
+        $selectedMotherId = (int) $request->query('mother', 0);
+        $selectedMother = null;
         $selectedInfant = null;
         $childAccessDenied = false;
+        $accessDeniedMessage = null;
 
         if ($selectedChildId > 0) {
             $selectedInfant = $children->firstWhere('id', $selectedChildId);
             $childAccessDenied = ! $selectedInfant;
+            $selectedMother = $selectedInfant?->mother;
+            $accessDeniedMessage = $childAccessDenied
+                ? 'The selected child profile is not assigned to your casefiles.'
+                : null;
+        } elseif ($selectedMotherId > 0) {
+            $selectedMother = $mothers->firstWhere('id', $selectedMotherId);
+            $childAccessDenied = ! $selectedMother;
+            $accessDeniedMessage = $childAccessDenied
+                ? 'The selected mother profile is not assigned to your casefiles.'
+                : null;
+
+            if ($selectedMother) {
+                $selectedInfant = $children
+                    ->where('mother_id', $selectedMother->id)
+                    ->sortBy(fn (Infant $infant): string => ($infant->birth_date?->format('Ymd') ?? '99999999').$infant->full_name)
+                    ->first();
+            }
         } else {
-            $selectedInfant = $children->first();
+            $selectedMother = $mothers->first();
+
+            if ($selectedMother) {
+                $selectedInfant = $children
+                    ->where('mother_id', $selectedMother->id)
+                    ->sortBy(fn (Infant $infant): string => ($infant->birth_date?->format('Ymd') ?? '99999999').$infant->full_name)
+                    ->first();
+            }
         }
+
+        $selectedMotherInfants = $selectedMother
+            ? $children
+                ->where('mother_id', $selectedMother->id)
+                ->sortBy(fn (Infant $infant): string => ($infant->birth_date?->format('Ymd') ?? '99999999').$infant->full_name)
+                ->values()
+            : collect();
 
         $allVaccines = $children->flatMap->vaccineRecords;
         $activeAlerts = $children->flatMap->healthAlerts->where('status', 'active');
@@ -1147,7 +1449,232 @@ class AuthController extends Controller
             'pending_followups' => $children->filter(fn (Infant $infant): bool => $this->infantGrowthAssessment($infant)['severity'] !== 'normal')->count(),
         ];
 
-        return view('modules.staff-neonatal-vaccines', compact('staff', 'mothers', 'children', 'selectedInfant', 'childAccessDenied', 'neonatalStats'));
+        return view('modules.staff-neonatal-vaccines', compact(
+            'staff',
+            'mothers',
+            'children',
+            'selectedMother',
+            'selectedMotherInfants',
+            'selectedInfant',
+            'childAccessDenied',
+            'accessDeniedMessage',
+            'neonatalStats',
+        ));
+    }
+
+    public function staffDynamicReports(Request $request): View|RedirectResponse
+    {
+        if ($request->session()->get('auth_role') !== 'staff') {
+            return redirect()->route('login')->with('status', 'Please login as Program Staff first.');
+        }
+
+        $staff = ProgramStaff::find($request->session()->get('auth_id'));
+
+        if (! $staff) {
+            $this->clearLoginSession($request);
+
+            return redirect()->route('login')->with('status', 'Please login again.');
+        }
+
+        $activeTab = in_array($request->query('tab'), ['newborn', 'statistics'], true) ? $request->query('tab') : 'maternal';
+        $maternalSearch = trim((string) $request->query('maternal_q', ''));
+        $maternalRisk = strtolower((string) $request->query('risk', 'all'));
+        $newbornSearch = trim((string) $request->query('newborn_q', ''));
+        $today = Carbon::today();
+        $assignedMotherIds = StaffMotherCasefile::where('staff_id', $staff->id)->pluck('mother_id');
+
+        $mothers = Mother::query()
+            ->whereIn('id', $assignedMotherIds)
+            ->with([
+                'maternalMonitoringRecords' => fn ($query) => $query
+                    ->orderByDesc('recorded_at')
+                    ->orderByDesc('created_at'),
+                'infants.growthRecords.recorder',
+                'infants.vaccineRecords.recorder',
+                'infants.healthAlerts',
+            ])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $maternalRows = $mothers->map(function (Mother $mother): array {
+            $latest = $mother->maternalMonitoringRecords->first();
+            $screeningStatus = MaternalVitalScreening::normalizeStatus($latest?->screening_summary_status ?? $latest?->risk_level);
+            $screeningKey = MaternalVitalScreening::statusKey($screeningStatus);
+
+            $bloodPressure = $latest?->bp_systolic && $latest?->bp_diastolic
+                ? $latest->bp_systolic.'/'.$latest->bp_diastolic.' mmHg'
+                : 'No BP logged';
+            $bloodSugar = $latest?->blood_sugar === null
+                ? 'No data'
+                : rtrim(rtrim(number_format((float) $latest->blood_sugar, 2), '0'), '.').' mg/dL';
+            $bloodSugarTestType = $latest?->blood_sugar_test_type
+                ? (MaternalVitalScreening::bloodSugarTestTypes()[$latest->blood_sugar_test_type] ?? 'Test type not recorded')
+                : 'Test type not recorded';
+            $temperature = $latest?->temperature === null
+                ? 'No temp'
+                : rtrim(rtrim(number_format((float) $latest->temperature, 1), '0'), '.').' C';
+            $heartRate = $latest?->heart_rate === null ? 'No HR' : $latest->heart_rate.' bpm';
+
+            return [
+                'id' => $mother->id,
+                'mother' => $mother,
+                'code' => 'MAT-RH-'.str_pad((string) $mother->id, 3, '0', STR_PAD_LEFT),
+                'name' => $mother->full_name,
+                'age' => $mother->age,
+                'barangay' => $mother->barangay ?: 'Not provided',
+                'pregnancy_status' => $mother->pregnancy_status ?: 'pending',
+                'pregnancy_week' => $latest?->pregnancy_week,
+                'blood_pressure' => $bloodPressure,
+                'blood_sugar' => $bloodSugar,
+                'blood_sugar_test_type' => $bloodSugarTestType,
+                'blood_sugar_value' => $latest?->blood_sugar === null ? null : (float) $latest->blood_sugar,
+                'temperature' => $temperature,
+                'heart_rate' => $heartRate,
+                'risk_level' => $screeningKey,
+                'risk_label' => $screeningStatus,
+                'recorded_label' => $latest?->recorded_at?->format('M j, Y') ?? 'No monitoring record',
+                'casefile_url' => route('staff.mothers.show', $mother),
+                'search_text' => Str::lower(collect([
+                    $mother->full_name,
+                    $mother->email,
+                    $mother->contact_number,
+                    $mother->barangay,
+                    $mother->age,
+                    $screeningKey,
+                    $screeningStatus,
+                    $bloodPressure,
+                    $bloodSugar,
+                    $bloodSugarTestType,
+                    $latest?->notes,
+                ])->filter()->implode(' ')),
+            ];
+        });
+
+        $maternalSearchTokens = collect(preg_split('/\s+/', Str::lower($maternalSearch), -1, PREG_SPLIT_NO_EMPTY) ?: []);
+        $filteredMaternalRows = $maternalRows
+            ->filter(function (array $row) use ($maternalRisk): bool {
+                return ! in_array($maternalRisk, ['within_reference_range', 'for_review', 'for_professional_interpretation', 'urgent_referral_recommended', 'logged'], true)
+                    || $row['risk_level'] === $maternalRisk;
+            })
+            ->filter(function (array $row) use ($maternalSearchTokens): bool {
+                return $maternalSearchTokens->isEmpty()
+                    || $maternalSearchTokens->every(fn (string $token): bool => str_contains($row['search_text'], $token));
+            })
+            ->values();
+
+        $bloodSugarValues = $maternalRows
+            ->pluck('blood_sugar_value')
+            ->filter(fn ($value): bool => $value !== null);
+        $maternalSummary = [
+            'urgent_referral_recommended' => $maternalRows->where('risk_level', 'urgent_referral_recommended')->count(),
+            'for_review' => $maternalRows->where('risk_level', 'for_review')->count(),
+            'for_professional_interpretation' => $maternalRows->where('risk_level', 'for_professional_interpretation')->count(),
+            'within_reference_range' => $maternalRows->where('risk_level', 'within_reference_range')->count(),
+            'logged' => $maternalRows->where('risk_level', 'logged')->count(),
+            'mean_blood_sugar' => $bloodSugarValues->isEmpty() ? null : round((float) $bloodSugarValues->avg(), 2),
+            'total' => $maternalRows->count(),
+        ];
+
+        $newbornRows = $mothers
+            ->flatMap(function (Mother $mother) use ($today) {
+                return $mother->infants->map(function (Infant $infant) use ($mother, $today): array {
+                    $latestGrowth = $infant->growthRecords->last();
+                    $firstGrowth = $infant->growthRecords->first();
+                    $growthAssessment = $this->infantGrowthAssessment($infant);
+                    $completedVaccines = $infant->vaccineRecords->where('status', 'completed')->count();
+                    $overdueVaccines = $infant->vaccineRecords->filter(function (InfantVaccineRecord $record) use ($today): bool {
+                        return in_array($record->status, ['missed', 'overdue'], true)
+                            || ($record->status !== 'completed' && $record->due_date && $record->due_date->isBefore($today));
+                    })->count();
+                    $activeAlerts = $infant->healthAlerts->where('status', 'active')->count();
+                    $status = $activeAlerts > 0 || $overdueVaccines > 0 || $growthAssessment['severity'] !== 'normal'
+                        ? 'at_risk'
+                        : ($latestGrowth ? 'healthy' : 'watch');
+                    $ageMonths = $latestGrowth?->age_months ?? ($infant->birth_date ? max(0, (int) $infant->birth_date->diffInMonths(now())) : null);
+
+                    return [
+                        'id' => $infant->id,
+                        'infant' => $infant,
+                        'mother' => $mother,
+                        'code' => 'NBN-RH-'.str_pad((string) $infant->id, 3, '0', STR_PAD_LEFT),
+                        'name' => $infant->full_name,
+                        'sex' => ucfirst((string) $infant->sex),
+                        'age_months' => $ageMonths,
+                        'birth_date_label' => $infant->birth_date?->format('M j, Y') ?? 'Not recorded',
+                        'birth_weight' => $infant->birth_weight,
+                        'birth_height' => $infant->birth_height,
+                        'head_circumference' => $firstGrowth?->head_circumference,
+                        'latest_growth' => $latestGrowth,
+                        'completed_vaccines' => $completedVaccines,
+                        'overdue_vaccines' => $overdueVaccines,
+                        'active_alerts' => $activeAlerts,
+                        'status' => $status,
+                        'status_label' => match ($status) {
+                            'at_risk' => 'At Risk',
+                            'watch' => 'Needs Baseline',
+                            default => 'Healthy',
+                        },
+                        'growth_label' => $growthAssessment['label'],
+                        'profile_url' => route('staff.neonatal', ['mother' => $mother->id, 'child' => $infant->id]),
+                        'search_text' => Str::lower(collect([
+                            $infant->full_name,
+                            $mother->full_name,
+                            $mother->barangay,
+                            $infant->sex,
+                            $status,
+                            $growthAssessment['label'],
+                            $completedVaccines.' completed vaccines',
+                            $overdueVaccines.' overdue vaccines',
+                            $infant->vaccineRecords->pluck('vaccine_name')->implode(' '),
+                            $infant->vaccineRecords->pluck('status')->implode(' '),
+                        ])->filter()->implode(' ')),
+                    ];
+                });
+            })
+            ->sortBy(fn (array $row): string => $row['mother']->last_name.$row['mother']->first_name.$row['name'])
+            ->values();
+
+        $newbornSearchTokens = collect(preg_split('/\s+/', Str::lower($newbornSearch), -1, PREG_SPLIT_NO_EMPTY) ?: []);
+        $filteredNewbornRows = $newbornRows
+            ->filter(function (array $row) use ($newbornSearchTokens): bool {
+                return $newbornSearchTokens->isEmpty()
+                    || $newbornSearchTokens->every(fn (string $token): bool => str_contains($row['search_text'], $token));
+            })
+            ->values();
+        $selectedNewbornId = (int) $request->query('newborn', 0);
+        $selectedNewborn = $newbornRows->firstWhere('id', $selectedNewbornId) ?? $filteredNewbornRows->first() ?? $newbornRows->first();
+        $selectedGrowthLogs = $selectedNewborn ? $selectedNewborn['infant']->growthRecords->values() : collect();
+        $selectedVaccineLogs = $selectedNewborn ? $selectedNewborn['infant']->vaccineRecords->values() : collect();
+        $newbornSummary = [
+            'total' => $newbornRows->count(),
+            'at_risk' => $newbornRows->where('status', 'at_risk')->count(),
+            'baseline_needed' => $newbornRows->where('status', 'watch')->count(),
+            'completed_vaccines' => $newbornRows->sum('completed_vaccines'),
+            'overdue_vaccines' => $newbornRows->sum('overdue_vaccines'),
+        ];
+
+        $statistics = $activeTab === 'statistics'
+            ? \App\Support\StaffClinicalStatistics::build($mothers, $maternalRows, $newbornRows, $today)
+            : null;
+
+        return view('modules.staff-dynamic-reports', compact(
+            'statistics',
+            'staff',
+            'activeTab',
+            'maternalRows',
+            'filteredMaternalRows',
+            'maternalSummary',
+            'maternalSearch',
+            'maternalRisk',
+            'newbornRows',
+            'filteredNewbornRows',
+            'newbornSummary',
+            'newbornSearch',
+            'selectedNewborn',
+            'selectedGrowthLogs',
+            'selectedVaccineLogs',
+        ));
     }
 
     public function storeStaffInfant(Request $request): RedirectResponse
@@ -1660,6 +2187,45 @@ class AuthController extends Controller
         return ProgramStaff::find($request->session()->get('auth_id'));
     }
 
+    private function notifyProgramStaffOfNewMother(Mother $mother): void
+    {
+        ProgramStaff::query()
+            ->where('approval_status', 'approved')
+            ->orderBy('id')
+            ->each(function (ProgramStaff $staff) use ($mother): void {
+                AppNotificationService::createForMotherOnce(
+                    (int) $staff->id,
+                    Message::ROLE_PROGRAM_STAFF,
+                    $mother,
+                    'mother_registered',
+                    'New mother registered',
+                    'A new mother, '.$mother->full_name.', has registered.',
+                    [
+                        'url' => route('staff.mothers.show', $mother),
+                        'mother_id' => $mother->id,
+                        'patient_number' => $this->patientNumberForMother($mother),
+                    ],
+                );
+            });
+    }
+
+    private function patientIdsFromSearchToken(string $token): array
+    {
+        preg_match_all('/\d+/', $token, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn (string $number): int => (int) ltrim($number, '0'))
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function patientNumberForMother(Mother $mother): string
+    {
+        return 'INAY-'.str_pad((string) $mother->id, 5, '0', STR_PAD_LEFT);
+    }
+
     private function casefileForStaffMother(ProgramStaff $staff, Mother $mother): ?StaffMotherCasefile
     {
         return StaffMotherCasefile::where('staff_id', $staff->id)
@@ -1667,58 +2233,176 @@ class AuthController extends Controller
             ->first();
     }
 
-    private function maternalVitalsValidator(Request $request)
+    private function maternalVitalsValidator(Request $request, ?Mother $mother = null)
     {
         $validator = Validator::make($request->all(), [
-            'recorded_at' => ['required', 'date'],
+            'recorded_at' => ['required', 'date', 'before_or_equal:today'],
             'pregnancy_week' => ['required', 'integer', 'between:1,42'],
-            'weight' => ['required', 'numeric', 'min:0.1', 'max:300'],
-            'bp_systolic' => ['required', 'integer', 'between:60,220'],
-            'bp_diastolic' => ['required', 'integer', 'between:40,140'],
-            'blood_sugar' => ['required', 'numeric', 'between:40,400'],
-            'hemoglobin' => ['required', 'numeric', 'between:5,25'],
-            'temperature' => ['required', 'numeric', 'between:34,43'],
-            'heart_rate' => ['required', 'integer', 'between:40,180'],
+            'weight' => ['required', 'numeric', 'between:25,250'],
+            'height_unit' => ['nullable', Rule::in(['cm', 'ft_in'])],
+            'height_cm' => ['nullable', 'numeric', 'gt:0'],
+            'height_feet' => ['nullable', 'integer', 'min:1'],
+            'height_inches' => ['nullable', 'numeric', 'between:0,11.99'],
+            'pre_pregnancy_weight' => ['nullable', 'numeric', 'between:25,250'],
+            'bp_systolic' => ['required', 'integer', 'between:50,260'],
+            'bp_diastolic' => ['required', 'integer', 'between:30,160'],
+            'blood_sugar_test_type' => ['required', Rule::in(array_keys(MaternalVitalScreening::bloodSugarTestTypes()))],
+            'blood_sugar' => ['required', 'numeric', 'between:20,700'],
+            'temperature' => ['required', 'numeric', 'between:30,45'],
+            'heart_rate' => ['required', 'integer', 'between:30,220'],
+            'confirmed_unusual' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ], [
             'recorded_at.required' => 'Record date is required.',
             'recorded_at.date' => 'Record date must be a valid date.',
+            'recorded_at.before_or_equal' => 'Record date cannot be in the future.',
             'pregnancy_week.required' => 'Pregnancy week is required.',
             'pregnancy_week.between' => 'Pregnancy week must be between 1 and 42.',
             'weight.required' => 'Weight is required.',
             'weight.numeric' => 'Weight must be a valid number.',
-            'weight.min' => 'Weight must be greater than zero.',
-            'weight.max' => 'Weight is outside the accepted range.',
+            'weight.between' => 'Weight must be from 25 to 250 kg. Confirm the unit before saving.',
+            'height_cm.numeric' => 'Height must be a valid number in centimeters.',
+            'height_cm.gt' => 'Height must be greater than 0 cm.',
+            'height_feet.integer' => 'Feet must be a positive whole number.',
+            'height_feet.min' => 'Feet must be at least 1.',
+            'height_inches.numeric' => 'Inches must be a valid number.',
+            'height_inches.between' => 'Inches must be between 0 and 11.99.',
+            'pre_pregnancy_weight.between' => 'Pre-pregnancy weight must be from 25 to 250 kg.',
             'bp_systolic.required' => 'Systolic blood pressure is required.',
-            'bp_systolic.between' => 'Systolic BP must be from 60 to 220 mmHg.',
+            'bp_systolic.between' => 'Systolic BP must be from 50 to 260 mmHg.',
             'bp_diastolic.required' => 'Diastolic blood pressure is required.',
-            'bp_diastolic.between' => 'Diastolic BP must be from 40 to 140 mmHg.',
+            'bp_diastolic.between' => 'Diastolic BP must be from 30 to 160 mmHg.',
+            'blood_sugar_test_type.required' => 'Blood Sugar Test Type is required.',
+            'blood_sugar_test_type.in' => 'Select a valid Blood Sugar Test Type.',
             'blood_sugar.required' => 'Blood sugar is required.',
-            'blood_sugar.between' => 'Blood sugar must be from 40 to 400 mg/dL.',
-            'hemoglobin.required' => 'Hemoglobin is required.',
-            'hemoglobin.between' => 'Hemoglobin must be from 5 to 25 g/dL.',
+            'blood_sugar.between' => 'Blood sugar must be from 20 to 700 mg/dL.',
             'temperature.required' => 'Body temperature is required.',
-            'temperature.between' => 'Body temperature must be entered in Celsius from 34 to 43 C.',
+            'temperature.between' => 'Body temperature must be entered in Celsius from 30 to 45 C.',
             'heart_rate.required' => 'Heart rate is required.',
-            'heart_rate.between' => 'Heart rate must be from 40 to 180 bpm.',
+            'heart_rate.between' => 'Heart rate must be from 30 to 220 bpm.',
             'notes.max' => 'Program staff notes must be 5000 characters or fewer.',
         ]);
 
-        $validator->after(function ($validator) use ($request) {
+        $validator->after(function ($validator) use ($request, $mother) {
             $systolic = $request->input('bp_systolic');
             $diastolic = $request->input('bp_diastolic');
 
             if (is_numeric($systolic) && is_numeric($diastolic) && (int) $diastolic >= (int) $systolic) {
                 $validator->errors()->add('bp_diastolic', 'Diastolic BP should be lower than systolic BP.');
             }
+
+            $heightInputPresent = filled($request->input('height_cm'))
+                || filled($request->input('height_feet'))
+                || filled($request->input('height_inches'));
+            $heightCm = $this->normalizedHeightFromRequest($request);
+
+            if ($heightInputPresent && $heightCm === null) {
+                $validator->errors()->add('height_cm', 'Enter a complete, valid height before saving.');
+            }
+
+            $prePregnancyWeight = $request->input('pre_pregnancy_weight');
+            if (($prePregnancyWeight === null || $prePregnancyWeight === '') && $mother) {
+                $prePregnancyWeight = $this->latestMaternalValue($mother, 'pre_pregnancy_weight');
+            }
+
+            $bmi = $this->calculatePrePregnancyBmi($heightCm, $prePregnancyWeight);
+            if ($bmi !== null && ($bmi < 10 || $bmi > 70)) {
+                $validator->errors()->add('pre_pregnancy_bmi', 'The calculated pre-pregnancy BMI must be from 10 to 70.');
+            }
         });
 
         return $validator;
     }
 
-    private function maternalVitalsAttributes(array $validated, Mother $mother, ProgramStaff $staff, StaffMotherCasefile $casefile): array
+    private function applyMaternalVitalsDerivedValues(array $validated, Request $request, Mother $mother): array
+    {
+        $heightCm = $this->normalizedHeightFromRequest($request)
+            ?? $this->latestMaternalValue($mother, 'height_cm');
+        $prePregnancyWeight = $validated['pre_pregnancy_weight'] ?? null;
+
+        if ($prePregnancyWeight === null || $prePregnancyWeight === '') {
+            $prePregnancyWeight = $this->latestMaternalValue($mother, 'pre_pregnancy_weight');
+        }
+
+        $validated['height_cm'] = $heightCm === null ? null : round((float) $heightCm, 2);
+        $validated['pre_pregnancy_weight'] = $prePregnancyWeight === null ? null : (float) $prePregnancyWeight;
+        $validated['pre_pregnancy_bmi'] = $this->calculatePrePregnancyBmi($heightCm, $prePregnancyWeight);
+
+        return $validated;
+    }
+
+    private function normalizedHeightFromRequest(Request $request): ?float
+    {
+        $unit = $request->input('height_unit', 'cm');
+
+        if ($unit === 'ft_in') {
+            $feet = $request->input('height_feet');
+            $inches = $request->input('height_inches');
+
+            if (! is_numeric($feet) || filter_var($feet, FILTER_VALIDATE_INT) === false || (int) $feet < 1 || ! is_numeric($inches)) {
+                return null;
+            }
+
+            $inches = (float) $inches;
+            if ($inches < 0 || $inches > 11.99) {
+                return null;
+            }
+
+            return round(((int) $feet * 30.48) + ($inches * 2.54), 2);
+        }
+
+        $heightCm = $request->input('height_cm');
+
+        if ($heightCm === null || $heightCm === '' || ! is_numeric($heightCm) || (float) $heightCm <= 0) {
+            return null;
+        }
+
+        return round((float) $heightCm, 2);
+    }
+
+    private function calculatePrePregnancyBmi(mixed $heightCm, mixed $prePregnancyWeight): ?float
+    {
+        if (! is_numeric($heightCm) || (float) $heightCm <= 0 || ! is_numeric($prePregnancyWeight) || (float) $prePregnancyWeight <= 0) {
+            return null;
+        }
+
+        $heightMeters = (float) $heightCm / 100;
+        if ($heightMeters <= 0) {
+            return null;
+        }
+
+        return round((float) $prePregnancyWeight / ($heightMeters * $heightMeters), 2);
+    }
+
+    private function latestMaternalValue(Mother $mother, string $column): mixed
+    {
+        return MaternalMonitoringRecord::query()
+            ->where('mother_id', $mother->id)
+            ->whereNotNull($column)
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('created_at')
+            ->value($column);
+    }
+
+    private function maternalVitalsConfirmationResponse(Request $request, array $screening): ?JsonResponse
+    {
+        $warnings = $screening['confirmation_warnings'] ?? [];
+
+        if ($warnings === [] || $request->boolean('confirmed_unusual')) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'Confirm flagged or unusually high/low values before saving this maternal vital record.',
+            'requires_confirmation' => true,
+            'warnings' => $warnings,
+        ], 409);
+    }
+
+    private function maternalVitalsAttributes(array $validated, Mother $mother, ProgramStaff $staff, StaffMotherCasefile $casefile, array $screening): array
     {
         $pregnancyWeek = (int) $validated['pregnancy_week'];
+        $confirmed = ! empty($screening['confirmation_warnings']) && ! empty($validated['confirmed_unusual']);
 
         return [
             'mother_id' => $mother->id,
@@ -1729,101 +2413,109 @@ class AuthController extends Controller
             'bp_systolic' => (int) $validated['bp_systolic'],
             'bp_diastolic' => (int) $validated['bp_diastolic'],
             'blood_sugar' => (float) $validated['blood_sugar'],
+            'blood_sugar_test_type' => $validated['blood_sugar_test_type'],
             'weight' => (float) $validated['weight'],
-            'hemoglobin' => (float) $validated['hemoglobin'],
+            'height_cm' => $validated['height_cm'] ?? null,
+            'pre_pregnancy_weight' => $validated['pre_pregnancy_weight'] ?? null,
+            'pre_pregnancy_bmi' => $validated['pre_pregnancy_bmi'] ?? null,
+            'weight_change_from_previous' => $screening['weight_change_from_previous'],
             'temperature' => (float) $validated['temperature'],
             'heart_rate' => (int) $validated['heart_rate'],
-            'risk_level' => $this->maternalRiskLevel($validated),
+            'bp_status' => $screening['statuses']['blood_pressure'],
+            'blood_sugar_status' => $screening['statuses']['blood_sugar'],
+            'weight_status' => $screening['statuses']['weight'],
+            'temperature_status' => $screening['statuses']['temperature'],
+            'heart_rate_status' => $screening['statuses']['heart_rate'],
+            'screening_summary_status' => $screening['summary_status'],
+            'measurement_units' => $screening['units'],
+            'screening_explanations' => $screening['explanations'],
+            'screening_guidelines' => $screening['guidelines'],
+            'confirmed_unusual_at' => $confirmed ? now() : null,
+            'confirmed_unusual_by_staff_id' => $confirmed ? $staff->id : null,
+            'risk_level' => $screening['summary_status'],
             'notes' => $validated['notes'] ?? null,
             'recorded_at' => Carbon::parse($validated['recorded_at'])->startOfDay(),
         ];
     }
 
-    private function maternalRiskLevel(array $values): string
-    {
-        $systolic = (int) $values['bp_systolic'];
-        $diastolic = (int) $values['bp_diastolic'];
-        $sugar = (float) $values['blood_sugar'];
-        $hemoglobin = (float) $values['hemoglobin'];
-        $temperature = (float) $values['temperature'];
-        $heartRate = (int) $values['heart_rate'];
-
-        if (
-            $systolic >= 140 ||
-            $diastolic >= 90 ||
-            $sugar < 60 ||
-            $sugar > 200 ||
-            $hemoglobin < 10 ||
-            $temperature < 35 ||
-            $temperature >= 38 ||
-            $heartRate < 50 ||
-            $heartRate > 120
-        ) {
-            return 'high';
-        }
-
-        if (
-            $systolic >= 130 ||
-            $diastolic >= 85 ||
-            $sugar < 70 ||
-            $sugar > 140 ||
-            $hemoglobin < 11.5 ||
-            $temperature < 36 ||
-            $temperature > 37.5 ||
-            $heartRate < 60 ||
-            $heartRate > 110
-        ) {
-            return 'medium';
-        }
-
-        return 'low';
-    }
-
     private function maternalVitalsPayload(Mother $mother): array
     {
-        $records = MaternalMonitoringRecord::with('recorder')
+        $records = MaternalMonitoringRecord::with(['recorder', 'mother'])
             ->where('mother_id', $mother->id)
             ->orderBy('recorded_at')
             ->orderBy('created_at')
             ->get();
         $latest = $records->last();
+        $latestFormatted = $latest ? $this->formatMaternalVitalsRecord($latest) : null;
+        $latestHeight = $records->reverse()->first(fn (MaternalMonitoringRecord $record): bool => $record->height_cm !== null);
+        $latestPrePregnancyWeight = $records->reverse()->first(fn (MaternalMonitoringRecord $record): bool => $record->pre_pregnancy_weight !== null);
 
         return [
-            'latest' => $latest ? $this->formatMaternalVitalsRecord($latest) : null,
+            'latest' => $latestFormatted,
+            'defaults' => [
+                'height_cm' => $latestHeight?->height_cm === null ? null : (float) $latestHeight->height_cm,
+                'pre_pregnancy_weight' => $latestPrePregnancyWeight?->pre_pregnancy_weight === null ? null : (float) $latestPrePregnancyWeight->pre_pregnancy_weight,
+            ],
             'records' => $records->map(fn (MaternalMonitoringRecord $record): array => $this->formatMaternalVitalsRecord($record))->values(),
             'weight_history' => $records
                 ->filter(fn (MaternalMonitoringRecord $record): bool => $record->weight !== null)
-                ->map(fn (MaternalMonitoringRecord $record): array => [
-                    'id' => $record->id,
-                    'recorded_at' => ($record->recorded_at ?? $record->created_at)?->toDateString(),
-                    'recorded_label' => ($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded',
-                    'pregnancy_week' => $record->pregnancy_week,
-                    'label' => $record->pregnancy_week ? 'Wk '.$record->pregnancy_week : (($record->recorded_at ?? $record->created_at)?->format('M j') ?? 'Record'),
-                    'weight' => (float) $record->weight,
-                    'tooltip' => (($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded').' - Week '.($record->pregnancy_week ?: 'N/A').' - '.rtrim(rtrim(number_format((float) $record->weight, 2), '0'), '.').' kg',
-                ])
+                ->map(function (MaternalMonitoringRecord $record): array {
+                    $formatted = $this->formatMaternalVitalsRecord($record);
+
+                    return [
+                        'id' => $record->id,
+                        'recorded_at' => ($record->recorded_at ?? $record->created_at)?->toDateString(),
+                        'recorded_label' => ($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded',
+                        'pregnancy_week' => $record->pregnancy_week,
+                        'label' => $record->pregnancy_week ? 'Wk '.$record->pregnancy_week : (($record->recorded_at ?? $record->created_at)?->format('M j') ?? 'Record'),
+                        'weight' => (float) $record->weight,
+                        'unit' => 'kg',
+                        'status' => $formatted['statuses']['weight'],
+                        'explanation' => $formatted['explanations']['weight'],
+                        'weight_change_from_previous' => $formatted['weight_change_from_previous'],
+                        'previous_weight' => $formatted['previous_weight'],
+                        'tooltip' => (($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded').' - Week '.($record->pregnancy_week ?: 'N/A').' - '.rtrim(rtrim(number_format((float) $record->weight, 2), '0'), '.').' kg',
+                    ];
+                })
                 ->values(),
             'blood_pressure_history' => $records
                 ->filter(fn (MaternalMonitoringRecord $record): bool => $record->bp_systolic !== null && $record->bp_diastolic !== null)
-                ->map(fn (MaternalMonitoringRecord $record): array => [
-                    'id' => $record->id,
-                    'recorded_at' => ($record->recorded_at ?? $record->created_at)?->toDateString(),
-                    'recorded_label' => ($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded',
-                    'pregnancy_week' => $record->pregnancy_week,
-                    'label' => $record->pregnancy_week ? 'Wk '.$record->pregnancy_week : (($record->recorded_at ?? $record->created_at)?->format('M j') ?? 'Record'),
-                    'systolic' => (int) $record->bp_systolic,
-                    'diastolic' => (int) $record->bp_diastolic,
-                    'tooltip' => (($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded').' - Week '.($record->pregnancy_week ?: 'N/A').' - '.$record->bp_systolic.'/'.$record->bp_diastolic.' mmHg',
-                ])
+                ->map(function (MaternalMonitoringRecord $record): array {
+                    $formatted = $this->formatMaternalVitalsRecord($record);
+
+                    return [
+                        'id' => $record->id,
+                        'recorded_at' => ($record->recorded_at ?? $record->created_at)?->toDateString(),
+                        'recorded_label' => ($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded',
+                        'pregnancy_week' => $record->pregnancy_week,
+                        'label' => $record->pregnancy_week ? 'Wk '.$record->pregnancy_week : (($record->recorded_at ?? $record->created_at)?->format('M j') ?? 'Record'),
+                        'systolic' => (int) $record->bp_systolic,
+                        'diastolic' => (int) $record->bp_diastolic,
+                        'unit' => 'mmHg',
+                        'status' => $formatted['statuses']['blood_pressure'],
+                        'raw_status' => $record->bp_status,
+                        'explanation' => $formatted['explanations']['blood_pressure'],
+                        'tooltip' => (($record->recorded_at ?? $record->created_at)?->format('M j, Y') ?? 'Date not recorded').' - Week '.($record->pregnancy_week ?: 'N/A').' - '.$record->bp_systolic.'/'.$record->bp_diastolic.' mmHg',
+                    ];
+                })
                 ->values(),
-            'risk_status' => $latest?->risk_level ?? 'pending',
-            'risk_label' => $this->maternalRiskLabel($latest?->risk_level),
+            'risk_status' => $latestFormatted['screening_summary_status'] ?? MaternalVitalScreening::STATUS_LOGGED,
+            'risk_label' => $latestFormatted['screening_summary_status'] ?? MaternalVitalScreening::STATUS_LOGGED,
+            'blood_sugar_test_types' => MaternalVitalScreening::bloodSugarTestTypes(),
+            'references' => MaternalVitalScreening::references(),
+            'safety_notice' => 'Project INAY provides threshold-based screening alerts for monitoring purposes only. Results must be verified and interpreted by a qualified healthcare professional. The system does not provide a medical diagnosis.',
         ];
     }
 
     private function formatMaternalVitalsRecord(MaternalMonitoringRecord $record): array
     {
         $date = $record->recorded_at ?? $record->created_at;
+        $screening = $this->screeningForRecord($record);
+        $bloodSugarTestType = $record->blood_sugar_test_type;
+        $bloodSugarTestTypes = MaternalVitalScreening::bloodSugarTestTypes();
+        $bloodSugarTestTypeLabel = $bloodSugarTestType && isset($bloodSugarTestTypes[$bloodSugarTestType])
+            ? $bloodSugarTestTypes[$bloodSugarTestType]
+            : 'Test type not recorded';
 
         return [
             'id' => $record->id,
@@ -1839,24 +2531,137 @@ class AuthController extends Controller
             'bp_diastolic' => $record->bp_diastolic,
             'blood_pressure' => $record->bp_systolic && $record->bp_diastolic ? $record->bp_systolic.'/'.$record->bp_diastolic : null,
             'blood_sugar' => $record->blood_sugar === null ? null : (float) $record->blood_sugar,
+            'blood_sugar_test_type' => $bloodSugarTestType,
+            'blood_sugar_test_type_label' => $bloodSugarTestTypeLabel,
             'weight' => $record->weight === null ? null : (float) $record->weight,
-            'hemoglobin' => $record->hemoglobin === null ? null : (float) $record->hemoglobin,
+            'height_cm' => $record->height_cm === null ? null : (float) $record->height_cm,
+            'pre_pregnancy_weight' => $record->pre_pregnancy_weight === null ? null : (float) $record->pre_pregnancy_weight,
+            'pre_pregnancy_bmi' => $record->pre_pregnancy_bmi === null ? null : (float) $record->pre_pregnancy_bmi,
+            'weight_change_from_previous' => $screening['weight_change_from_previous'],
+            'previous_weight' => $screening['previous_weight'],
             'temperature' => $record->temperature === null ? null : (float) $record->temperature,
             'heart_rate' => $record->heart_rate,
-            'risk_level' => $record->risk_level ?? 'pending',
-            'risk_label' => $this->maternalRiskLabel($record->risk_level),
+            'statuses' => $screening['statuses'],
+            'status_slugs' => collect($screening['statuses'])
+                ->map(fn (?string $status): string => MaternalVitalScreening::statusSlug($status))
+                ->all(),
+            'screening_summary_status' => $screening['summary_status'],
+            'screening_summary_slug' => MaternalVitalScreening::statusSlug($screening['summary_status']),
+            'risk_level' => $screening['summary_status'],
+            'risk_label' => $screening['summary_status'],
+            'explanations' => $screening['explanations'],
+            'guidelines' => $screening['guidelines'],
+            'units' => $screening['units'],
+            'confirmed_unusual_at' => $record->confirmed_unusual_at?->toDateTimeString(),
+            'confirmed_unusual_by_staff_id' => $record->confirmed_unusual_by_staff_id,
             'notes' => $record->notes,
         ];
     }
 
     private function maternalRiskLabel(?string $riskLevel): string
     {
-        return match (strtolower((string) $riskLevel)) {
-            'low' => 'Low Risk',
-            'medium' => 'Needs Review',
-            'high' => 'High Risk',
-            default => 'Pending',
-        };
+        return MaternalVitalScreening::normalizeStatus($riskLevel);
+    }
+
+    private function screeningForRecord(MaternalMonitoringRecord $record): array
+    {
+        $storedStatuses = [
+            'blood_pressure' => $record->bp_status,
+            'blood_sugar' => $record->blood_sugar_status,
+            'weight' => $record->weight_status,
+            'temperature' => $record->temperature_status,
+            'heart_rate' => $record->heart_rate_status,
+        ];
+
+        $hasStoredScreening = collect($storedStatuses)->every(fn ($status): bool => filled($status))
+            && is_array($record->screening_explanations)
+            && is_array($record->screening_guidelines);
+
+        if ($hasStoredScreening) {
+            $statuses = collect($storedStatuses)
+                ->map(fn (?string $status): string => MaternalVitalScreening::normalizeStatus($status))
+                ->all();
+            $screeningKeys = array_flip(array_keys($statuses));
+            $unitKeys = array_flip([
+                'bp_systolic',
+                'bp_diastolic',
+                'blood_sugar',
+                'weight',
+                'height_cm',
+                'pre_pregnancy_weight',
+                'pre_pregnancy_bmi',
+                'temperature',
+                'heart_rate',
+            ]);
+            $units = $record->measurement_units ?: [
+                'bp_systolic' => 'mmHg',
+                'bp_diastolic' => 'mmHg',
+                'blood_sugar' => 'mg/dL',
+                'weight' => 'kg',
+                'height_cm' => 'cm',
+                'pre_pregnancy_weight' => 'kg',
+                'pre_pregnancy_bmi' => 'kg/m2',
+                'temperature' => 'C',
+                'heart_rate' => 'bpm',
+            ];
+
+            return [
+                'statuses' => $statuses,
+                'summary_status' => MaternalVitalScreening::summaryStatus($statuses),
+                'explanations' => array_intersect_key($record->screening_explanations, $screeningKeys),
+                'guidelines' => array_intersect_key($record->screening_guidelines, $screeningKeys),
+                'units' => array_intersect_key($units, $unitKeys),
+                'weight_change_from_previous' => $record->weight_change_from_previous === null ? null : (float) $record->weight_change_from_previous,
+                'previous_weight' => null,
+                'confirmation_warnings' => [],
+            ];
+        }
+
+        $mother = $record->mother ?: Mother::find($record->mother_id);
+
+        if (! $mother) {
+            $statuses = collect($storedStatuses)
+                ->map(fn (?string $status): string => MaternalVitalScreening::normalizeStatus($status))
+                ->all();
+
+            return [
+                'statuses' => $statuses,
+                'summary_status' => MaternalVitalScreening::summaryStatus($statuses),
+                'explanations' => [],
+                'guidelines' => [],
+                'units' => [],
+                'weight_change_from_previous' => $record->weight_change_from_previous === null ? null : (float) $record->weight_change_from_previous,
+                'previous_weight' => null,
+                'confirmation_warnings' => [],
+            ];
+        }
+
+        return MaternalVitalScreening::screen([
+            'recorded_at' => ($record->recorded_at ?? $record->created_at ?? now())->toDateString(),
+            'pregnancy_week' => $record->pregnancy_week ?: 1,
+            'weight' => $record->weight,
+            'pre_pregnancy_weight' => $record->pre_pregnancy_weight,
+            'pre_pregnancy_bmi' => $record->pre_pregnancy_bmi,
+            'bp_systolic' => $record->bp_systolic,
+            'bp_diastolic' => $record->bp_diastolic,
+            'blood_sugar_test_type' => $record->blood_sugar_test_type ?: '',
+            'blood_sugar' => $record->blood_sugar,
+            'temperature' => $record->temperature,
+            'heart_rate' => $record->heart_rate,
+        ], $mother, $record->id);
+    }
+
+    private function auditMaternalVitals(MaternalMonitoringRecord $record, string $action, ?array $before, ?array $after, ProgramStaff $staff): void
+    {
+        MaternalMonitoringRecordAudit::create([
+            'maternal_monitoring_record_id' => $record->id,
+            'mother_id' => $record->mother_id,
+            'staff_id' => $staff->id,
+            'action' => $action,
+            'before_values' => $before,
+            'after_values' => $after,
+            'created_at' => now(),
+        ]);
     }
 
     private function staffCanAccessInfant(ProgramStaff $staff, Infant $infant): bool
@@ -2012,17 +2817,105 @@ class AuthController extends Controller
 
     private function inayKaalamanVideoMonths(): array
     {
+        $firstTrimesterSupplementalVideos = [
+            1 => [
+                ['key' => 'month-1-first-trimester-video-2', 'title' => 'Conception and New Beginnings Video 2', 'tag' => 'First Trimester', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/e4UPKPv7v38?si=Mwv0LmxVKzyTD9ev', 'youtube_id' => 'e4UPKPv7v38'],
+            ],
+            2 => [
+                ['key' => 'month-2-first-trimester-video-1', 'title' => 'The Tiny Heart Beats Video 1', 'tag' => 'Month 2', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/_Ux1wPgEpJo?si=HMiCAkDgUNwr_Pi-', 'youtube_id' => '_Ux1wPgEpJo'],
+                ['key' => 'month-2-first-trimester-video-2', 'title' => 'The Tiny Heart Beats Video 2', 'tag' => 'Month 2', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/jgnciIgOFmg?si=jNVfw8xB4aDof5QG', 'youtube_id' => 'jgnciIgOFmg'],
+                ['key' => 'month-2-first-trimester-video-3', 'title' => 'The Tiny Heart Beats Video 3', 'tag' => 'Month 2', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/GiRnUn0ApKE?si=yuajuH0q3jbcNuEa', 'youtube_id' => 'GiRnUn0ApKE'],
+                ['key' => 'month-2-first-trimester-video-4', 'title' => 'The Tiny Heart Beats Video 4', 'tag' => 'Month 2', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/gAkxR_Ept1k?si=BtSQwzVTsSQq25Rv', 'youtube_id' => 'gAkxR_Ept1k'],
+            ],
+            3 => [
+                ['key' => 'month-3-first-trimester-video-1', 'title' => 'First Trimester Milestones Video 1', 'tag' => 'Month 3', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/yRoHw6rnntc?si=GCGN-bD8Yyg7vzAV', 'youtube_id' => 'yRoHw6rnntc'],
+                ['key' => 'month-3-first-trimester-video-2', 'title' => 'First Trimester Milestones Video 2', 'tag' => 'Month 3', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/ciG1YICJrDA?si=bbbqHktM2TMMheCW', 'youtube_id' => 'ciG1YICJrDA'],
+                ['key' => 'month-3-first-trimester-video-3', 'title' => 'First Trimester Milestones Video 3', 'tag' => 'Month 3', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/vtg1w7TUJ3w?si=iT69DCppncZIAWvD', 'youtube_id' => 'vtg1w7TUJ3w'],
+                ['key' => 'month-3-first-trimester-video-4', 'title' => 'First Trimester Milestones Video 4', 'tag' => 'Month 3', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/_QB0qkJ4zRk?si=DKsL1i8tlr4Bq4eo', 'youtube_id' => '_QB0qkJ4zRk'],
+            ],
+        ];
+        $secondTrimesterSupplementalVideos = [
+            4 => [
+                ['key' => 'month-4-second-trimester-video-1', 'title' => 'Growing and Developing Video 1', 'tag' => 'Month 4', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/IPj4dJnP85o?si=XmiOYwKz8gCOCL6u', 'youtube_id' => 'IPj4dJnP85o'],
+                ['key' => 'month-4-second-trimester-video-2', 'title' => 'Growing and Developing Video 2', 'tag' => 'Month 4', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/B9xiKEWc9SM?si=Zs0G3N_otwXbvvoX', 'youtube_id' => 'B9xiKEWc9SM'],
+                ['key' => 'month-4-second-trimester-video-3', 'title' => 'Growing and Developing Video 3', 'tag' => 'Month 4', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/hmWtKtbIolE?si=KpdmXsXsGywd_dge', 'youtube_id' => 'hmWtKtbIolE'],
+                ['key' => 'month-4-second-trimester-video-4', 'title' => 'Growing and Developing Video 4', 'tag' => 'Month 4', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/shyWWLkA61I?si=WDZovJ13tTqkzeOj', 'youtube_id' => 'shyWWLkA61I'],
+                ['key' => 'month-4-second-trimester-video-5', 'title' => 'Growing and Developing Video 5', 'tag' => 'Month 4', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/HTIV2AdFTnc?si=lxxxbyKlLLetwx41', 'youtube_id' => 'HTIV2AdFTnc'],
+            ],
+            5 => [
+                ['key' => 'month-5-second-trimester-video-1', 'title' => 'Feeling the Baby Move Video 1', 'tag' => 'Month 5', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/tycuzmo-s34?si=41LH9sIVm8f-yK6I', 'youtube_id' => 'tycuzmo-s34'],
+                ['key' => 'month-5-second-trimester-video-2', 'title' => 'Feeling the Baby Move Video 2', 'tag' => 'Month 5', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/wM7I0krDPTg?si=pNKqK_hMb0JSxkuj', 'youtube_id' => 'wM7I0krDPTg'],
+                ['key' => 'month-5-second-trimester-video-3', 'title' => 'Feeling the Baby Move Video 3', 'tag' => 'Month 5', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/L-9NcufiDOo?si=iEwITUCZ9F-V6w-7', 'youtube_id' => 'L-9NcufiDOo'],
+                ['key' => 'month-5-second-trimester-video-4', 'title' => 'Feeling the Baby Move Video 4', 'tag' => 'Month 5', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/MLZ0lbkKbgM?si=RVcjGCR5e5ZD_UeP', 'youtube_id' => 'MLZ0lbkKbgM'],
+            ],
+            6 => [
+                ['key' => 'month-6-second-trimester-video-1', 'title' => 'Continued Growth Video 1', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/umgAThOkJgw?si=BJDaKv9iLRrAmK1y', 'youtube_id' => 'umgAThOkJgw'],
+                ['key' => 'month-6-second-trimester-video-2', 'title' => 'Continued Growth Video 2', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/QctcxLDsWB0?si=60H3b3Mi3NUdviUs', 'youtube_id' => 'QctcxLDsWB0'],
+                ['key' => 'month-6-second-trimester-video-3', 'title' => 'Continued Growth Video 3', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/OmivW51zGvs?si=VirObbd4cmquFtOF', 'youtube_id' => 'OmivW51zGvs'],
+                ['key' => 'month-6-second-trimester-video-4', 'title' => 'Continued Growth Video 4', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/VYYgOi9AkHU?si=d717SRziL9sOu0bF', 'youtube_id' => 'VYYgOi9AkHU'],
+                ['key' => 'month-6-second-trimester-video-5', 'title' => 'Continued Growth Video 5', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/orLWetHISck?si=My5x5lx2RjeI9CHb', 'youtube_id' => 'orLWetHISck'],
+                ['key' => 'month-6-second-trimester-video-6', 'title' => 'Continued Growth Video 6', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/k71_-M5q_H0?si=8mKHcTgdZM2Gwr6H', 'youtube_id' => 'k71_-M5q_H0'],
+                ['key' => 'month-6-second-trimester-video-7', 'title' => 'Continued Growth Video 7', 'tag' => 'Month 6', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/14kbze3sSaY?si=YoQK4OI7bcdhBhVB', 'youtube_id' => '14kbze3sSaY'],
+            ],
+        ];
+        $thirdTrimesterSupplementalVideos = [
+            7 => [
+                ['key' => 'month-7-third-trimester-video-1', 'title' => 'Preparing for Birth Video 1', 'tag' => 'Month 7', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/lpDW00nQhUo?si=OyLqgLRQNw11Qo1f', 'youtube_id' => 'lpDW00nQhUo'],
+                ['key' => 'month-7-third-trimester-video-2', 'title' => 'Preparing for Birth Video 2', 'tag' => 'Month 7', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/OzY_2-0NvVM?si=T49XHXyAnL_VnOQy', 'youtube_id' => 'OzY_2-0NvVM'],
+                ['key' => 'month-7-third-trimester-video-3', 'title' => 'Preparing for Birth Video 3', 'tag' => 'Month 7', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/GkcPIcxGy9g?si=5pqkAB5pVReRV2S_', 'youtube_id' => 'GkcPIcxGy9g'],
+                ['key' => 'month-7-third-trimester-video-4', 'title' => 'Preparing for Birth Video 4', 'tag' => 'Month 7', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/AyEm6K295iE?si=f_Q1M0bvE8hLeOMW', 'youtube_id' => 'AyEm6K295iE'],
+                ['key' => 'month-7-third-trimester-video-5', 'title' => 'Preparing for Birth Video 5', 'tag' => 'Month 7', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/_pE5PqZgleI?si=UEdfFgHaUKL5z3yk', 'youtube_id' => '_pE5PqZgleI'],
+            ],
+            8 => [
+                ['key' => 'month-8-third-trimester-video-1', 'title' => 'Birth Readiness Video 1', 'tag' => 'Month 8', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/nFnlovPk1ro?si=rept0jT9pnTTr__W', 'youtube_id' => 'nFnlovPk1ro'],
+                ['key' => 'month-8-third-trimester-video-2', 'title' => 'Birth Readiness Video 2', 'tag' => 'Month 8', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/wITeiIVieao?si=lsEjtM65scvoE50E', 'youtube_id' => 'wITeiIVieao'],
+                ['key' => 'month-8-third-trimester-video-3', 'title' => 'Birth Readiness Video 3', 'tag' => 'Month 8', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/9HzZeSX6b2o?si=UGlOFClSzqmSf3ru', 'youtube_id' => '9HzZeSX6b2o'],
+                ['key' => 'month-8-third-trimester-video-4', 'title' => 'Birth Readiness Video 4', 'tag' => 'Month 8', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/OtG-M8pHODY?si=3VKOdwrooDyKi_XD', 'youtube_id' => 'OtG-M8pHODY'],
+            ],
+            9 => [
+                ['key' => 'month-9-third-trimester-video-1', 'title' => 'Final Preparation Video 1', 'tag' => 'Month 9', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/eFWuydRmFQg?si=_-X7dzUI4UtsZFxo', 'youtube_id' => 'eFWuydRmFQg'],
+                ['key' => 'month-9-third-trimester-video-2', 'title' => 'Final Preparation Video 2', 'tag' => 'Month 9', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/_oB6wbpWCSo?si=s738kCP-nAzhij2Q', 'youtube_id' => '_oB6wbpWCSo'],
+                ['key' => 'month-9-third-trimester-video-3', 'title' => 'Final Preparation Video 3', 'tag' => 'Month 9', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/c701W2pzuyo?si=Oys7aDXLnKqa5sXz', 'youtube_id' => 'c701W2pzuyo'],
+                ['key' => 'month-9-third-trimester-video-4', 'title' => 'Final Preparation Video 4', 'tag' => 'Month 9', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/ww8s7PQWWuY?si=FQ6Aat8X4u362zhD', 'youtube_id' => 'ww8s7PQWWuY'],
+                ['key' => 'month-9-third-trimester-video-5', 'title' => 'Final Preparation Video 5', 'tag' => 'Month 9', 'time' => 'Supplemental video', 'url' => 'https://youtu.be/yO6GYS3PnFY?si=x6r0pY6y-TFar1lI', 'youtube_id' => 'yO6GYS3PnFY'],
+            ],
+        ];
+
         $months = [
-            1 => ['Conception & New Beginnings', 'Weeks 1-4', [['Early Pregnancy And Prenatal Care', 'Prenatal Care', '7 min'], ['Conception & New Beginnings Nutrition Tips', 'Nutrition', '5 min']]],
-            2 => ['The Tiny Heart Beats', 'Weeks 5-8', [['The Tiny Heart Beats: What To Expect', 'Baby Development', '6 min'], ['Morning Sickness Care At Home', 'Maternal Care', '5 min']]],
-            3 => ['First Trimester Milestones', 'Weeks 9-12', [['First Trimester Safety Reminders', 'Safety', '6 min'], ['Healthy Plate For Pregnancy', 'Nutrition', '5 min']]],
-            4 => ['Energy Returns', 'Weeks 13-16', [['Second Trimester Changes', 'Maternal Care', '6 min'], ['Safe Movement And Rest', 'Wellness', '4 min']]],
-            5 => ['Feeling Baby Move', 'Weeks 17-20', [['Understanding Baby Movements', 'Baby Development', '6 min'], ['Comfort Tips For Back Pain', 'Wellness', '5 min']]],
-            6 => ['Growth And Screening', 'Weeks 21-24', [['Screening And Checkup Reminders', 'Checkup', '7 min'], ['Eating Well In Month Six', 'Nutrition', '5 min']]],
-            7 => ['Preparing For The Final Stretch', 'Weeks 25-28', [['Preparing For The Final Stretch Guide', 'Maternal Health', '6 min'], ['Preparing For The Final Stretch Nutrition Tips', 'Nutrition', '5 min']]],
-            8 => ['Monitoring Baby Position', 'Weeks 29-32', [['Counting Baby Kicks', 'Monitoring', '5 min'], ['Comfortable Sleep Positions', 'Wellness', '4 min']]],
-            9 => ['Birth Readiness', 'Weeks 33-36', [['What To Pack For Delivery', 'Birth Plan', '6 min'], ['When To Go To The Clinic', 'Safety', '5 min']]],
-            10 => ['Safe Delivery And Newborn Care', 'Weeks 37-40', [['Safe Delivery Reminders', 'Delivery', '7 min'], ['Newborn Care Basics', 'Newborn', '6 min']]],
+            1 => ['Conception and New Beginnings', 'Weeks 1-4', array_merge([[
+                'key' => 'month-1-required-trimester-video',
+                'title' => 'First Trimester Prenatal Care Guide',
+                'tag' => 'First Trimester',
+                'time' => 'Required video',
+                'url' => 'https://youtu.be/D_jxGJsEY2A?si=tZLKKH_KnEHkOY2C',
+                'youtube_id' => 'D_jxGJsEY2A',
+                'required' => true,
+            ]], $firstTrimesterSupplementalVideos[1])],
+            2 => ['The Tiny Heart Beats', 'Weeks 5-8', $firstTrimesterSupplementalVideos[2]],
+            3 => ['First Trimester Milestones', 'Weeks 9-12', $firstTrimesterSupplementalVideos[3]],
+            4 => ['Growing and Developing', 'Weeks 13-16', array_merge([[
+                'key' => 'month-4-required-trimester-video',
+                'title' => 'Second Trimester Prenatal Care Guide',
+                'tag' => 'Second Trimester',
+                'time' => 'Required video',
+                'url' => 'https://youtu.be/H6mZRds0dHo?si=jXxF1SdF5h_emTNW',
+                'youtube_id' => 'H6mZRds0dHo',
+                'required' => true,
+            ]], $secondTrimesterSupplementalVideos[4])],
+            5 => ['Feeling the Baby Move', 'Weeks 17-20', $secondTrimesterSupplementalVideos[5]],
+            6 => ['Continued Growth', 'Weeks 21-27', $secondTrimesterSupplementalVideos[6]],
+            7 => ['Preparing for Birth', 'Weeks 28-31', array_merge([[
+                'key' => 'month-7-required-trimester-video',
+                'title' => 'Third Trimester Birth Readiness Guide',
+                'tag' => 'Third Trimester',
+                'time' => 'Required video',
+                'url' => 'https://youtu.be/f2dcTHQXwTI?si=YXvFxXuYWXbENi2C',
+                'youtube_id' => 'f2dcTHQXwTI',
+                'required' => true,
+            ]], $thirdTrimesterSupplementalVideos[7])],
+            8 => ['Birth Readiness', 'Weeks 32-35', $thirdTrimesterSupplementalVideos[8]],
+            9 => ['Final Preparation', 'Weeks 36-40', $thirdTrimesterSupplementalVideos[9]],
+            10 => ['Safe Delivery And Newborn Care', 'Birth Process', []],
         ];
 
         return collect($months)->mapWithKeys(function (array $monthData, int $month): array {
@@ -2049,14 +2942,19 @@ class AuthController extends Controller
 
     private function formatKaalamanVideo(array $video): array
     {
-        [$title, $tag, $time] = $video;
+        $title = $video['title'] ?? $video[0];
+        $tag = $video['tag'] ?? $video[1];
+        $time = $video['time'] ?? $video[2];
         $query = urlencode($title.' pregnancy education');
 
         return [
+            'key' => $video['key'] ?? null,
             'title' => $title,
             'tag' => $tag,
             'time' => $time,
-            'url' => "https://www.youtube.com/results?search_query={$query}",
+            'url' => $video['url'] ?? "https://www.youtube.com/results?search_query={$query}",
+            'youtube_id' => $video['youtube_id'] ?? null,
+            'required' => (bool) ($video['required'] ?? false),
         ];
     }
 
@@ -2082,7 +2980,7 @@ class AuthController extends Controller
             $readingComplete = $readingStatus['status'] === 'read';
 
             $videos = collect($definition['videos'])->values()->map(function (array $video, int $index) use ($month, $monthProgress): array {
-                $itemKey = "month-{$month}-video-{$index}";
+                $itemKey = $video['key'] ?: "month-{$month}-video-{$index}";
                 $record = $monthProgress->first(fn ($progress) => $progress->activity_type === 'video' && $progress->item_key === $itemKey);
                 $status = $this->kaalamanActivityStatus($record, 'video');
 
@@ -2091,13 +2989,18 @@ class AuthController extends Controller
                     'title' => $video['title'],
                     'tag' => $video['tag'],
                     'time' => $video['time'],
+                    'url' => $video['url'],
+                    'youtube_id' => $video['youtube_id'],
+                    'required' => (bool) $video['required'],
                     'status' => $status['status'],
                     'label' => $status['label'],
                     'completed_at' => $status['completed_at'],
                 ];
             })->all();
 
-            $watchedVideos = collect($videos)->where('status', 'watched')->count();
+            $requiredVideos = collect($videos);
+            $watchedVideos = $requiredVideos->where('status', 'watched')->count();
+            $totalRequiredVideos = $requiredVideos->count();
             $infographicKey = "month-{$month}-infographic";
             $infographicRecord = $monthProgress->first(fn ($record) => $record->activity_type === 'infographic' && $record->item_key === $infographicKey);
             $infographicStatus = $this->kaalamanActivityStatus($infographicRecord, 'infographic');
@@ -2125,8 +3028,8 @@ class AuthController extends Controller
                 'uploaded_at' => $upload->created_at?->format('M j, Y'),
             ])->values()->all();
 
-            $requiredCount = 1 + count($videos) + 1 + count($requiredDocumentTypes);
-            $completedCount = ($readingComplete ? 1 : 0) + $watchedVideos + ($infographicComplete ? 1 : 0) + $uploadedRequiredDocuments;
+            $requiredCount = 1 + $totalRequiredVideos + 1;
+            $completedCount = ($readingComplete ? 1 : 0) + $watchedVideos + ($infographicComplete ? 1 : 0);
             $percentage = $requiredCount > 0 ? (int) round($completedCount / $requiredCount * 100) : 0;
             $status = $completedCount === 0 ? 'Not Started' : ($completedCount >= $requiredCount ? 'Completed' : 'In Progress');
 
@@ -2145,7 +3048,7 @@ class AuthController extends Controller
                 'reading' => $readingStatus,
                 'videos' => $videos,
                 'watched_videos' => $watchedVideos,
-                'total_videos' => count($videos),
+                'total_videos' => $totalRequiredVideos,
                 'infographic' => $infographicStatus,
                 'documents' => $documentStatus,
                 'uploaded_documents' => $uploadedDocuments,

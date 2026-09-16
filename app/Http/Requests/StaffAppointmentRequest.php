@@ -17,6 +17,7 @@ class StaffAppointmentRequest extends FormRequest
     {
         return [
             'mother_id' => ['required', 'integer', 'exists:mothers,id'],
+            'staff_availability_id' => ['nullable', 'integer', 'exists:staff_availabilities,id'],
             'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
             'appointment_type' => ['required', Rule::in(array_keys(Appointment::appointmentTypeLabels()))],
             'meeting_type' => ['required', Rule::in(array_keys(Appointment::meetingTypeLabels()))],
@@ -28,6 +29,7 @@ class StaffAppointmentRequest extends FormRequest
             'status' => ['nullable', Rule::in([
                 Appointment::STATUS_PENDING,
                 Appointment::STATUS_CONFIRMED,
+                Appointment::STATUS_RESCHEDULED,
                 Appointment::STATUS_RESCHEDULE_REQUESTED,
             ])],
         ];

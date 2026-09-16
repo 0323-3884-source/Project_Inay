@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\MaternalMonitoringRecord;
 use App\Models\Mother;
+use App\Support\MaternalVitalScreening;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -154,6 +155,18 @@ class TestingMaternalCasesSeeder extends Seeder
 
             $week = $scenario['week'] === null ? null : min(40, max(4, $scenario['week'] + ($index % 3)));
             $recordedAt = Carbon::parse($registeredAt)->addDays(2 + ($index % 7));
+            $vitals = [
+                'recorded_at' => $recordedAt,
+                'pregnancy_week' => $week,
+                'bp_systolic' => $scenario['bp'][0] + ($index % 2),
+                'bp_diastolic' => $scenario['bp'][1],
+                'blood_sugar_test_type' => 'fasting_plasma_glucose',
+                'blood_sugar' => $scenario['sugar'] + ($index % 4),
+                'weight' => $scenario['weight'] + (($index % 6) * 0.35),
+                'temperature' => $scenario['temperature'],
+                'heart_rate' => $scenario['heart_rate'],
+            ];
+            $screening = MaternalVitalScreening::screen($vitals, $mother);
 
             MaternalMonitoringRecord::updateOrCreate(
                 [
@@ -165,14 +178,24 @@ class TestingMaternalCasesSeeder extends Seeder
                     'recorded_by_staff_id' => null,
                     'pregnancy_week' => $week,
                     'pregnancy_month' => $week ? min(10, (int) ceil($week / 4)) : null,
-                    'bp_systolic' => $scenario['bp'][0] + ($index % 2),
-                    'bp_diastolic' => $scenario['bp'][1],
-                    'blood_sugar' => $scenario['sugar'] + ($index % 4),
-                    'weight' => $scenario['weight'] + (($index % 6) * 0.35),
-                    'hemoglobin' => $scenario['hemoglobin'],
-                    'temperature' => $scenario['temperature'],
-                    'heart_rate' => $scenario['heart_rate'],
-                    'risk_level' => $scenario['risk'],
+                    'bp_systolic' => $vitals['bp_systolic'],
+                    'bp_diastolic' => $vitals['bp_diastolic'],
+                    'blood_sugar_test_type' => $vitals['blood_sugar_test_type'],
+                    'blood_sugar' => $vitals['blood_sugar'],
+                    'weight' => $vitals['weight'],
+                    'temperature' => $vitals['temperature'],
+                    'heart_rate' => $vitals['heart_rate'],
+                    'bp_status' => $screening['statuses']['blood_pressure'],
+                    'blood_sugar_status' => $screening['statuses']['blood_sugar'],
+                    'weight_status' => $screening['statuses']['weight'],
+                    'temperature_status' => $screening['statuses']['temperature'],
+                    'heart_rate_status' => $screening['statuses']['heart_rate'],
+                    'screening_summary_status' => $screening['summary_status'],
+                    'measurement_units' => $screening['units'],
+                    'screening_explanations' => $screening['explanations'],
+                    'screening_guidelines' => $screening['guidelines'],
+                    'weight_change_from_previous' => $screening['weight_change_from_previous'],
+                    'risk_level' => $screening['summary_status'],
                     'notes' => $scenario['label'].' seeded for unassigned casefile testing.',
                     'created_at' => $recordedAt,
                     'updated_at' => $recordedAt,

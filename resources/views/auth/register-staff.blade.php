@@ -129,7 +129,7 @@
 
             <label class="consent-box" for="privacy_policy">
                 <input id="privacy_policy" type="checkbox" name="privacy_policy" value="1" @checked(old('privacy_policy')) required>
-                <span>I have read and agree to the <a href="#">Privacy Policy</a>.</span>
+                <span>I have read and agree to the <button type="button" class="privacy-policy-link" data-open-privacy-policy aria-haspopup="dialog" aria-controls="privacyPolicyDialog">Privacy Policy</button>.</span>
             </label>
             @error('privacy_policy')<span class="field-error">{{ $message }}</span>@enderror
 
@@ -147,6 +147,8 @@
             <a href="{{ route('login') }}">Mayroon nang account? Log in</a>
         </div>
     </section>
+
+    @include('auth.partials.privacy-policy')
 
     <script>
         const staffIdInput = document.getElementById('healthcare_worker_id_photo');

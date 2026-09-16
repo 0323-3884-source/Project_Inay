@@ -1,4 +1,6 @@
 <IfModule mod_rewrite.c>
+    AddType application/manifest+json .webmanifest
+
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>

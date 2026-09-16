@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\MaternalMonitoringRecord;
+use App\Models\MaternalVitalThreshold;
 use App\Models\Mother;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -120,12 +121,14 @@ class AdminModuleTest extends TestCase
 
         MaternalMonitoringRecord::create([
             'mother_id' => $highRiskMother->id,
-            'risk_level' => 'high',
+            'screening_summary_status' => 'For Review',
+            'risk_level' => 'For Review',
             'recorded_at' => now(),
         ]);
         MaternalMonitoringRecord::create([
             'mother_id' => $lowRiskMother->id,
-            'risk_level' => 'low',
+            'screening_summary_status' => 'Within Reference Range',
+            'risk_level' => 'Within Reference Range',
             'recorded_at' => now(),
         ]);
 
@@ -141,7 +144,7 @@ class AdminModuleTest extends TestCase
             ->assertSee('Total 4Ps Beneficiaries')
             ->assertSee('Total Non-4Ps')
             ->assertSee('Barangays Represented')
-            ->assertSee('High-Risk Pregnancies')
+            ->assertSee('For Review Screenings')
             ->assertSee('Active Pregnancies')
             ->assertSee('San Francisco')
             ->assertSee('Del Remedio')
@@ -151,6 +154,43 @@ class AdminModuleTest extends TestCase
 
         $this->assertSame('completed-admin@example.test', $completedMother->email);
         $this->assertSame('second-barangay-admin@example.test', $secondBarangayMother->email);
+    }
+
+    public function test_admin_can_review_and_update_maternal_vital_thresholds(): void
+    {
+        $threshold = MaternalVitalThreshold::where('key', 'blood_pressure.systolic.review_min')->firstOrFail();
+        $session = [
+            'admin_authenticated' => true,
+            'admin_id' => 1,
+            'admin_username' => 'admin',
+        ];
+
+        $this->withSession($session)
+            ->get(route('admin.maternal-vital-thresholds.index'))
+            ->assertOk()
+            ->assertSee('Clinical Settings')
+            ->assertSee('Clinical Guide References')
+            ->assertSee('Philippine Localized MNCHN Manual of Operations');
+
+        $this->withSession($session)
+            ->patch(route('admin.maternal-vital-thresholds.update'), [
+                'thresholds' => [
+                    $threshold->id => [
+                        'value' => 142,
+                        'guideline_name' => 'Partner OB-GYN Protocol',
+                        'guideline_version' => 'Draft 2026',
+                        'source_url' => 'https://example.test/guideline',
+                        'notes' => 'Pending approval by partner facility.',
+                        'is_active' => '1',
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('admin.maternal-vital-thresholds.index'));
+
+        $threshold->refresh();
+        $this->assertSame(142.0, (float) $threshold->value);
+        $this->assertSame('Partner OB-GYN Protocol', $threshold->guideline_name);
+        $this->assertSame('Draft 2026', $threshold->guideline_version);
     }
 
     private function createAdmin(string $username, string $password): AdminUser

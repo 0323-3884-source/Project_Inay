@@ -178,8 +178,8 @@
                 <article class="admin-pregnancy-tile"><span>Total Pregnant</span><strong>{{ number_format($pregnancyStats['total_pregnant']) }}</strong></article>
                 <article class="admin-pregnancy-tile"><span>Active</span><strong>{{ number_format($pregnancyStats['active']) }}</strong></article>
                 <article class="admin-pregnancy-tile"><span>Completed</span><strong>{{ number_format($pregnancyStats['completed']) }}</strong></article>
-                <article class="admin-pregnancy-tile"><span>High Risk</span><strong>{{ number_format($pregnancyStats['high_risk']) }}</strong></article>
-                <article class="admin-pregnancy-tile"><span>Low Risk</span><strong>{{ number_format($pregnancyStats['low_risk']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>For Review</span><strong>{{ number_format($pregnancyStats['for_review']) }}</strong></article>
+                <article class="admin-pregnancy-tile"><span>Within Reference</span><strong>{{ number_format($pregnancyStats['within_reference_range']) }}</strong></article>
             </div>
         </article>
 

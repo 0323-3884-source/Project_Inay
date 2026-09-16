@@ -187,4 +187,68 @@ class SeparatedRoleAuthTest extends TestCase
         $this->assertSame('Not provided', $staff->contact_number);
         $this->assertStringStartsWith('STAFF-', $staff->staff_id);
     }
+
+    public function test_mother_registration_saves_civil_status(): void
+    {
+        $this->post(route('mother.register.store'), [
+            'full_name' => 'Maria Santos Reyes',
+            'email' => 'mother-civil-status@example.test',
+            'password' => 'password123',
+            'barangay' => 'San Gabriel',
+            'contact_number' => '09171234567',
+            'age' => 35,
+            'civil_status' => 'Married',
+            'gravidity' => 2,
+            'parity' => 1,
+            'is_4ps_beneficiary' => 'no',
+            'privacy_policy' => '1',
+        ])->assertRedirect('/login');
+
+        $this->assertDatabaseHas('mothers', [
+            'email' => 'mother-civil-status@example.test',
+            'civil_status' => 'Married',
+            'gravidity' => 2,
+            'parity' => 1,
+        ]);
+    }
+
+    public function test_mother_registration_rejects_parity_greater_than_gravidity(): void
+    {
+        $this->from(route('mother.register'))
+            ->post(route('mother.register.store'), [
+                'full_name' => 'Maria Santos Reyes',
+                'email' => 'mother-invalid-obstetric@example.test',
+                'password' => 'password123',
+                'barangay' => 'San Gabriel',
+                'contact_number' => '09171234567',
+                'gravidity' => 1,
+                'parity' => 2,
+                'is_4ps_beneficiary' => 'no',
+                'privacy_policy' => '1',
+            ])
+            ->assertRedirect(route('mother.register'))
+            ->assertSessionHasErrors([
+                'parity' => 'Parity cannot be greater than Gravidity.',
+            ]);
+
+        $this->assertDatabaseMissing('mothers', [
+            'email' => 'mother-invalid-obstetric@example.test',
+        ]);
+    }
+
+    public function test_mother_registration_lists_all_san_pablo_barangays_for_search(): void
+    {
+        $content = $this->get(route('mother.register'))
+            ->assertOk()
+            ->assertSee('list="san-pablo-barangays"', false)
+            ->getContent();
+
+        preg_match('/<datalist id="san-pablo-barangays">(.*?)<\/datalist>/s', $content, $matches);
+
+        $this->assertNotEmpty($matches[1] ?? null);
+        $this->assertSame(80, preg_match_all('/<option value="[^"]+"><\/option>/', $matches[1], $options));
+        $this->assertStringContainsString('Bagong Bayan II-A', $matches[1]);
+        $this->assertStringContainsString('Barangay I-A', $matches[1]);
+        $this->assertStringContainsString('Santo Niño', $matches[1]);
+    }
 }

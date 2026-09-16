@@ -55,9 +55,89 @@ class NeonatalVaccinesTest extends TestCase
         ])
             ->get('/staff/neonatal-vaccines')
             ->assertOk()
-            ->assertSee('Neonatal & Vaccine Command', false)
-            ->assertSee('Linked Child Case Records', false)
+            ->assertSee('Neonatal &amp; Vaccines', false)
+            ->assertDontSee('Neonatal &amp;amp; Vaccines', false)
+            ->assertSee('Neonatal & Vaccine Monitoring', false)
+            ->assertSee("Mother's Child", false)
+            ->assertDontSee('Linked Child Case Records', false)
+            ->assertDontSee('data-neo-open="add-child"', false)
+            ->assertDontSee('data-neo-modal="add-child"', false)
+            ->assertDontSee('Add Child Case Record')
             ->assertSee($mother->full_name);
+    }
+
+    public function test_staff_selects_mother_then_switches_between_that_mothers_children(): void
+    {
+        $staff = ProgramStaff::create([
+            'first_name' => 'Miguel',
+            'last_name' => 'Ponce Isles',
+            'email' => 'staff-neonatal-mother-select@example.test',
+            'password' => Hash::make('password123'),
+            'staff_id' => 'STAFF-NEONATAL-MOTHER',
+            'position' => 'Program Staff',
+            'contact_number' => '09990001111',
+        ]);
+
+        $mother = Mother::create([
+            'first_name' => 'Maria',
+            'last_name' => 'Reyes',
+            'email' => 'mother-neonatal-mother-select@example.test',
+            'password' => Hash::make('password123'),
+            'barangay' => 'Concepcion',
+            'contact_number' => '09923245009',
+            'age' => 25,
+            'blood_type' => 'Unknown',
+            'pregnancy_status' => 'not_pregnant',
+            'is_4ps_beneficiary' => false,
+        ]);
+
+        StaffMotherCasefile::create([
+            'staff_id' => $staff->id,
+            'mother_id' => $mother->id,
+        ]);
+
+        $olderChild = Infant::create([
+            'mother_id' => $mother->id,
+            'full_name' => 'Baby Alpha',
+            'sex' => 'female',
+            'birth_date' => '2026-06-01',
+        ]);
+
+        $youngerChild = Infant::create([
+            'mother_id' => $mother->id,
+            'full_name' => 'Baby Beta',
+            'sex' => 'male',
+            'birth_date' => '2026-07-01',
+        ]);
+
+        $session = [
+            'auth_role' => 'staff',
+            'auth_id' => $staff->id,
+            'auth_name' => $staff->full_name,
+            'auth_email' => $staff->email,
+        ];
+        $olderChildUrl = str_replace('&', '&amp;', route('staff.neonatal', ['mother' => $mother->id, 'child' => $olderChild->id]));
+        $youngerChildUrl = str_replace('&', '&amp;', route('staff.neonatal', ['mother' => $mother->id, 'child' => $youngerChild->id]));
+
+        $this->withSession($session)
+            ->get('/staff/neonatal-vaccines?mother='.$mother->id)
+            ->assertOk()
+            ->assertSee($mother->full_name)
+            ->assertSee('Baby Alpha')
+            ->assertSee('Baby Beta')
+            ->assertSee('name="mother_id"', false)
+            ->assertSee("Mother's Child", false)
+            ->assertDontSee('data-neo-open="add-child"', false)
+            ->assertDontSee('data-neo-modal="add-child"', false)
+            ->assertDontSee('Add Child Case Record')
+            ->assertSee($olderChildUrl, false)
+            ->assertSee($youngerChildUrl, false);
+
+        $this->withSession($session)
+            ->get('/staff/neonatal-vaccines?mother='.$mother->id.'&child='.$youngerChild->id)
+            ->assertOk()
+            ->assertSeeInOrder([$mother->full_name, 'Baby Beta'])
+            ->assertSee('value="'.$youngerChildUrl.'" selected', false);
     }
 
     public function test_staff_can_update_child_profile_and_photo(): void

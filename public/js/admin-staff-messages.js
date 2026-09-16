@@ -128,9 +128,28 @@
         setComposerEnabled();
     };
 
+    const contactNumber = () => {
+        const raw = String(selectedThread()?.participant?.contact_number || '').trim();
+        const digits = raw.replace(/\D/g, '');
+        return digits.length >= 7 ? (raw.startsWith('+') ? '+' : '') + digits : '';
+    };
+    const contactButtons = root.querySelectorAll('[data-contact-action]');
+    contactButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const number = contactNumber();
+            if (number) window.location.href = `${button.dataset.contactAction}:${number}`;
+        });
+    });
+
     const updateSelectedHeader = () => {
         const thread = selectedThread();
         const participant = thread?.participant;
+        contactButtons.forEach((button) => {
+            button.disabled = !contactNumber();
+            button.title = contactNumber()
+                ? `${button.dataset.contactAction === 'tel' ? 'Call' : 'Send SMS to'} ${participant.name}`
+                : 'Phone number is unavailable for this contact';
+        });
 
         if (!participant) {
             selectedInitials.textContent = copy.selectedInitials;

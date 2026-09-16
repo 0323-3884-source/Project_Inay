@@ -13,6 +13,8 @@
 @endpush
 
 @php
+    $iconPhone = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.6 1.9Z"/></svg>';
+    $iconSms = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 8h8"/><path d="M8 12h5"/></svg>';
     $iconSearch = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
     $iconPlus = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
     $iconSmile = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>';
@@ -83,7 +85,10 @@
                         <h2 data-selected-name>Select Program Staff</h2>
                         <p><span data-selected-role>Program Staff</span> <b>&middot;</b> <span data-selected-status>Offline</span></p>
                     </div>
-                    <span class="admin-staff-message-chip">Admin only</span>
+                    <div class="consultation-call-actions">
+                        <button type="button" data-contact-action="tel" aria-label="Call contact" title="Call contact" disabled>{!! $iconPhone !!}</button>
+                        <button type="button" data-contact-action="sms" aria-label="Send SMS" title="Send SMS" disabled>{!! $iconSms !!}</button>
+                    </div>
                 </header>
 
                 <div class="consultation-messages" data-message-list>

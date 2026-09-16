@@ -30,6 +30,10 @@ class ProgramStaff extends Model
         'approved_by_admin_id',
         'rejected_at',
         'rejection_reason',
+        'assigned_barangay',
+        'assigned_facility',
+        'accepting_appointments',
+        'max_appointments_per_day',
     ];
 
     protected $hidden = [
@@ -40,6 +44,8 @@ class ProgramStaff extends Model
         'healthcare_worker_id_verified_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'accepting_appointments' => 'boolean',
+        'max_appointments_per_day' => 'integer',
     ];
 
     public function getFullNameAttribute(): string
@@ -122,6 +128,16 @@ class ProgramStaff extends Model
         return $this->hasMany(Appointment::class, 'staff_id');
     }
 
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(StaffAvailability::class, 'staff_id');
+    }
+
+    public function availabilityBlocks(): HasMany
+    {
+        return $this->hasMany(StaffAvailabilityBlock::class, 'staff_id');
+    }
+
     public function coordinationMessagesSent(): HasMany
     {
         return $this->hasMany(StaffCoordinationMessage::class, 'sender_staff_id');
@@ -130,6 +146,16 @@ class ProgramStaff extends Model
     public function coordinationMessagesReceived(): HasMany
     {
         return $this->hasMany(StaffCoordinationMessage::class, 'receiver_staff_id');
+    }
+
+    public function verifiedInayKaalamanCheckups(): HasMany
+    {
+        return $this->hasMany(InayKaalamanCheckup::class, 'verified_by_staff_id');
+    }
+
+    public function recordedInayKaalamanCheckups(): HasMany
+    {
+        return $this->hasMany(InayKaalamanCheckup::class, 'recorded_by_staff_id');
     }
 
     private function normalizeHealthcareWorkerIdPhotoPath(?string $value): ?string

@@ -166,6 +166,68 @@ class AppNotificationsTest extends TestCase
         ]);
     }
 
+    public function test_mother_registration_creates_one_unread_staff_notification_with_casefile_link(): void
+    {
+        $staff = $this->createStaff('Ana', 'Cruz', 'ana.registration-notify@example.test', 'STAFF-REGISTRATION-NOTIFY');
+
+        $payload = [
+            'first_name' => 'Maria',
+            'middle_name' => null,
+            'last_name' => 'Santos',
+            'email' => 'maria.santos.registration@example.test',
+            'password' => 'password123',
+            'barangay' => 'San Francisco',
+            'contact_number' => '09175551234',
+            'age' => 26,
+            'pregnancy_status' => 'pregnant',
+            'is_4ps_beneficiary' => 'yes',
+            'privacy_policy' => '1',
+        ];
+
+        $this->post(route('mother.register.store'), $payload)
+            ->assertRedirect(route('login'));
+
+        $mother = Mother::where('email', $payload['email'])->firstOrFail();
+
+        $this->assertDatabaseHas('app_notifications', [
+            'recipient_id' => $staff->id,
+            'recipient_role' => Message::ROLE_PROGRAM_STAFF,
+            'mother_id' => $mother->id,
+            'type' => 'mother_registered',
+            'title' => 'New mother registered',
+            'body' => 'A new mother, Maria Santos, has registered.',
+            'read_at' => null,
+        ]);
+
+        $this->post(route('mother.register.store'), $payload)
+            ->assertSessionHasErrors('email');
+
+        $this->assertSame(1, AppNotification::where('recipient_id', $staff->id)
+            ->where('recipient_role', Message::ROLE_PROGRAM_STAFF)
+            ->where('mother_id', $mother->id)
+            ->where('type', 'mother_registered')
+            ->count());
+
+        $notification = AppNotification::firstWhere('type', 'mother_registered');
+
+        $this->withSession($this->staffSession($staff))
+            ->getJson(route('notifications.index'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonPath('notifications.0.body', 'A new mother, Maria Santos, has registered.')
+            ->assertJsonPath('notifications.0.url', route('staff.mothers.show', $mother));
+
+        $this->withSession($this->staffSession($staff))
+            ->postJson(route('notifications.read', $notification))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 0);
+
+        $this->withSession($this->staffSession($staff))
+            ->get(route('staff.mothers.show', $mother))
+            ->assertOk()
+            ->assertSee('Maria Santos');
+    }
+
     public function test_message_links_render_as_sidebar_dropdown_and_admin_has_notifications(): void
     {
         $mother = $this->createMother('maria.responsive-shell@example.test');

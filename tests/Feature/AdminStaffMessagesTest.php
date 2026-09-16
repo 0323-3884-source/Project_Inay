@@ -49,6 +49,13 @@ class AdminStaffMessagesTest extends TestCase
 
         $this->assertCount(1, $payload);
         $this->assertSame($staff->full_name, $payload[0]['participant']['name']);
+        $this->assertSame($staff->contact_number, $payload[0]['participant']['contact_number']);
+
+        config(['contacts.admin_phone' => '+639171234567']);
+        $this->withSession($this->staffSession($staff))
+            ->getJson(route('admin-staff-messages.threads.index', ['selected' => $thread->id]))
+            ->assertOk()
+            ->assertJsonPath('threads.0.participant.contact_number', '+639171234567');
     }
 
     public function test_admin_and_program_staff_can_send_read_reply_and_unsend_messages(): void

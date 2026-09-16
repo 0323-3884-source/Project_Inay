@@ -11,19 +11,7 @@
         old('last_name'),
     ]))));
 
-    $barangayOptions = $barangays ?? [
-        'Bagong Bayan',
-        'Concepcion',
-        'Del Remedio',
-        'San Gabriel',
-        'San Francisco',
-        'San Lucas 1',
-        'San Lucas 2',
-        'San Nicolas',
-        'San Rafael',
-        'Santa Ana',
-        'Santo Angel',
-    ];
+    $barangayOptions = $barangays ?? [];
 @endphp
 
 @section('content')
@@ -87,12 +75,23 @@
 
             <div class="auth-field">
                 <label class="auth-label" for="barangay">Barangay (San Pablo City, Laguna)</label>
-                <select class="auth-select" id="barangay" name="barangay" required>
-                    <option value="">Pumili ng barangay</option>
+                <input
+                    class="auth-input"
+                    id="barangay"
+                    type="search"
+                    name="barangay"
+                    value="{{ old('barangay') }}"
+                    list="san-pablo-barangays"
+                    placeholder="Type to search barangay"
+                    autocomplete="off"
+                    required
+                >
+                <datalist id="san-pablo-barangays">
                     @foreach ($barangayOptions as $barangay)
-                        <option value="{{ $barangay }}" @selected(old('barangay') === $barangay)>{{ $barangay }}</option>
+                        <option value="{{ $barangay }}"></option>
                     @endforeach
-                </select>
+                </datalist>
+                <p class="auth-help">Type a few letters to search the 80 official San Pablo City barangays, then choose a match.</p>
                 @error('barangay')<span class="field-error">{{ $message }}</span>@enderror
             </div>
 
@@ -135,6 +134,34 @@
                         @endforeach
                     </select>
                     @error('blood_type')<span class="field-error">{{ $message }}</span>@enderror
+                </div>
+            </div>
+
+            <div class="auth-field">
+                <label class="auth-label" for="civil_status">Civil Status</label>
+                <select class="auth-select" id="civil_status" name="civil_status">
+                    <option value="">Pumili ng civil status</option>
+                    @foreach (['Single', 'Married', 'Widowed', 'Separated'] as $civilStatus)
+                        <option value="{{ $civilStatus }}" @selected(old('civil_status') === $civilStatus)>{{ $civilStatus }}</option>
+                    @endforeach
+                </select>
+                @error('civil_status')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
+            <div class="auth-field-row">
+                <div class="auth-field">
+                    <label class="auth-label" for="gravidity">Gravidity (Number of Pregnancies)</label>
+                    <input class="auth-input" id="gravidity" type="number" name="gravidity" min="0" step="1" value="{{ old('gravidity') }}" placeholder="e.g. 2" inputmode="numeric">
+                    <p class="auth-help">Enter the total number of pregnancies, including the current pregnancy.</p>
+                    @error('gravidity')<span class="field-error">{{ $message }}</span>@enderror
+                </div>
+
+                <div class="auth-field">
+                    <label class="auth-label" for="parity">Parity (Pregnancies Reaching Viability)</label>
+                    <input class="auth-input" id="parity" type="number" name="parity" min="0" step="1" value="{{ old('parity') }}" placeholder="e.g. 1" inputmode="numeric" aria-describedby="parityHelp parityClientError">
+                    <p class="auth-help" id="parityHelp">Enter the number of pregnancies reaching the project parity threshold.</p>
+                    <span class="field-error" id="parityClientError" hidden>Parity cannot be greater than Gravidity.</span>
+                    @error('parity')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
             </div>
 
@@ -188,7 +215,7 @@
 
             <label class="consent-box" for="privacy_policy">
                 <input id="privacy_policy" type="checkbox" name="privacy_policy" value="1" @checked(old('privacy_policy')) required>
-                <span>I have read and agree to the <a href="#">Privacy Policy</a>.</span>
+                <span>I have read and agree to the <button type="button" class="privacy-policy-link" data-open-privacy-policy aria-haspopup="dialog" aria-controls="privacyPolicyDialog">Privacy Policy</button>.</span>
             </label>
             @error('privacy_policy')<span class="field-error">{{ $message }}</span>@enderror
 
@@ -207,6 +234,8 @@
         </div>
     </section>
 
+    @include('auth.partials.privacy-policy')
+
     <script>
         const locationButton = document.getElementById('useLocation');
         const locationStatus = document.getElementById('locationStatus');
@@ -215,6 +244,20 @@
         const accuracyInput = document.getElementById('location_accuracy');
         const privacyPolicy = document.getElementById('privacy_policy');
         const motherSubmit = document.getElementById('motherSubmit');
+        const gravidityInput = document.getElementById('gravidity');
+        const parityInput = document.getElementById('parity');
+        const parityClientError = document.getElementById('parityClientError');
+
+        const syncObstetricValidation = () => {
+            if (!gravidityInput || !parityInput) return;
+
+            const gravidity = gravidityInput.value === '' ? null : Number(gravidityInput.value);
+            const parity = parityInput.value === '' ? null : Number(parityInput.value);
+            const invalid = gravidity !== null && parity !== null && parity > gravidity;
+
+            parityInput.setCustomValidity(invalid ? 'Parity cannot be greater than Gravidity.' : '');
+            parityClientError.hidden = !invalid;
+        };
 
         const syncMotherSubmit = () => {
             motherSubmit.classList.toggle('is-ready', privacyPolicy.checked);
@@ -222,6 +265,10 @@
 
         syncMotherSubmit();
         privacyPolicy.addEventListener('change', syncMotherSubmit);
+
+        gravidityInput?.addEventListener('input', syncObstetricValidation);
+        parityInput?.addEventListener('input', syncObstetricValidation);
+        syncObstetricValidation();
 
         locationButton.addEventListener('click', () => {
             if (!navigator.geolocation) {

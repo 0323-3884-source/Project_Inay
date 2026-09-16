@@ -3,11 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Appointment;
-use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Mother;
 use App\Models\ProgramStaff;
-use App\Models\StaffMotherCasefile;
+use App\Models\StaffAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -16,157 +15,329 @@ class ClinicScheduleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_staff_and_mother_can_open_clinic_schedule_pages(): void
+    public function test_mother_appointment_page_shows_doctor_list_without_fee_text(): void
     {
-        [$mother, $staff] = $this->makeAssignedPair();
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        $date = now()->addWeek()->startOfWeek();
+        $this->createAvailability($staff, $date->isoWeekday());
+
+        $this->withSession($this->motherSession($mother))
+            ->get(route('mother.clinic-schedule.index'))
+            ->assertOk()
+            ->assertSee('My Appointments')
+            ->assertSee('Doctor List')
+            ->assertSee('Filter by Barangay')
+            ->assertSee('San Gabriel')
+            ->assertSee($staff->full_name)
+            ->assertSee('Midwife')
+            ->assertSee('San Gabriel Health Center')
+            ->assertSee('Book Now')
+            ->assertSee('Details')
+            ->assertSee('Detail Doctor')
+            ->assertSee('Experience')
+            ->assertSee('Speciality')
+            ->assertSee('Reviews')
+            ->assertDontSee('&#8369;', false)
+            ->assertDontSee('₱')
+            ->assertDontSee('/hour');
 
         $this->withSession($this->staffSession($staff))
             ->get(route('staff.clinic-schedule.index'))
             ->assertOk()
             ->assertSee('Clinic Schedule')
-            ->assertSee('Create Appointment');
-
-        $this->withSession($this->motherSession($mother))
-            ->get(route('mother.clinic-schedule.index'))
-            ->assertOk()
-            ->assertSee('My Clinic Schedule');
+            ->assertSee('Healthcare Worker Portal')
+            ->assertSee('Scheduling Profile')
+            ->assertSee('Available Hours')
+            ->assertSee('Blocked Dates')
+            ->assertSee('Create Appointment')
+            ->assertSee('Appointment Requests');
     }
 
-    public function test_staff_creates_appointment_and_mother_can_confirm_it(): void
+    public function test_mother_can_filter_doctor_list_by_barangay(): void
     {
-        [$mother, $staff] = $this->makeAssignedPair();
-        $date = now()->addDays(7)->toDateString();
+        $mother = Mother::create($this->motherAttributes());
+        $sanGabrielStaff = ProgramStaff::create($this->staffAttributes(
+            email: 'san-gabriel-staff@example.test',
+            staffId: 'STAFF-SAN-GABRIEL',
+            firstName: 'Ana',
+            lastName: 'Cruz',
+            barangay: 'San Gabriel',
+            facility: 'San Gabriel Health Center',
+        ));
+        $sanIsidroStaff = ProgramStaff::create($this->staffAttributes(
+            email: 'san-isidro-staff@example.test',
+            staffId: 'STAFF-SAN-ISIDRO',
+            firstName: 'Lina',
+            lastName: 'Dela Rosa',
+            barangay: 'San Isidro',
+            facility: 'San Isidro Health Station',
+        ));
 
-        $this->withSession($this->staffSession($staff))
-            ->post(route('staff.clinic-schedule.store'), $this->appointmentPayload($mother, $date))
-            ->assertRedirect(route('staff.clinic-schedule.index'));
+        $date = now()->addWeek()->startOfWeek();
+        $this->createAvailability($sanGabrielStaff, $date->isoWeekday());
+        $this->createAvailability($sanIsidroStaff, $date->isoWeekday());
 
-        $appointment = Appointment::first();
+        $this->withSession($this->motherSession($mother))
+            ->get(route('mother.clinic-schedule.index', ['barangay' => 'San Gabriel']))
+            ->assertOk()
+            ->assertSee('Barangay:')
+            ->assertSee('San Gabriel')
+            ->assertSee($sanGabrielStaff->full_name)
+            ->assertDontSee($sanIsidroStaff->full_name);
+    }
 
-        $this->assertNotNull($appointment);
-        $this->assertSame(Appointment::STATUS_PENDING, $appointment->status);
-        $this->assertDatabaseHas('app_notifications', [
-            'recipient_id' => $mother->id,
-            'recipient_role' => Message::ROLE_MOTHER,
-            'appointment_id' => $appointment->id,
-            'type' => 'appointment_created',
+    public function test_mother_can_book_from_doctor_list(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        $date = now()->addWeek()->startOfWeek();
+        $availability = $this->createAvailability($staff, $date->isoWeekday());
+
+        $this->withSession($this->motherSession($mother))
+            ->postJson(route('mother.clinic-schedule.store'), [
+                'staff_availability_id' => $availability->id,
+                'appointment_date' => $date->toDateString(),
+                'appointment_type' => 'prenatal_checkup',
+                'notes' => 'Headache and mild dizziness since yesterday.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('appointment.staff_name', $staff->full_name)
+            ->assertJsonPath('appointment.status', Appointment::STATUS_PENDING);
+
+        $appointment = Appointment::firstOrFail();
+
+        $this->assertSame($date->toDateString(), $appointment->appointment_date->toDateString());
+        $this->assertDatabaseHas('appointments', [
+            'mother_id' => $mother->id,
+            'staff_id' => $staff->id,
+            'staff_availability_id' => $availability->id,
+            'notes' => 'Headache and mild dizziness since yesterday.',
+            'status' => Appointment::STATUS_PENDING,
+        ]);
+    }
+
+    public function test_mother_doctor_list_locks_booking_when_active_appointment_exists(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $activeStaff = ProgramStaff::create($this->staffAttributes());
+        $otherStaff = ProgramStaff::create($this->staffAttributes(
+            email: 'other-schedule-staff@example.test',
+            staffId: 'STAFF-SCHEDULE-OTHER',
+            firstName: 'Lina',
+            lastName: 'Reyes',
+            barangay: 'San Gabriel',
+            facility: 'San Gabriel Health Station',
+        ));
+        $date = now()->addWeek()->startOfWeek();
+        $activeAvailability = $this->createAvailability($activeStaff, $date->isoWeekday());
+        $this->createAvailability($otherStaff, $date->isoWeekday());
+
+        Appointment::create([
+            'mother_id' => $mother->id,
+            'staff_id' => $activeStaff->id,
+            'staff_availability_id' => $activeAvailability->id,
+            'appointment_type' => 'prenatal_checkup',
+            'meeting_type' => Appointment::MEETING_IN_PERSON,
+            'appointment_date' => $date->toDateString(),
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'location' => 'San Gabriel Health Center',
+            'status' => Appointment::STATUS_PENDING,
+            'created_by_id' => $mother->id,
+            'created_by_role' => Message::ROLE_MOTHER,
         ]);
 
         $this->withSession($this->motherSession($mother))
             ->get(route('mother.clinic-schedule.index'))
             ->assertOk()
-            ->assertSee('Prenatal Checkup')
-            ->assertSee('Confirm');
+            ->assertSee('You already have an active appointment with')
+            ->assertSee($activeStaff->full_name)
+            ->assertSee('Waiting for Confirmation')
+            ->assertSee('Appointment Pending')
+            ->assertSee('Active Appointment')
+            ->assertSee('View Appointment')
+            ->assertSee('Cancel Request');
+    }
+
+    public function test_mother_cannot_submit_multiple_active_appointment_requests(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $activeStaff = ProgramStaff::create($this->staffAttributes());
+        $otherStaff = ProgramStaff::create($this->staffAttributes(
+            email: 'duplicate-other-staff@example.test',
+            staffId: 'STAFF-DUPLICATE-OTHER',
+            firstName: 'Lina',
+            lastName: 'Reyes',
+            barangay: 'San Gabriel',
+            facility: 'San Gabriel Health Station',
+        ));
+        $date = now()->addWeek()->startOfWeek();
+        $activeAvailability = $this->createAvailability($activeStaff, $date->isoWeekday());
+        $otherAvailability = $this->createAvailability($otherStaff, $date->isoWeekday());
+
+        Appointment::create([
+            'mother_id' => $mother->id,
+            'staff_id' => $activeStaff->id,
+            'staff_availability_id' => $activeAvailability->id,
+            'appointment_type' => 'prenatal_checkup',
+            'meeting_type' => Appointment::MEETING_IN_PERSON,
+            'appointment_date' => $date->toDateString(),
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'location' => 'San Gabriel Health Center',
+            'status' => Appointment::STATUS_PENDING,
+            'created_by_id' => $mother->id,
+            'created_by_role' => Message::ROLE_MOTHER,
+        ]);
 
         $this->withSession($this->motherSession($mother))
-            ->patch(route('mother.clinic-schedule.confirm', $appointment))
-            ->assertRedirect(route('mother.clinic-schedule.index'));
+            ->postJson(route('mother.clinic-schedule.store'), [
+                'staff_availability_id' => $otherAvailability->id,
+                'appointment_date' => $date->toDateString(),
+                'appointment_type' => 'prenatal_checkup',
+                'notes' => 'Trying to book a second doctor.',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('active_appointment.staff_id', $activeStaff->id)
+            ->assertJsonPath('active_appointment.status_display', 'Waiting for Confirmation');
+
+        $this->assertSame(1, Appointment::where('mother_id', $mother->id)->count());
+    }
+
+    public function test_mother_can_cancel_pending_request_and_book_again(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        $date = now()->addWeek()->startOfWeek();
+        $availability = $this->createAvailability($staff, $date->isoWeekday());
+
+        $appointment = Appointment::create([
+            'mother_id' => $mother->id,
+            'staff_id' => $staff->id,
+            'staff_availability_id' => $availability->id,
+            'appointment_type' => 'prenatal_checkup',
+            'meeting_type' => Appointment::MEETING_IN_PERSON,
+            'appointment_date' => $date->toDateString(),
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'location' => 'San Gabriel Health Center',
+            'status' => Appointment::STATUS_PENDING,
+            'created_by_id' => $mother->id,
+            'created_by_role' => Message::ROLE_MOTHER,
+        ]);
+
+        $this->withSession($this->motherSession($mother))
+            ->patchJson(route('mother.clinic-schedule.cancel', $appointment))
+            ->assertOk()
+            ->assertJsonPath('appointment.status', Appointment::STATUS_CANCELLED)
+            ->assertJsonPath('active_appointment', null);
+
+        $this->withSession($this->motherSession($mother))
+            ->get(route('mother.clinic-schedule.index'))
+            ->assertOk()
+            ->assertSee('Cancelled')
+            ->assertSee('Book Now')
+            ->assertDontSee('Appointment Pending');
+    }
+
+    public function test_mother_search_endpoints_remain_disabled_for_json_requests(): void
+    {
+        $this->getJson(route('mother.clinic-schedule.workers'))
+            ->assertGone()
+            ->assertJsonPath('message', 'Appointment scheduling has been removed from the mother portal.');
+
+        $this->getJson(route('mother.clinic-schedule.availability'))
+            ->assertGone()
+            ->assertJsonPath('message', 'Appointment scheduling has been removed from the mother portal.');
+    }
+
+    public function test_healthcare_worker_can_publish_availability_and_block_dates(): void
+    {
+        $staff = ProgramStaff::create($this->staffAttributes());
+
+        $this->withSession($this->staffSession($staff))
+            ->post(route('staff.clinic-schedule.availability.store'), [
+                'day_of_week' => 1,
+                'start_time' => '09:00',
+                'end_time' => '10:00',
+                'appointment_type' => 'prenatal_checkup',
+                'meeting_type' => Appointment::MEETING_IN_PERSON,
+                'location' => 'San Gabriel Health Center',
+            ])
+            ->assertRedirect(route('staff.clinic-schedule.index'));
+
+        $this->assertDatabaseHas('staff_availabilities', [
+            'staff_id' => $staff->id,
+            'day_of_week' => 1,
+            'appointment_type' => 'prenatal_checkup',
+            'meeting_type' => Appointment::MEETING_IN_PERSON,
+        ]);
+
+        $this->withSession($this->staffSession($staff))
+            ->post(route('staff.clinic-schedule.blocks.store'), [
+                'blocked_date' => now()->addWeeks(2)->toDateString(),
+                'reason' => 'Training day',
+                'notes' => 'Community health training.',
+            ])
+            ->assertRedirect(route('staff.clinic-schedule.index'));
+
+        $this->assertDatabaseHas('staff_availability_blocks', [
+            'staff_id' => $staff->id,
+            'reason' => 'Training day',
+        ]);
+    }
+
+    public function test_healthcare_worker_can_confirm_a_mothers_appointment_request(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        $date = now()->addWeek()->startOfWeek();
+        $availability = $this->createAvailability($staff, $date->isoWeekday());
+
+        $this->withSession($this->motherSession($mother))
+            ->postJson(route('mother.clinic-schedule.store'), [
+                'staff_availability_id' => $availability->id,
+                'appointment_date' => $date->toDateString(),
+                'appointment_type' => 'prenatal_checkup',
+            ])
+            ->assertCreated();
+
+        $appointment = Appointment::firstOrFail();
+
+        $this->withSession($this->staffSession($staff))
+            ->patchJson(route('staff.clinic-schedule.confirm', $appointment))
+            ->assertOk()
+            ->assertJsonPath('appointment.status', Appointment::STATUS_CONFIRMED);
 
         $this->assertDatabaseHas('appointments', [
             'id' => $appointment->id,
+            'staff_id' => $staff->id,
             'status' => Appointment::STATUS_CONFIRMED,
         ]);
-        $this->assertDatabaseHas('app_notifications', [
-            'recipient_id' => $staff->id,
-            'recipient_role' => Message::ROLE_PROGRAM_STAFF,
-            'appointment_id' => $appointment->id,
-            'type' => 'appointment_confirmed',
-        ]);
     }
 
-    public function test_conflict_validation_blocks_overlapping_mother_or_staff_schedule(): void
+    private function createAvailability(ProgramStaff $staff, int $dayOfWeek): StaffAvailability
     {
-        [$mother, $staff] = $this->makeAssignedPair();
-        $date = now()->addDays(8)->toDateString();
-
-        $this->withSession($this->staffSession($staff))
-            ->post(route('staff.clinic-schedule.store'), $this->appointmentPayload($mother, $date, '09:00', '10:00'))
-            ->assertRedirect(route('staff.clinic-schedule.index'));
-
-        $this->withSession($this->staffSession($staff))
-            ->post(route('staff.clinic-schedule.store'), $this->appointmentPayload($mother, $date, '09:30', '10:30'))
-            ->assertSessionHasErrors(['appointment' => 'This schedule conflicts with another appointment.']);
-
-        $this->assertDatabaseCount('appointments', 1);
-    }
-
-    public function test_staff_cannot_schedule_unassigned_mother(): void
-    {
-        [, $staff] = $this->makeAssignedPair();
-        $unassignedMother = Mother::create($this->motherAttributes('Lorna', 'Reyes', 'unassigned@example.test'));
-
-        $this->withSession($this->staffSession($staff))
-            ->postJson(route('staff.clinic-schedule.store'), $this->appointmentPayload($unassignedMother, now()->addDays(9)->toDateString()))
-            ->assertForbidden()
-            ->assertJsonPath('message', 'You can only schedule assigned mothers.');
-
-        $this->assertDatabaseCount('appointments', 0);
-    }
-
-    public function test_consultation_schedule_checkup_creates_system_message(): void
-    {
-        [$mother, $staff] = $this->makeAssignedPair();
-        $conversation = Conversation::create([
-            'mother_id' => $mother->id,
-            'program_staff_id' => $staff->id,
-        ]);
-
-        $this->withSession($this->staffSession($staff))
-            ->postJson(route('staff.clinic-schedule.store'), array_merge(
-                $this->appointmentPayload($mother, now()->addDays(10)->toDateString()),
-                [
-                    'conversation_id' => $conversation->id,
-                    'from_consultation' => '1',
-                ],
-            ))
-            ->assertCreated()
-            ->assertJsonPath('message.message_type', Message::TYPE_SYSTEM)
-            ->assertJsonPath('message.message', 'Prenatal Checkup scheduled for '.now()->addDays(10)->format('F j, Y').' at 9:00 AM.');
-
-        $this->assertDatabaseHas('messages', [
-            'conversation_id' => $conversation->id,
-            'sender_id' => $staff->id,
-            'sender_role' => Message::ROLE_PROGRAM_STAFF,
-            'receiver_id' => $mother->id,
-            'receiver_role' => Message::ROLE_MOTHER,
-            'message_type' => Message::TYPE_SYSTEM,
-        ]);
-    }
-
-    private function makeAssignedPair(string $email = 'schedule@example.test'): array
-    {
-        $mother = Mother::create($this->motherAttributes('Maria', 'Reyes', $email));
-        $staff = ProgramStaff::create($this->staffAttributes('Ana', 'Cruz', $email, 'STAFF-SCHEDULE'));
-
-        StaffMotherCasefile::create([
+        return StaffAvailability::create([
             'staff_id' => $staff->id,
-            'mother_id' => $mother->id,
-        ]);
-
-        return [$mother, $staff];
-    }
-
-    private function appointmentPayload(Mother $mother, string $date, string $start = '09:00', string $end = '10:00'): array
-    {
-        return [
-            'mother_id' => $mother->id,
+            'day_of_week' => $dayOfWeek,
+            'start_time' => '09:00',
+            'end_time' => '10:00',
             'appointment_type' => 'prenatal_checkup',
             'meeting_type' => Appointment::MEETING_IN_PERSON,
-            'appointment_date' => $date,
-            'start_time' => $start,
-            'end_time' => $end,
-            'location' => 'Main Health Center',
-            'notes' => 'Bring previous monitoring record.',
-        ];
+            'location' => 'San Gabriel Health Center',
+            'is_active' => true,
+        ]);
     }
 
-    private function motherAttributes(string $firstName, string $lastName, string $email): array
+    private function motherAttributes(): array
     {
         return [
-            'first_name' => $firstName,
+            'first_name' => 'Maria',
             'middle_name' => null,
-            'last_name' => $lastName,
-            'email' => $email,
+            'last_name' => 'Reyes',
+            'email' => 'schedule-mother@example.test',
             'password' => Hash::make('password123'),
             'barangay' => 'San Gabriel',
             'contact_number' => '09170000000',
@@ -174,7 +345,14 @@ class ClinicScheduleTest extends TestCase
         ];
     }
 
-    private function staffAttributes(string $firstName, string $lastName, string $email, string $staffId): array
+    private function staffAttributes(
+        string $email = 'schedule-staff@example.test',
+        string $staffId = 'STAFF-SCHEDULE',
+        string $firstName = 'Ana',
+        string $lastName = 'Cruz',
+        string $barangay = 'San Gabriel',
+        string $facility = 'San Gabriel Health Center',
+    ): array
     {
         return [
             'first_name' => $firstName,
@@ -184,7 +362,13 @@ class ClinicScheduleTest extends TestCase
             'password' => Hash::make('password123'),
             'staff_id' => $staffId,
             'position' => 'Program Staff',
+            'role' => 'Midwife',
             'contact_number' => '09171111111',
+            'approval_status' => 'approved',
+            'assigned_barangay' => $barangay,
+            'assigned_facility' => $facility,
+            'accepting_appointments' => true,
+            'max_appointments_per_day' => 8,
         ];
     }
 
