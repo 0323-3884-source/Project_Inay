@@ -1047,3 +1047,39 @@ body.has-clinic-modal {
         flex-direction: column;
     }
 }
+
+/* Pink actions, including link-based tabs; retain layout and modal backdrops. */
+.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button) {
+    background: #db2777;
+    border-color: #db2777;
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):hover {
+    background: #be185d;
+    border-color: #be185d;
+    color: #ffffff;
+}
+
+.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):is(.is-active, .is-selected, [aria-selected="true"]) {
+    background: #9d174d;
+    border-color: #9d174d;
+    color: #ffffff;
+}
+
+.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):focus-visible {
+    outline: 3px solid #f9a8d4;
+    outline-offset: 3px;
+}
+
+.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):is(:disabled, .is-disabled, [aria-disabled="true"]) {
+    background: #fce7f3;
+    border-color: #fbcfe8;
+    color: #9d174d;
+    box-shadow: none;
+}
+
+.clinic-schedule input:is([type="checkbox"], [type="radio"]) {
+    accent-color: #db2777;
+}
