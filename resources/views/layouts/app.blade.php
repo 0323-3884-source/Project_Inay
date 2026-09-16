@@ -6891,6 +6891,7 @@
         }
     </style>
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/pink-controls.css') }}?v={{ filemtime(public_path('css/pink-controls.css')) }}">
     <style>
         @media (max-width: 760px) {
             .portal-main .card {

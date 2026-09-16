@@ -1,0 +1,46 @@
+/* Shared action palette. Keep each component's sizing, layout and visibility. */
+body :where(
+    button:not([class*="backdrop"], [class*="overlay"]),
+    input[type="submit"], input[type="button"], input[type="reset"],
+    a.button, a[class*="-button"], a[class*="-btn"], a[role="button"],
+    .doctor-message, .detail-chat, .clinic-primary, .clinic-secondary,
+    .clinic-danger, .clinic-success, .clinic-tab, .clinic-page-tab, .report-tab,
+    .casefiles-page-link, .casefile-back-link, .admin-staff-link,
+    .portal-menu-button, .portal-close
+) {
+    --inay-control-background: #db2777;
+    --inay-control-border: #db2777;
+    --inay-control-text: #ffffff;
+    background: var(--inay-control-background) !important;
+    border-color: var(--inay-control-border) !important;
+    color: var(--inay-control-text) !important;
+    /* Replace the blue/green shadows used by some original action buttons. */
+    box-shadow: none !important;
+}
+
+body :is(button, input, a, label):hover {
+    --inay-control-background: #be185d;
+    --inay-control-border: #be185d;
+}
+
+body :is(button, input, a, label):is(
+    :active, .is-active, .is-selected, [aria-pressed="true"], [aria-selected="true"]
+) {
+    --inay-control-background: #9d174d;
+    --inay-control-border: #9d174d;
+}
+
+body :is(button, input, a, label):focus-visible {
+    outline-color: #db2777;
+}
+
+body :is(button, input, a):is(:disabled, [aria-disabled="true"], .is-disabled, .is-unavailable) {
+    --inay-control-background: #fce7f3;
+    --inay-control-border: #fbcfe8;
+    --inay-control-text: #9d174d;
+}
+
+/* Labels inside action buttons occasionally have their own blue/green color. */
+body button :where(span, strong, small, svg) {
+    color: inherit !important;
+}
