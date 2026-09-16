@@ -118,7 +118,6 @@
         @media (max-width: 640px) { .admin-summary-grid { grid-template-columns: 1fr; } .admin-auth-body { padding: 16px; } .admin-auth-card { padding: 22px 18px; } }
     </style>
     @stack('styles')
-    <link rel="stylesheet" href="{{ asset('css/pink-controls.css') }}?v={{ filemtime(public_path('css/pink-controls.css')) }}">
 </head>
 <body class="{{ $isAdminAuthScreen ? 'admin-auth-body' : 'admin-shell' }}">
     @if ($isAdminAuthScreen)
