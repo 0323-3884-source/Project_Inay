@@ -1098,6 +1098,37 @@ class AuthController extends Controller
         ));
     }
 
+    public function updateStaffMother(Request $request, Mother $mother): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        abort_unless($staff, 401);
+        abort_unless($staff->is_approved && $this->casefileForStaffMother($staff, $mother), 403);
+
+        $validated = $request->validateWithBag('motherInformation', [
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'contact_number' => ['required', 'string', 'max:25', 'regex:/^\\+?[0-9 ()-]{7,25}$/', function ($attribute, $value, $fail) {
+                if (strlen(preg_replace('/\\D/', '', $value)) < 7) {
+                    $fail('The contact number must contain at least 7 digits.');
+                }
+            }],
+            'barangay' => ['required', 'string', 'max:255'],
+            'age' => ['nullable', 'integer', 'min:10', 'max:65'],
+            'civil_status' => ['nullable', Rule::in(self::CIVIL_STATUSES)],
+            'gravidity' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'parity' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
+            'pregnancy_status' => ['nullable', Rule::in(self::PREGNANCY_STATUSES)],
+            'is_4ps_beneficiary' => ['required', 'boolean'],
+        ]);
+
+        $mother->update($validated);
+
+        return redirect()->route('staff.mothers.show', $mother)
+            ->with('status', 'Mother information updated successfully.');
+    }
+
     public function staffMotherRecord(Request $request, Mother $mother, string $format = 'print'): Response|JsonResponse
     {
         $staff = $this->staffFromRequest($request);
@@ -1192,6 +1223,23 @@ class AuthController extends Controller
             'letterhead' => 'data:image/jpeg;base64,'.base64_encode(file_get_contents($letterheadPath)),
             'footer' => 'data:image/jpeg;base64,'.base64_encode(file_get_contents($footerPath)),
         ];
+    }
+
+    public function previewStaffInayKaalamanUpload(Request $request, Mother $mother, InayKaalamanUpload $upload): StreamedResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        abort_unless($staff, 401);
+        abort_unless($staff->is_approved && (int) $upload->mother_id === (int) $mother->id && $this->casefileForStaffMother($staff, $mother), 403);
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($upload->path), 404);
+        $mime = $disk->mimeType($upload->path);
+        abort_unless(in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true), 415);
+
+        return $disk->response($upload->path, 'document-preview', [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ], 'inline');
     }
 
     public function downloadStaffInayKaalamanUpload(Request $request, Mother $mother, InayKaalamanUpload $upload): StreamedResponse|RedirectResponse

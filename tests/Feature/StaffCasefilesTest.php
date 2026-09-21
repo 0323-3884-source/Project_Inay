@@ -278,6 +278,34 @@ class StaffCasefilesTest extends TestCase
             ->assertDownload('prenatal-receipt.pdf');
     }
 
+    public function test_document_previews_are_scoped_and_only_render_supported_files(): void
+    {
+        Storage::fake('public');
+        $staff = $this->createStaff();
+        $mother = $this->createMother('Preview', null, 'Patient', 'preview@example.test', '09175556666', 'San Pablo');
+        $upload = InayKaalamanUpload::create([
+            'mother_id' => $mother->id, 'month' => 1, 'record_type' => 'Prenatal Records and Receipts',
+            'original_name' => 'record.pdf', 'path' => 'records/record.pdf', 'mime_type' => 'application/pdf', 'size' => 20,
+        ]);
+        Storage::disk('public')->put($upload->path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF");
+        $url = route('staff.mothers.kaalaman-uploads.preview', [$mother, $upload]);
+        $this->get($url)->assertUnauthorized();
+        $this->withStaffSession($staff)->get($url)->assertForbidden();
+        $this->assignMother($staff, $mother);
+        $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('inline;', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $other = $this->createMother('Other', null, 'Patient', 'other-preview@example.test', '09175556667', 'San Pablo');
+        $this->assignMother($staff, $other);
+        $this->get(route('staff.mothers.kaalaman-uploads.preview', [$other, $upload]))->assertForbidden();
+        Storage::disk('public')->put($upload->path, '<html><script>alert(1)</script></html>');
+        $this->get($url)->assertStatus(415);
+        Storage::disk('public')->put($upload->path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aG1cAAAAASUVORK5CYII='));
+        $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/png');
+        Storage::disk('public')->delete($upload->path);
+        $this->get($url)->assertNotFound();
+    }
+
     public function test_staff_can_create_and_update_maternal_vitals_for_assigned_mother(): void
     {
         $staff = $this->createStaff();

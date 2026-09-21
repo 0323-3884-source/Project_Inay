@@ -141,11 +141,13 @@ Route::post('/staff/neonatal-vaccines/infants/{infant}/alerts', [AuthController:
 Route::patch('/staff/neonatal-vaccines/alerts/{alert}/resolve', [AuthController::class, 'resolveStaffChildAlert'])->name('staff.neonatal.alerts.resolve');
 Route::post('/staff/mothers', [AuthController::class, 'storeStaffMothers'])->name('staff.mothers.store');
 Route::get('/staff/mothers/{mother}', [AuthController::class, 'staffMotherCasefile'])->name('staff.mothers.show');
+Route::patch('/staff/mothers/{mother}', [AuthController::class, 'updateStaffMother'])->name('staff.mothers.update');
 Route::get('/staff/neonatal/{infant}/print', [AuthController::class, 'staffChildRecord'])->defaults('format', 'print')->name('staff.neonatal.print');
 Route::get('/staff/neonatal/{infant}/pdf', [AuthController::class, 'staffChildRecord'])->defaults('format', 'pdf')->name('staff.neonatal.pdf');
 Route::get('/staff/mothers/{mother}/print', [AuthController::class, 'staffMotherRecord'])->defaults('format', 'print')->name('staff.mothers.print');
 Route::get('/staff/mothers/{mother}/pdf', [AuthController::class, 'staffMotherRecord'])->defaults('format', 'pdf')->name('staff.mothers.pdf');
 Route::get('/staff/mothers/{mother}/inay-kaalaman/uploads/{upload}/download', [AuthController::class, 'downloadStaffInayKaalamanUpload'])->name('staff.mothers.kaalaman-uploads.download');
+Route::get('/staff/mothers/{mother}/inay-kaalaman/uploads/{upload}/preview', [AuthController::class, 'previewStaffInayKaalamanUpload'])->name('staff.mothers.kaalaman-uploads.preview');
 
 Route::get('/api/program-staff/mothers/{mother}/maternal-vitals', [AuthController::class, 'getStaffMaternalVitals'])->name('api.staff.maternal-vitals.index');
 Route::post('/api/program-staff/mothers/{mother}/maternal-vitals', [AuthController::class, 'storeStaffMaternalVitals'])->name('api.staff.maternal-vitals.store');

@@ -196,6 +196,34 @@ class MotherCareRecordTest extends TestCase
         return ProgramStaff::create(['first_name' => 'Isabel', 'last_name' => 'Peña', 'email' => 'record-staff@example.test', 'password' => 'unused', 'staff_id' => 'STAFF-RECORD', 'position' => 'Program Staff', 'role' => 'Midwife', 'contact_number' => '09170000000', 'approval_status' => 'approved']);
     }
 
+    public function test_staff_can_edit_mother_information_with_validation_and_casefile_authorization(): void
+    {
+        $staff = $this->staff();
+        $mother = $this->mother();
+        $url = route('staff.mothers.update', $mother);
+        $data = ['first_name' => 'Updated', 'middle_name' => 'M', 'last_name' => 'Santos', 'contact_number' => '09912345678', 'barangay' => 'Concepcion', 'age' => 36, 'civil_status' => 'Married', 'gravidity' => 2, 'parity' => 1, 'blood_type' => 'O+', 'pregnancy_status' => 'pregnant', 'is_4ps_beneficiary' => '1'];
+
+        $this->patchJson($url, $data)->assertUnauthorized();
+        $this->withSession(['auth_role' => 'mother', 'auth_id' => $mother->id])->patchJson($url, $data)->assertUnauthorized();
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id])->patchJson($url, $data)->assertForbidden();
+        $staff->casefileMothers()->attach($mother);
+        $staff->update(['approval_status' => 'rejected']);
+        $this->patchJson($url, $data)->assertForbidden();
+        $staff->update(['approval_status' => 'approved']);
+
+        $this->get(route('staff.mothers.show', $mother))->assertOk()->assertSee('data-mother-edit', false)->assertSee('mother-information-form')->assertSee($mother->contact_number);
+        $this->from(route('staff.mothers.show', $mother))->patch($url, array_replace($data, ['first_name' => '', 'blood_type' => 'invalid']))
+            ->assertSessionHasErrors(['first_name', 'blood_type'], null, 'motherInformation');
+        $this->assertNotSame('Updated', $mother->fresh()->first_name);
+        $this->get(route('staff.mothers.show', $mother))->assertOk()->assertSee('Please correct the following information:');
+
+        $this->patch($url, $data + ['email' => 'ignored@example.test', 'password' => 'ignored'])->assertRedirect(route('staff.mothers.show', $mother))->assertSessionHas('status');
+        $this->assertDatabaseHas('mothers', ['id' => $mother->id] + $data);
+        $this->assertSame($mother->email, $mother->fresh()->email);
+        $this->assertSame($mother->password, $mother->fresh()->password);
+        $this->get(route('staff.mothers.show', $mother))->assertOk()->assertSee('Updated M Santos')->assertSee('Mother information updated successfully.');
+    }
+
     private function mother(string $email = 'record-mother@example.test'): Mother
     {
         return Mother::create(['first_name' => 'María', 'last_name' => 'Santos', 'email' => $email, 'password' => 'unused', 'barangay' => 'San Jose', 'contact_number' => '09171111111']);

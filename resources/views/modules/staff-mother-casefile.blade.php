@@ -1937,6 +1937,55 @@
         }
 
         /* ===== LEARNING & DOCUMENTS ===== */
+        .document-file-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; padding: 0; list-style: none; }
+        .document-file-card { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 20px; background: #fff; border: 1px solid #dbe4ef; border-radius: 14px; text-align: left; color: #0f172a; cursor: pointer; font: inherit; overflow-wrap: anywhere; }
+        .document-file-card:hover, .document-file-card:focus-visible { border-color: #ec008c; box-shadow: 0 4px 16px #fce7f3; }
+        .document-file-card small { color: #526581; }
+        .document-file-card svg { width: 30px; height: 30px; color: #ec008c; }
+        .document-preview-dialog { width: min(960px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); margin: auto; padding: 24px; border: 0; border-radius: 18px; box-sizing: border-box; overflow: auto; }
+        .document-preview-dialog::backdrop { background: rgba(15, 23, 42, .6); }
+        .document-preview-dialog h2, .document-preview-dialog p { overflow-wrap: anywhere; }
+        .document-preview-content img { display: block; max-width: 100%; max-height: 65dvh; object-fit: contain; margin: auto; }
+        .document-preview-content iframe { width: 100%; height: 60dvh; border: 1px solid #dbe4ef; border-radius: 8px; }
+        body.has-document-preview { overflow: hidden; }
+        .document-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin: 16px 0 24px;
+        }
+        .document-status-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            border: 1px solid #dbe4ef;
+            border-radius: 12px;
+            color: #0f172a;
+            text-decoration: none;
+            background: #f8fafc;
+        }
+        .document-status-card:hover, .document-status-card:focus-visible {
+            border-color: #ec008c;
+            outline: 2px solid #fce7f3;
+        }
+        .document-submission-status {
+            display: inline-block;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #fff7ed;
+            color: #9a3412;
+        }
+        .document-submission-status.is-submitted {
+            background: #ecfdf5;
+            color: #047857;
+        }
+        .document-status-card small { color: #526581; }
+        .casefile-learning-list li > span { overflow-wrap: anywhere; min-width: 0; }
+
         .casefile-learning-summary {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -2464,6 +2513,28 @@
         .casefile-summary-page .history-row-actions .is-delete:hover {
             background: #b42318;
             color: #ffffff;
+        }
+
+        body.has-mother-information-dialog {
+            overflow: hidden;
+        }
+
+        .casefile-summary-page .mother-information-dialog {
+            width: min(720px, calc(100vw - 32px));
+            max-height: calc(100dvh - 32px);
+            margin: auto;
+            padding: 24px;
+            border: 1px solid #dbe4ef;
+            border-radius: 20px;
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, .25);
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .mother-information-dialog::backdrop {
+            background: rgba(15, 23, 42, .55);
         }
 
         /* ===== VITALS FORM ===== */
@@ -3343,12 +3414,17 @@
             </div>
 
             <div class="casefile-profile-actions">
-                <button type="button">{!! $iconEdit !!} Edit Information</button>
+                <button type="button" data-mother-edit aria-haspopup="dialog" aria-controls="mother-information-dialog" aria-expanded="{{ $errors->motherInformation->any() ? 'true' : 'false' }}">{!! $iconEdit !!} Edit Information</button>
                 <button type="button" data-casefile-record="print" data-record-url="{{ route('staff.mothers.print', $mother) }}">{!! $iconPrinter !!} Print Record</button>
                 <button type="button" class="is-dark" data-casefile-record="pdf" data-record-url="{{ route('staff.mothers.pdf', $mother) }}">{!! $iconDownload !!} Export PDF</button>
             </div>
             <p class="vitals-warning" data-record-error role="alert" hidden></p>
             <p data-record-ready role="status" hidden><span data-record-status></span> <a data-record-open target="_blank" rel="noopener">Open generated record</a></p>
+
+            @if (session('status'))
+                <p role="status">{{ session('status') }}</p>
+            @endif
+            @include('partials.mother-information-form')
 
             <dl class="casefile-profile-facts">
                 <div><dt>Age</dt><dd>{{ $mother->age ? $mother->age.' years old' : 'Not provided' }}</dd></div>
@@ -3381,7 +3457,7 @@
         <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
             <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
             <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $learningCompleted }}/{{ $learningTotal }} months done</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
             <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
         </div>
 
@@ -3601,6 +3677,29 @@
                 <article><span>Files Uploaded</span><strong>{{ $kaalamanOverallProgress['files_uploaded'] ?? $uploads->count() }}</strong></article>
             </div>
 
+            <section aria-labelledby="document-submissions-title">
+                <h3 id="document-submissions-title">Document Submissions</h3>
+                <p class="casefile-panel-note">See at a glance whether the mother has sent documents for each month. Select a month to check its files and download them for review. Refresh this page to check for new submissions.</p>
+                @if ($uploads->isEmpty())
+                    <p class="casefile-panel-note"><strong>No documents received yet.</strong> Files will appear here after the mother uploads them in INAY Kaalaman.</p>
+                @endif
+                <div class="document-status-grid">
+                    @foreach (($kaalamanMonthlyProgress['months'] ?? []) as $documentMonth)
+                        @php
+                            $submittedFiles = $uploads->where('month', $documentMonth['month']);
+                        @endphp
+                        <a class="document-status-card" href="#month-documents-{{ $documentMonth['month'] }}">
+                            <strong>Month {{ $documentMonth['month'] }}</strong>
+                            <span class="document-submission-status {{ $submittedFiles->isNotEmpty() ? 'is-submitted' : '' }}">{{ $submittedFiles->isNotEmpty() ? 'Submitted' : 'Not yet submitted' }}</span>
+                            <small>{{ $submittedFiles->count() }} file{{ $submittedFiles->count() === 1 ? '' : 's' }} received</small>
+                            @if ($submittedFiles->isNotEmpty())
+                                <small>Latest: {{ $submittedFiles->first()->created_at?->format('M j, Y, g:i A') ?? 'Date not recorded' }}</small>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+
             <div class="casefile-learning-months">
                 @foreach (($kaalamanMonthlyProgress['months'] ?? []) as $progressMonth)
                     @php
@@ -3636,14 +3735,32 @@
                             @endforeach
                         </ul>
 
+                        <h4 id="month-documents-{{ $progressMonth['month'] }}" style="scroll-margin-top: 100px;">Month {{ $progressMonth['month'] }} Document Checklist</h4>
+                        <ul class="casefile-learning-list">
+                            @foreach ($progressMonth['documents'] as $document)
+                                <li>
+                                    <span>{{ $document['label'] }}</span>
+                                    <span class="document-submission-status {{ $document['uploaded'] ? 'is-submitted' : '' }}">{{ $document['uploaded'] ? 'Submitted' : 'Not yet submitted' }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                         @if ($monthUploadsForStaff->isNotEmpty())
                             <h4>Prenatal Records and Receipts History</h4>
-                            <ul class="casefile-learning-list">
+                            <ul class="document-file-grid">
                                 @foreach ($monthUploadsForStaff as $upload)
                                     <li>
-                                        <span>{{ $uploadTypeLabels[$upload->record_type] ?? $upload->record_type }}: {{ $upload->original_name }}</span>
-                                        <small>Uploaded {{ $upload->created_at?->format('M j, Y') ?? 'date not recorded' }}</small>
-                                        <a href="{{ route('staff.mothers.kaalaman-uploads.download', [$mother, $upload]) }}">Download</a>
+                                        <button type="button" class="document-file-card" data-document-card
+                                            data-name="{{ $upload->original_name }}"
+                                            data-details="Month {{ $upload->month }} · {{ $uploadTypeLabels[$upload->record_type] ?? $upload->record_type }} · Received {{ $upload->created_at?->format('M j, Y, g:i A') ?? 'date not recorded' }} · {{ number_format($upload->size / 1024, 1) }} KB"
+                                            data-preview="{{ route('staff.mothers.kaalaman-uploads.preview', [$mother, $upload]) }}"
+                                            data-download="{{ route('staff.mothers.kaalaman-uploads.download', [$mother, $upload]) }}"
+                                            aria-haspopup="dialog" aria-controls="document-preview-dialog">
+                                            {!! $iconFile !!}
+                                            <strong>{{ $upload->original_name }}</strong>
+                                            <small>{{ $uploadTypeLabels[$upload->record_type] ?? $upload->record_type }}</small>
+                                            <small>Received {{ $upload->created_at?->format('M j, Y, g:i A') ?? 'date not recorded' }}</small>
+                                            <span class="document-submission-status is-submitted">View document</span>
+                                        </button>
                                     </li>
                                 @endforeach
                             </ul>
@@ -3655,6 +3772,17 @@
                 @endforeach
             </div>
         </section>
+
+        <dialog id="document-preview-dialog" class="document-preview-dialog" aria-labelledby="document-preview-title">
+            <header class="vitals-dialog-header">
+                <h2 id="document-preview-title">Document details</h2>
+                <button type="button" data-document-close aria-label="Close document preview">&times;</button>
+            </header>
+            <p data-document-details></p>
+            <p data-document-status role="status"></p>
+            <div class="document-preview-content" data-document-content></div>
+            <p><a data-document-download>Download file</a></p>
+        </dialog>
 
         <!-- ===== NOTES PANEL ===== -->
         <section class="casefile-panel" data-casefile-panel="notes" hidden>
@@ -4692,5 +4820,7 @@
             renderVitals(vitalsState);
         })();
     </script>
+    <script src="{{ asset('js/document-preview.js') }}?v={{ filemtime(public_path('js/document-preview.js')) }}" defer></script>
+    <script src="{{ asset('js/mother-information.js') }}?v={{ filemtime(public_path('js/mother-information.js')) }}" defer></script>
     <script src="{{ asset('js/mother-care-record.js') }}?v={{ filemtime(public_path('js/mother-care-record.js')) }}" defer></script>
 @endsection
