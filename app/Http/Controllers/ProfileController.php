@@ -7,12 +7,14 @@ use App\Models\ProgramStaff;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
     private function account(Request $request): Mother|ProgramStaff|null
     {
-        $role = $request->routeIs('mother.profile.*') ? 'mother' : 'staff';
+        $role = $request->routeIs('mother.*') ? 'mother' : 'staff';
         if ($request->session()->get('auth_role') !== $role) {
             return null;
         }
@@ -57,5 +59,37 @@ class ProfileController extends Controller
 
         return redirect()->route($account instanceof Mother ? 'mother.profile.show' : 'staff.profile.show')
             ->with('status', 'Your profile has been updated.');
+    }
+
+    public function settings(Request $request): View|RedirectResponse
+    {
+        $account = $this->account($request);
+        if (! $account) {
+            return redirect()->route('login');
+        }
+
+        return view('profiles.settings', ['account' => $account, 'isMother' => $account instanceof Mother]);
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $account = $this->account($request);
+        if (! $account) {
+            return redirect()->route('login');
+        }
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed', 'different:current_password'],
+        ]);
+        if (! Hash::check($data['current_password'], $account->password)) {
+            throw ValidationException::withMessages(['current_password' => 'Your current password is incorrect.']);
+        }
+
+        $account->update(['password' => Hash::make($data['password'])]);
+        $request->session()->regenerate();
+
+        return redirect()->route($account instanceof Mother ? 'mother.settings' : 'staff.settings')
+            ->with('status', 'Your password has been updated.');
     }
 }

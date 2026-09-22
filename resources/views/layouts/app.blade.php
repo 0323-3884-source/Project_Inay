@@ -7109,10 +7109,10 @@
                                 {!! $portalIconSvgs['user'] !!}
                                 My Profile
                             </a>
-                            <button class="portal-dropdown-item is-muted" type="button" aria-disabled="true">
+                            <a class="portal-dropdown-item" href="{{ route($isMotherPortal ? 'mother.settings' : 'staff.settings') }}">
                                 {!! $portalIconSvgs['settings'] !!}
                                 Settings
-                            </button>
+                            </a>
                             <form class="portal-dropdown-form" method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button class="portal-dropdown-item is-danger" type="submit">
@@ -7147,21 +7147,13 @@
                 @if ($isMotherPortal)
                     <section class="portal-profile-card" aria-label="Mother profile summary">
                         <div class="portal-profile-row">
-                            <form class="portal-avatar-upload-form" method="POST" action="{{ route('mother.profile-photo.update') }}" enctype="multipart/form-data">
-                                @csrf
-                                @method('PATCH')
-                                <label class="portal-avatar-upload" aria-label="Upload mother profile photo">
-                                    <span class="portal-avatar">
-                                        @if ($portalPhotoUrl)
-                                            <img src="{{ $portalPhotoUrl }}" alt="{{ $portalName }}">
-                                        @else
-                                            {{ $portalInitials }}
-                                        @endif
-                                    </span>
-                                    <span class="portal-avatar-action" aria-hidden="true">+</span>
-                                    <input type="file" name="profile_photo" accept="image/png,image/jpeg,image/webp" data-photo-crop data-photo-auto-submit="true" data-photo-title="Upload Mother Profile Photo">
-                                </label>
-                            </form>
+                            <span class="portal-avatar">
+                                @if ($portalPhotoUrl)
+                                    <img src="{{ $portalPhotoUrl }}" alt="{{ $portalName }}">
+                                @else
+                                    {{ $portalInitials }}
+                                @endif
+                            </span>
                             <div>
                                 <p class="portal-profile-name">{{ $portalName }}</p>
                                 <div class="portal-status-line">
@@ -7510,4 +7502,3 @@
     @endif
 </body>
 </html>
-

@@ -10,8 +10,21 @@
     <div class="account-columns">
         <aside class="account-panel">
             <div class="account-identity">
-                @if ($isMother && $account->profile_photo_path)
-                    <img class="account-avatar" src="{{ asset('storage/'.$account->profile_photo_path) }}" alt="Your profile photo">
+                @if ($isMother)
+                    <form class="account-avatar-form" method="POST" action="{{ route('mother.profile-photo.update') }}" enctype="multipart/form-data">
+                        @csrf
+                        @method('PATCH')
+                        <label class="portal-avatar-upload account-avatar-upload">
+                            @if ($account->profile_photo_path)
+                                <img class="account-avatar" src="{{ asset('storage/'.$account->profile_photo_path) }}" alt="Your profile photo">
+                            @else
+                                <span class="account-avatar">{{ mb_substr($account->first_name, 0, 1).mb_substr($account->last_name, 0, 1) }}</span>
+                            @endif
+                            <span class="portal-avatar-action" aria-hidden="true">+</span>
+                            <input type="file" name="profile_photo" aria-label="Upload profile photo" accept="image/jpeg,image/png,image/webp" data-photo-crop data-photo-auto-submit="true" data-photo-title="Upload Profile Photo">
+                        </label>
+                        <p class="account-muted">Click + to update your photo. JPG, PNG or WebP, up to 4 MB.</p>
+                    </form>
                 @else
                     <span class="account-avatar">{{ mb_substr($account->first_name, 0, 1).mb_substr($account->last_name, 0, 1) }}</span>
                 @endif
@@ -27,13 +40,7 @@
                 <div><dt>ID verification</dt><dd>{{ $account->healthcare_worker_id_verified_at ? 'Verified' : 'Not yet verified' }}</dd></div>
             @endif
             </dl>
-            @if ($isMother)
-                <form class="account-photo-form" method="POST" action="{{ route('mother.profile-photo.update') }}" enctype="multipart/form-data">
-                    @csrf @method('PATCH')
-                    <label for="profile-photo">Profile photo</label><input id="profile-photo" type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" required>
-                    <small>JPG, PNG or WebP. Maximum 4 MB.</small><button class="account-button" type="submit">Update Photo</button>
-                </form>
-            @elseif ($account->healthcare_worker_id_photo_url)
+            @if (! $isMother && $account->healthcare_worker_id_photo_url)
                 <img class="account-id-image" src="{{ $account->healthcare_worker_id_photo_url }}" alt="Your healthcare worker ID">
             @endif
         </aside>

@@ -9,7 +9,7 @@
 @section('content')
 <div class="account-page">
     <header class="account-heading"><div><p class="account-kicker">MOTHER PORTAL</p><h1>Welcome, {{ $mother->first_name }}.</h1><p>Your care, records, and support in one place.</p></div><a class="account-button" href="{{ route('mother.profile.show') }}">My Profile</a></header>
-    <section class="account-welcome"><div><h2>Stay connected to your care team</h2><p>Review your monitoring records, explore learning materials, and message your assigned healthcare worker.</p></div><a class="account-button is-primary" href="{{ route('mother.consultation') }}">Message Your Care Team</a></section>
+    <section class="account-welcome"><div><h2>Stay connected to your healthcare worker</h2><p>Review your monitoring records, explore learning materials, and message your assigned healthcare worker.</p></div><a class="account-button is-primary" href="{{ route('mother.consultation') }}">Message Your Healthcare Worker</a></section>
     <div class="account-metrics">
         <a href="{{ route('maternal-monitoring') }}"><span>Monitoring Records</span><strong>{{ $monitoringCount }}</strong><small>View your recorded checkups &rarr;</small></a>
         <a href="{{ route('child-health') }}"><span>My Children</span><strong>{{ $childCount }}</strong><small>Open child health records &rarr;</small></a>
@@ -30,11 +30,11 @@
             @endif
             <a class="account-button" href="{{ route('maternal-monitoring') }}">View Monitoring Records</a>
         </section>
-        <section class="account-panel"><h2>Your Care Team</h2><p class="account-muted">Healthcare workers assigned to your casefile.</p>
+        <section class="account-panel"><h2>{{ $careTeam->count() > 1 ? 'Your Healthcare Workers' : 'Your Healthcare Worker' }}</h2><p class="account-muted">{{ $careTeam->count() > 1 ? 'The healthcare workers assigned to your casefile.' : 'Your assigned healthcare worker for care and support.' }}</p>
             @forelse ($careTeam as $worker)
                 <div class="account-team-row"><strong>{{ $worker->full_name }}</strong><small>{{ $worker->role_label }} · {{ $worker->assigned_facility ?: 'Facility not listed' }}</small></div>
             @empty
-                <div class="account-empty"><strong>No healthcare worker assigned yet</strong><p>Your care team will appear here once your assignment is recorded.</p></div>
+                <div class="account-empty"><strong>No healthcare worker assigned yet</strong><p>Your healthcare worker will appear here once your assignment is recorded.</p></div>
             @endforelse
             <a class="account-button" href="{{ route('mother.consultation') }}">Open Messages</a>
         </section>

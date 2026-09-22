@@ -80,10 +80,11 @@ Route::get('/mother/profile', [\App\Http\Controllers\ProfileController::class, '
 Route::patch('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('mother.profile.update');
 Route::get('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('staff.profile.show');
 Route::patch('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('staff.profile.update');
-Route::get('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('mother.profile.show');
-Route::patch('/mother/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('mother.profile.update');
-Route::get('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('staff.profile.show');
-Route::patch('/staff/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('staff.profile.update');
+foreach (['mother', 'staff'] as $role) {
+    Route::get("/$role/settings", [\App\Http\Controllers\ProfileController::class, 'settings'])->name("$role.settings");
+    Route::patch("/$role/settings/password", [\App\Http\Controllers\ProfileController::class, 'updatePassword'])
+        ->middleware('throttle:5,1')->name("$role.settings.password");
+}
 Route::get('/maternal-monitoring', [AuthController::class, 'maternalMonitoring'])->name('maternal-monitoring');
 Route::get('/child-health', [AuthController::class, 'childHealth'])->name('child-health');
 Route::post('/child-health/children', [AuthController::class, 'storeMotherChild'])->name('child-health.children.store');
