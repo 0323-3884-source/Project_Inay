@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class ProgramStaff extends Model
@@ -47,6 +48,43 @@ class ProgramStaff extends Model
         'accepting_appointments' => 'boolean',
         'max_appointments_per_day' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $staff): void {
+            if ($staff->isDirty(['assigned_facility', 'assigned_barangay'])) {
+                $staff->healthcare_facility_id = HealthcareFacility::forDetails(
+                    $staff->assigned_facility, $staff->assigned_barangay
+                )?->id;
+                $staff->unsetRelation('facility');
+            }
+        });
+        static::saved(function (self $staff): void {
+            if ($staff->wasChanged('healthcare_facility_id')) {
+                $staff->midwifeProfile()->update(['healthcare_facility_id' => $staff->healthcare_facility_id]);
+            }
+        });
+    }
+
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(HealthcareFacility::class, 'healthcare_facility_id');
+    }
+
+    public function assignedMidwife(): BelongsTo
+    {
+        return $this->belongsTo(MidwifeProfile::class, 'assigned_midwife_id');
+    }
+
+    public function midwifeProfile(): HasOne
+    {
+        return $this->hasOne(MidwifeProfile::class);
+    }
+
+    public function getIsMidwifeAttribute(): bool
+    {
+        return str_contains(HealthcareFacility::normalize($this->role_label), 'midwife');
+    }
 
     public function getFullNameAttribute(): string
     {

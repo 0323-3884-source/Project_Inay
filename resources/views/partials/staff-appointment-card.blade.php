@@ -16,6 +16,13 @@
     </div>
 
     <div class="clinic-facts">
+        @if ($appointment->care_team_snapshot)
+            <div class="clinic-fact"><span>Healthcare facility</span><strong>{{ $appointment->care_team_snapshot['facility'] ?? 'Not provided' }}</strong></div>
+            <div class="clinic-fact"><span>Barangay</span><strong>{{ $appointment->care_team_snapshot['barangay'] ?? 'Not provided' }}</strong></div>
+            @if (! empty($appointment->care_team_snapshot['midwife']))
+                <div class="clinic-fact"><span>Assigned Midwife</span><strong>{{ $appointment->care_team_snapshot['midwife']['name'] }} — Midwife</strong></div>
+            @endif
+        @endif
         <div class="clinic-fact"><span>Consultation type</span><strong>{{ $appointment->meetingLabel() }}</strong></div>
         <div class="clinic-fact"><span>Location</span><strong>{{ $appointment->location ?: 'Not provided' }}</strong></div>
         <div class="clinic-fact"><span>Healthcare worker</span><strong>{{ $appointment->staff->full_name }}</strong></div>

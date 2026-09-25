@@ -95,6 +95,8 @@ Route::get('/inay-kaalaman', [AuthController::class, 'inayKaalaman'])->name('ina
 Route::get('/health-services', [AuthController::class, 'healthServices'])->name('health-services');
 Route::get('/mother/consultation', [ConsultationController::class, 'mother'])->name('mother.consultation');
 Route::get('/mother/clinic-schedule', [AppointmentController::class, 'motherIndex'])->name('mother.clinic-schedule.index');
+Route::get('/mother/clinic-schedule/calendar', [AppointmentController::class, 'bookingCalendar'])->name('mother.clinic-schedule.calendar');
+Route::get('/mother/clinic-schedule/calendar', [AppointmentController::class, 'bookingCalendar'])->name('mother.clinic-schedule.calendar');
 Route::get('/mother/clinic-schedule/workers', $disabledMotherScheduling)->name('mother.clinic-schedule.workers');
 Route::get('/mother/clinic-schedule/availability', $disabledMotherScheduling)->name('mother.clinic-schedule.availability');
 Route::post('/mother/clinic-schedule', [AppointmentController::class, 'bookFromMother'])->name('mother.clinic-schedule.store');

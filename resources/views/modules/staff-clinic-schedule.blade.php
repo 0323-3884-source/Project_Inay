@@ -2,6 +2,7 @@
 
 @section('title', 'Clinic Schedule - Project INAY')
 @section('portal_title', 'Clinic Schedule')
+@section('handles_status', '1')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/clinic-schedule.css') }}?v={{ filemtime(public_path('css/clinic-schedule.css')) }}">
@@ -106,6 +107,20 @@
         }
 
         /* forms */
+        .clinic-midwife {
+            flex: 1 0 100%; min-width: 0; margin: 12px 0 0; padding: 20px;
+            border: 1px solid #f3c9dc; border-radius: 10px; background: #fffafb;
+        }
+        .clinic-midwife legend { font-size: 1.1rem; font-weight: 700; color: #98154c; padding: 0 8px; }
+        .clinic-midwife > label { margin: 16px 0; }
+        .clinic-midwife-fields, .clinic-midwife-summary {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+            gap: 16px; margin: 16px 0;
+        }
+        .clinic-midwife-summary div { display: grid; gap: 4px; overflow-wrap: anywhere; }
+        .clinic-midwife-summary span { font-size: .85rem; color: #667085; }
+        .clinic-midwife [hidden] { display: none !important; }
+        .clinic-midwife-error { color: #9f1239; }
         .clinic-profile-form,
         .clinic-availability-form,
         .clinic-block-form,
@@ -484,6 +499,7 @@
 @endpush
 
 @push('scripts')
+    <script src="{{ asset('js/scheduling-midwife.js') }}?v={{ filemtime(public_path('js/scheduling-midwife.js')) }}" defer></script>
     <script src="{{ asset('js/clinic-schedule.js') }}?v={{ filemtime(public_path('js/clinic-schedule.js')) }}" defer></script>
 @endpush
 
@@ -554,23 +570,24 @@
                             <select name="assigned_barangay">
                                 <option value="">Select barangay</option>
                                 @foreach ($barangays as $barangay)
-                                    <option value="{{ $barangay }}" @selected($staff->assigned_barangay === $barangay)>{{ $barangay }}</option>
+                                    <option value="{{ $barangay }}" @selected(old('assigned_barangay', $staff->assigned_barangay) === $barangay)>{{ $barangay }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label>
                             Facility
-                            <input type="text" name="assigned_facility" value="{{ $staff->assigned_facility }}" maxlength="255" placeholder="Health center or facility">
+                            <input type="text" name="assigned_facility" value="{{ old('assigned_facility', $staff->assigned_facility) }}" maxlength="255" placeholder="Health center or facility">
                         </label>
                         <label>
                             Daily limit
-                            <input type="number" name="max_appointments_per_day" value="{{ $staff->max_appointments_per_day ?? 8 }}" min="0" max="50" required>
+                            <input type="number" name="max_appointments_per_day" value="{{ old('max_appointments_per_day', $staff->max_appointments_per_day ?? 8) }}" min="0" max="50" required>
                         </label>
                         <label class="clinic-check">
                             <input type="hidden" name="accepting_appointments" value="0">
-                            <input type="checkbox" name="accepting_appointments" value="1" @checked($staff->accepting_appointments ?? true)>
+                            <input type="checkbox" name="accepting_appointments" value="1" @checked(old('accepting_appointments', $staff->accepting_appointments ?? true))>
                             <span>Accept new appointments</span>
                         </label>
+                        @include('partials.scheduling-midwife-form')
                         <button class="clinic-primary" type="submit">Save Profile</button>
                     </form>
                 </section>

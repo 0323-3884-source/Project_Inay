@@ -317,6 +317,82 @@ class ClinicScheduleTest extends TestCase
         ]);
     }
 
+    public function test_live_calendar_hides_booked_slots_and_cancellation_reopens_them(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-09-01 08:00'));
+        $mother = Mother::create($this->motherAttributes());
+        $other = Mother::create([...$this->motherAttributes(), 'email' => 'other-calendar@example.test']);
+        $staff = ProgramStaff::create([...$this->staffAttributes(), 'role' => 'Nurse']);
+        $slot = $this->createAvailability($staff, 1);
+        $later = StaffAvailability::create([
+            'staff_id' => $staff->id, 'day_of_week' => 1, 'start_time' => '11:00', 'end_time' => '12:00',
+            'appointment_type' => 'prenatal_checkup', 'meeting_type' => 'in_person', 'is_active' => true,
+        ]);
+        $this->withSession($this->motherSession($other))->postJson(route('mother.clinic-schedule.store'), [
+            'staff_availability_id' => $slot->id, 'appointment_date' => '2026-09-07', 'appointment_type' => 'prenatal_checkup',
+        ])->assertCreated();
+        $appointment = Appointment::firstOrFail();
+        $query = ['staff_id' => $staff->id, 'month' => '2026-09'];
+        $calendar = $this->withSession($this->motherSession($mother))->getJson(route('mother.clinic-schedule.calendar', $query));
+        $calendar->assertOk()->assertJsonPath('days.2026-09-07.status', 'available')
+            ->assertJsonPath('days.2026-09-07.slots.0.status', 'booked')
+            ->assertJsonPath('days.2026-09-07.slots.1.status', 'available')
+            ->assertJsonPath('days.2026-09-08.status', 'unavailable');
+        $this->assertStringNotContainsString($other->email, $calendar->getContent());
+        $this->withSession($this->motherSession($mother))->postJson(route('mother.clinic-schedule.store'), [
+            'staff_availability_id' => $slot->id, 'appointment_date' => '2026-09-07', 'appointment_type' => 'prenatal_checkup',
+        ])->assertUnprocessable();
+
+        // A fully occupied second Monday gives the browser both day and time occupied states.
+        Appointment::create([
+            ...$appointment->only(['mother_id', 'staff_id', 'appointment_type', 'meeting_type', 'created_by_id', 'created_by_role']),
+            'appointment_date' => '2026-09-14', 'start_time' => '08:00', 'end_time' => '13:00', 'status' => 'confirmed',
+        ]);
+        $calendar = $this->getJson(route('mother.clinic-schedule.calendar', $query));
+        $calendar->assertJsonPath('days.2026-09-14.status', 'booked');
+        if (getenv('INAY_CARE_TEAM_FIXTURES') === '1') {
+            $directory = storage_path('framework/testing/care-team');
+            if (! is_dir($directory)) { mkdir($directory, 0777, true); }
+            file_put_contents($directory.'/calendar.json', $calendar->getContent());
+            file_put_contents($directory.'/booking.html', $this->get(route('mother.clinic-schedule.index'))->getContent());
+        }
+        $this->withSession($this->motherSession($other))->patchJson(route('mother.clinic-schedule.cancel', $appointment))->assertOk();
+        $this->withSession($this->motherSession($mother))->getJson(route('mother.clinic-schedule.calendar', $query))
+            ->assertJsonPath('days.2026-09-07.slots.0.status', 'available');
+    }
+
+    public function test_live_calendar_respects_blocks_limits_past_times_and_access(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-09-07 09:30'));
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        $this->createAvailability($staff, 1);
+        $query = ['staff_id' => $staff->id, 'month' => '2026-09'];
+        $this->getJson(route('mother.clinic-schedule.calendar', $query))->assertForbidden();
+        $this->withSession($this->staffSession($staff))->getJson(route('mother.clinic-schedule.calendar', $query))->assertForbidden();
+        $this->withSession($this->motherSession($mother))->getJson(route('mother.clinic-schedule.calendar', $query))
+            ->assertOk()->assertJsonPath('days.2026-09-07.slots.0.status', 'past');
+        \App\Models\StaffAvailabilityBlock::create(['staff_id' => $staff->id, 'blocked_date' => '2026-09-14', 'reason' => 'Closed']);
+        $this->getJson(route('mother.clinic-schedule.calendar', $query))->assertJsonPath('days.2026-09-14.status', 'unavailable');
+        $staff->update(['max_appointments_per_day' => 0]);
+        $this->getJson(route('mother.clinic-schedule.calendar', $query))->assertJsonPath('days.2026-09-21.slots.0.status', 'full');
+        $this->getJson(route('mother.clinic-schedule.calendar', ['staff_id' => $staff->id, 'month' => '2025-09']))->assertUnprocessable();
+    }
+
+    public function test_chat_action_targets_selected_worker_and_duplicate_flash_is_removed(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create([...$this->staffAttributes(), 'role' => 'Nurse']);
+        $this->withSession($this->motherSession($mother))->get(route('mother.consultation', ['staff' => $staff->id]))
+            ->assertRedirect(route('mother.clinic-schedule.index'));
+        \App\Models\StaffMotherCasefile::create(['staff_id' => $staff->id, 'mother_id' => $mother->id]);
+        $this->get(route('mother.consultation', ['staff' => $staff->id]))
+            ->assertRedirect(route('mother.consultation', ['conversation' => \App\Models\Conversation::firstOrFail()->id]));
+        $page = $this->withSession(['status' => 'Appointment request cancelled.'])->get(route('mother.clinic-schedule.index'));
+        $page->assertOk()->assertViewHas('doctorCards', fn ($cards) => $cards->first()['category_key'] === 'nurse');
+        $this->assertSame(1, substr_count($page->getContent(), 'Appointment request cancelled.'));
+    }
+
     private function createAvailability(ProgramStaff $staff, int $dayOfWeek): StaffAvailability
     {
         return StaffAvailability::create([

@@ -10,7 +10,6 @@ use App\Support\AppNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -423,7 +422,6 @@ class AdminStaffMessageController extends Controller
 
     private function isOnline(?object $model): bool
     {
-        return $model?->updated_at instanceof Carbon
-            && $model->updated_at->greaterThan(now()->subMinutes(10));
+        return \App\Support\ChatPresence::isOnline($model);
     }
 }

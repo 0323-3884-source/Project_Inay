@@ -375,8 +375,6 @@ trait AuthorizesConsultations
 
     protected function isOnline(?object $model): bool
     {
-        $updatedAt = $model?->updated_at;
-
-        return $updatedAt instanceof Carbon && $updatedAt->greaterThan(now()->subMinutes(10));
+        return \App\Support\ChatPresence::isOnline($model);
     }
 }

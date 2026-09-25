@@ -116,6 +116,10 @@
 
 @push('styles')
     <style>
+        .maternal-edit-notice { padding: 18px 22px; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; border-radius: 12px; background: #eff6ff; color: #1e3a5f; }
+        .maternal-edit-notice strong { display: block; font-size: 15px; }
+        .maternal-edit-notice p { margin: 8px 0; font-size: 14px; line-height: 1.6; }
+        .maternal-edit-notice a { color: #1d4ed8; font-size: 14px; font-weight: 700; text-decoration: underline; }
         .maternal-vital-toggle-details {
             display: none;
         }
@@ -664,6 +668,12 @@
                 <span class="maternal-chip">{!! $iconBell !!} Synced monitoring</span>
             </div>
         </header>
+
+        <aside class="maternal-panel maternal-edit-notice" aria-label="Record editing information">
+            <strong>View Only — updated by Program Staff</strong>
+            <p>Only Program Staff can add or edit your vital signs and maternal monitoring records, including blood pressure, weight, and other checkup results. You can view your records here.</p>
+            <a href="{{ route('mother.consultation') }}">Message your healthcare worker if a record needs updating</a>
+        </aside>
 
         <section class="maternal-panel maternal-vitals-panel">
             <div class="maternal-panel-title">

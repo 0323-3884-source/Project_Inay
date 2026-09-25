@@ -13,6 +13,7 @@ use App\Models\ProgramStaff;
 use App\Models\StaffAvailability;
 use App\Models\StaffAvailabilityBlock;
 use App\Models\StaffMotherCasefile;
+use App\Support\AppointmentCareTeam;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -174,6 +175,7 @@ class AppointmentController extends Controller
 
         return view('modules.staff-clinic-schedule', [
             'staff' => $staff,
+            'midwifeOptions' => app(AppointmentCareTeam::class)->options(),
             'assignedMothers' => $assignedMothers,
             'staffAvailabilities' => $staffAvailabilities,
             'availabilityBlocks' => $availabilityBlocks,
@@ -295,6 +297,55 @@ class AppointmentController extends Controller
         ]);
     }
 
+    public function bookingCalendar(Request $request): JsonResponse
+    {
+        $mother = $this->currentMother($request);
+        abort_unless($mother, 403);
+        $data = $request->validate([
+            'staff_id' => ['required', 'integer', 'exists:program_staff,id'],
+            'month' => ['required', 'date_format:Y-m'],
+        ]);
+        $month = Carbon::createFromFormat('!Y-m', $data['month']);
+        if ($month->lt(today()->startOfMonth()) || $month->gt(today()->addMonthsNoOverflow(12)->startOfMonth())) {
+            throw ValidationException::withMessages(['month' => 'Choose a month within the next year.']);
+        }
+        $staff = ProgramStaff::with(['availabilities' => fn ($q) => $q->where('is_active', true), 'availabilityBlocks'])
+            ->where('approval_status', 'approved')->findOrFail($data['staff_id']);
+        $start = $month->copy()->startOfWeek(Carbon::SUNDAY);
+        $end = $start->copy()->addDays(41);
+        $appointments = Appointment::whereIn('status', Appointment::activeStatuses())
+            ->whereBetween('appointment_date', [$start->toDateString(), $end->toDateString()])
+            ->where(fn ($q) => $q->where('staff_id', $staff->id)->orWhere('mother_id', $mother->id))
+            ->get(['staff_id', 'mother_id', 'appointment_date', 'start_time', 'end_time'])
+            ->groupBy(fn (Appointment $appointment) => $appointment->appointment_date->toDateString());
+        $days = [];
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $key = $date->toDateString();
+            $dayAppointments = $appointments->get($key, collect());
+            $full = $dayAppointments->where('staff_id', $staff->id)->count() >= (int) ($staff->max_appointments_per_day ?? 8);
+            $blocked = $this->staffIsBlocked($staff, $date) || $staff->accepting_appointments === false;
+            $slots = $staff->availabilities->where('day_of_week', $date->isoWeekday())->sortBy('start_time')
+                ->map(function (StaffAvailability $slot) use ($date, $dayAppointments, $full, $blocked): array {
+                    $past = Carbon::parse($date->toDateString().' '.$slot->start_time)->lte(now());
+                    $overlap = $dayAppointments->contains(fn (Appointment $a) =>
+                        substr($a->start_time, 0, 5) < substr($slot->end_time, 0, 5)
+                        && substr($a->end_time, 0, 5) > substr($slot->start_time, 0, 5));
+                    $status = $past ? 'past' : ($overlap ? 'booked' : ($blocked ? 'unavailable' : ($full ? 'full' : 'available')));
+                    return [
+                        'id' => $slot->id, 'start_time' => substr($slot->start_time, 0, 5),
+                        'end_time' => substr($slot->end_time, 0, 5), 'time_label' => $slot->timeLabel(),
+                        'appointment_type' => $slot->appointment_type, 'appointment_type_label' => $slot->typeLabel(),
+                        'meeting_type' => $slot->meeting_type, 'meeting_type_label' => $slot->meetingLabel(),
+                        'status' => $status,
+                    ];
+                })->values();
+            $status = $date->lt(today()) ? 'past' : ($slots->contains('status', 'available') ? 'available'
+                : ($slots->contains(fn ($s) => in_array($s['status'], ['booked', 'full'], true)) ? 'booked' : 'unavailable'));
+            $days[$key] = ['status' => $status, 'slots' => $slots];
+        }
+        return response()->json(['days' => $days, 'today' => today()->toDateString()])->header('Cache-Control', 'no-store');
+    }
+
     private function motherAppointmentCategories(): array
     {
         return [
@@ -302,6 +353,7 @@ class AppointmentController extends Controller
             'ob_gyn' => 'OB-GYN',
             'pediatrician' => 'Pediatrician',
             'midwife' => 'Midwife',
+            'nurse' => 'Nurse',
             'general_doctor' => 'General Doctor',
             'program_staff' => 'DSWD/Program Staff',
             'barangay_health_worker' => 'Barangay Health Worker',
@@ -338,7 +390,7 @@ class AppointmentController extends Controller
             'is_active_appointment_doctor' => $activeAppointment
                 ? (int) $activeAppointment->staff_id === (int) $staff->id
                 : false,
-            'message_url' => route('mother.consultation'),
+            'message_url' => route('mother.consultation', ['staff' => $staff->id]),
             'availabilities' => $availabilities
                 ->map(fn (StaffAvailability $availability): array => [
                     'id' => $availability->id,
@@ -373,6 +425,10 @@ class AppointmentController extends Controller
 
         if (str_contains($haystack, 'midwife')) {
             return ['midwife', $categories['midwife']];
+        }
+
+        if (str_contains($haystack, 'nurse')) {
+            return ['nurse', $categories['nurse']];
         }
 
         if (str_contains($haystack, 'bhw') || str_contains($haystack, 'barangay health')) {
@@ -542,6 +598,10 @@ class AppointmentController extends Controller
         ]);
 
         $result = DB::transaction(function () use ($mother, $validated): array {
+            // Serialize bookings for a mother and worker, including initially empty schedules.
+            Mother::whereKey($mother->id)->lockForUpdate()->firstOrFail();
+            $slotStaffId = StaffAvailability::whereKey($validated['staff_availability_id'])->value('staff_id');
+            ProgramStaff::whereKey($slotStaffId)->lockForUpdate()->firstOrFail();
             $activeAppointment = $this->activeMotherAppointmentQuery((int) $mother->id)
                 ->lockForUpdate()
                 ->first();
@@ -594,6 +654,7 @@ class AppointmentController extends Controller
             $conversation = $this->ensureConversationForPair($mother, $availability->staff);
 
             return ['appointment' => Appointment::create([
+                ...app(AppointmentCareTeam::class)->forBooking($availability->staff),
                 'mother_id' => $mother->id,
                 'staff_id' => $availability->staff_id,
                 'staff_availability_id' => $availability->id,
@@ -708,14 +769,25 @@ class AppointmentController extends Controller
             'assigned_facility' => ['nullable', 'string', 'max:255'],
             'accepting_appointments' => ['nullable', 'boolean'],
             'max_appointments_per_day' => ['required', 'integer', 'min:0', 'max:50'],
+            'midwife_selection' => ['nullable', 'string', 'regex:/^(new|staff:[1-9][0-9]*|profile:[1-9][0-9]*)$/'],
+            'midwife_full_name' => ['exclude_unless:midwife_selection,new', 'required', 'string', 'max:255'],
+            'midwife_barangay' => ['exclude_unless:midwife_selection,new', 'required', Rule::in(self::SAN_PABLO_BARANGAYS)],
+            'midwife_facility' => ['exclude_unless:midwife_selection,new', 'required', 'string', 'max:255'],
+            'midwife_contact_number' => ['exclude_unless:midwife_selection,new', 'nullable', 'string', 'max:30'],
+            'midwife_availability_status' => ['exclude_unless:midwife_selection,new', 'required', Rule::in(['available', 'unavailable'])],
+            'existing_midwife_availability_status' => ['nullable', Rule::in(['available', 'unavailable'])],
         ]);
 
-        $staff->forceFill([
-            'assigned_barangay' => $validated['assigned_barangay'] ?: null,
-            'assigned_facility' => $validated['assigned_facility'] ?: null,
-            'accepting_appointments' => $request->boolean('accepting_appointments'),
-            'max_appointments_per_day' => (int) $validated['max_appointments_per_day'],
-        ])->save();
+        DB::transaction(function () use ($staff, $validated, $request): void {
+            $staff->forceFill([
+                'assigned_barangay' => $validated['assigned_barangay'] ?: null,
+                'assigned_facility' => $validated['assigned_facility'] ?: null,
+                'accepting_appointments' => $request->boolean('accepting_appointments'),
+                'max_appointments_per_day' => (int) $validated['max_appointments_per_day'],
+            ])->save();
+            app(AppointmentCareTeam::class)->assign($staff, $validated);
+            $staff->save();
+        });
 
         return redirect()
             ->route('staff.clinic-schedule.index')
@@ -879,6 +951,7 @@ class AppointmentController extends Controller
         }
 
         $appointment = Appointment::create([
+            ...app(AppointmentCareTeam::class)->forBooking($staff),
             'mother_id' => $mother->id,
             'staff_id' => $staff->id,
             'staff_availability_id' => $availability?->id,
@@ -1427,7 +1500,7 @@ class AppointmentController extends Controller
             'status_tone' => $status['tone'],
             'can_cancel' => in_array($appointment->status, [Appointment::STATUS_PENDING, Appointment::STATUS_CONFIRMED], true),
             'cancel_url' => route('mother.clinic-schedule.cancel', $appointment),
-            'view_anchor' => 'doctor-card-'.$appointment->staff_id,
+            'view_anchor' => 'appointment-'.$appointment->id,
             'message' => $this->activeAppointmentMessage($appointment),
         ];
     }
@@ -2205,6 +2278,7 @@ class AppointmentController extends Controller
             'staff_id' => $appointment->staff_id,
             'staff_name' => $appointment->staff?->full_name,
             'staff_role' => $appointment->staff?->role_label,
+            'care_team' => $appointment->care_team_snapshot,
             'staff_availability_id' => $appointment->staff_availability_id,
             'conversation_id' => $appointment->conversation_id,
             'appointment_type' => $appointment->appointment_type,

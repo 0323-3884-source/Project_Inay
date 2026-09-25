@@ -1048,38 +1048,23 @@ body.has-clinic-modal {
     }
 }
 
-/* Pink actions, including link-based tabs; retain layout and modal backdrops. */
-.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button) {
-    background: #db2777;
-    border-color: #db2777;
-    color: #ffffff;
-    box-shadow: none;
+/* Keep action hierarchy and selected schedule tabs visually distinct. */
+.clinic-schedule :is(.clinic-primary, .clinic-secondary, .clinic-success, .clinic-danger, .clinic-link-button) {
+    min-height: 40px; border: 1px solid transparent; border-radius: 8px; font-weight: 600; box-shadow: none;
 }
-
-.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):hover {
-    background: #be185d;
-    border-color: #be185d;
-    color: #ffffff;
+.clinic-schedule .clinic-primary { background: #db2777; border-color: #db2777; color: #fff; }
+.clinic-schedule .clinic-primary:hover { background: #be185d; border-color: #be185d; }
+.clinic-schedule :is(.clinic-secondary, .clinic-link-button) { background: #fff; border-color: #d0d5dd; color: #344054; }
+.clinic-schedule :is(.clinic-secondary, .clinic-link-button):hover { background: #f9fafb; border-color: #98a2b3; }
+.clinic-schedule .clinic-success { background: #067647; border-color: #067647; color: #fff; }
+.clinic-schedule .clinic-success:hover { background: #085d3a; }
+.clinic-schedule .clinic-danger { background: #fff; border-color: #fecdca; color: #b42318; }
+.clinic-schedule .clinic-danger:hover { background: #fef3f2; border-color: #fda29b; }
+.clinic-schedule :is(.clinic-page-tab, .clinic-tab) { background: #fff; border: 1px solid #e4e7ec; color: #475467; text-decoration: none; }
+.clinic-schedule :is(.clinic-page-tab, .clinic-tab):hover { background: #fdf2f8; color: #9d174d; }
+.clinic-schedule :is(.clinic-page-tab[aria-selected="true"], .clinic-tab.is-active) { background: #9d174d; border-color: #9d174d; color: #fff; }
+.clinic-schedule :is(button, a):focus-visible { outline: 3px solid #f9a8d4; outline-offset: 3px; }
+.clinic-schedule :is(button, .clinic-link-button):is(:disabled, .is-disabled, [aria-disabled="true"]) {
+    background: #f2f4f7; border-color: #e4e7ec; color: #667085; opacity: 1; cursor: not-allowed;
 }
-
-.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):is(.is-active, .is-selected, [aria-selected="true"]) {
-    background: #9d174d;
-    border-color: #9d174d;
-    color: #ffffff;
-}
-
-.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):focus-visible {
-    outline: 3px solid #f9a8d4;
-    outline-offset: 3px;
-}
-
-.clinic-schedule :is(button:not([class*="backdrop"]), .clinic-page-tab, .clinic-tab, .clinic-primary, .clinic-secondary, .clinic-link-button):is(:disabled, .is-disabled, [aria-disabled="true"]) {
-    background: #fce7f3;
-    border-color: #fbcfe8;
-    color: #9d174d;
-    box-shadow: none;
-}
-
-.clinic-schedule input:is([type="checkbox"], [type="radio"]) {
-    accent-color: #db2777;
-}
+.clinic-schedule input:is([type="checkbox"], [type="radio"]) { accent-color: #db2777; }

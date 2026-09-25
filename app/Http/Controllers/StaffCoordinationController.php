@@ -9,7 +9,6 @@ use App\Support\AppNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -314,7 +313,6 @@ class StaffCoordinationController extends Controller
 
     private function isOnline(?ProgramStaff $staff): bool
     {
-        return $staff?->updated_at instanceof Carbon
-            && $staff->updated_at->greaterThan(now()->subMinutes(10));
+        return \App\Support\ChatPresence::isOnline($staff);
     }
 }

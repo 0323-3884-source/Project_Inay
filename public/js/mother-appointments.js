@@ -53,29 +53,10 @@
         detailDoctor: null,
     };
 
-    const defaultSlots = [
-        ['08:00', '09:00', '08:00 AM'],
-        ['09:00', '10:00', '09:00 AM'],
-        ['10:00', '11:00', '10:00 AM'],
-        ['11:00', '12:00', '11:00 AM'],
-        ['12:30', '13:30', '12:30 PM'],
-        ['13:30', '14:30', '01:30 PM'],
-        ['14:30', '15:30', '02:30 PM'],
-        ['15:30', '16:30', '03:30 PM'],
-        ['16:30', '17:30', '04:30 PM'],
-        ['17:30', '18:30', '05:30 PM'],
-    ];
-
-    const today = () => {
-        const value = new Date();
-        value.setHours(0, 0, 0, 0);
-        return value;
-    };
-
-    const nowTimeValue = () => {
-        const value = new Date();
-        return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
-    };
+    let calendarRequest;
+    let calendarVersion = 0;
+    let returnFocus;
+    const today = () => parseDate(root.dataset.today);
 
     const parseDate = (value) => {
         const [year, month, day] = String(value).split('-').map(Number);
@@ -271,6 +252,7 @@
 
     const openFilter = () => {
         if (!filterModal) return;
+        filterModal.returnFocus = document.activeElement;
         filterModal.hidden = false;
         document.body.classList.add('has-filter-modal');
         if (barangaySearch) {
@@ -284,28 +266,16 @@
         if (!filterModal) return;
         filterModal.hidden = true;
         document.body.classList.remove('has-filter-modal');
+        filterModal.returnFocus?.focus();
     };
 
-    const doctorExperience = (doctor) => {
-        const category = String(doctor.category_label || 'maternal care').toLowerCase();
-        return `${doctor.name} provides ${category} support for mothers and families through ${doctor.location}. Appointments focus on clear assessment, practical guidance, and coordinated follow-up care.`;
-    };
+    const doctorExperience = (doctor) => doctor.name + ' is listed as ' + doctor.role + '. Facility: ' + doctor.location + '. Contact the healthcare worker to confirm which services are offered.';
 
-    const doctorSpecialtyItems = (doctor) => {
-        const itemsByCategory = {
-            ob_gyn: ['Prenatal and postnatal checkups', 'Pregnancy risk review', 'Maternal wellness counseling'],
-            pediatrician: ['Child checkups', 'Growth and development review', 'Vaccination guidance'],
-            midwife: ['Prenatal monitoring', 'Birth preparedness', 'Postpartum support'],
-            general_doctor: ['General consultation', 'Primary care assessment', 'Follow-up care'],
-            program_staff: ['DSWD and program guidance', 'Mother case coordination', 'Community support referral'],
-            barangay_health_worker: ['Barangay health follow-up', 'Home visit coordination', 'Community care navigation'],
-        };
-        const baseItems = itemsByCategory[doctor.category_key] || itemsByCategory.general_doctor;
-        return [...baseItems, doctor.consultation_type, doctor.schedule].filter(Boolean).slice(0, 5);
-    };
+    const doctorSpecialtyItems = (doctor) => [...new Set((doctor.availabilities || []).map(slot => slot.appointment_type_label)), doctor.consultation_type, doctor.schedule].filter(Boolean);
 
     const openDetail = (doctor) => {
         if (!detailModal) return;
+        detailModal.returnFocus = document.activeElement;
         state.detailDoctor = doctor;
 
         detailName.textContent = doctor.name || 'Healthcare worker';
@@ -334,67 +304,14 @@
 
         detailModal.hidden = false;
         document.body.classList.add('has-detail-modal');
+        detailModal.querySelector('.detail-close').focus();
     };
 
     const closeDetail = () => {
         if (!detailModal) return;
         detailModal.hidden = true;
         document.body.classList.remove('has-detail-modal');
-    };
-
-    const availabilityForDate = (doctor, date) => {
-        const day = isoWeekday(date);
-        const dateText = dateValue(date);
-        const isToday = dateText === dateValue(today());
-        const currentTime = nowTimeValue();
-
-        return (doctor?.availabilities || [])
-            .filter((availability) => Number(availability.day_of_week) === day)
-            .filter((availability) => !isToday || String(availability.start_time) > currentTime);
-    };
-
-    const nextAvailableDate = (doctor) => {
-        const start = today();
-        const availableDays = new Set((doctor.available_days || []).map(Number));
-
-        if (availableDays.size === 0) return start;
-
-        for (let offset = 0; offset < 60; offset += 1) {
-            const candidate = new Date(start);
-            candidate.setDate(start.getDate() + offset);
-
-            if (availableDays.has(isoWeekday(candidate)) && availabilityForDate(doctor, candidate).length > 0) {
-                return candidate;
-            }
-        }
-
-        return start;
-    };
-
-    const uniqueSlotTemplates = (doctor) => {
-        const seen = new Set();
-        const slots = [];
-
-        (doctor?.availabilities || []).forEach((availability) => {
-            const key = `${availability.start_time}-${availability.end_time}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            slots.push({
-                start_time: availability.start_time,
-                end_time: availability.end_time,
-                time_label: availability.time_label,
-            });
-        });
-
-        if (slots.length > 0) {
-            return slots.sort((left, right) => String(left.start_time).localeCompare(String(right.start_time)));
-        }
-
-        return defaultSlots.map(([start, end, label]) => ({
-            start_time: start,
-            end_time: end,
-            time_label: label,
-        }));
+        detailModal.returnFocus?.focus();
     };
 
     const resetBookingFields = () => {
@@ -414,34 +331,30 @@
 
         slotGrid.querySelectorAll('.booking-slot').forEach((slotButton) => {
             slotButton.classList.toggle('is-selected', slotButton === button);
+            slotButton.setAttribute('aria-pressed', String(slotButton === button));
         });
     };
 
     const renderSlots = () => {
         resetBookingFields();
         slotGrid.replaceChildren();
-
-        if (!state.doctor || !state.selectedDate) return;
-
-        const date = state.selectedDate;
-        const available = availabilityForDate(state.doctor, date);
-        const availableByTime = new Map(available.map((availability) => [`${availability.start_time}-${availability.end_time}`, availability]));
-        dateInput.value = dateValue(date);
-        dateLabel.textContent = formatSelectedDate(date);
-
-        uniqueSlotTemplates(state.doctor).forEach((template) => {
-            const key = `${template.start_time}-${template.end_time}`;
-            const availability = availableByTime.get(key);
+        dateLabel.textContent = state.selectedDate ? formatSelectedDate(state.selectedDate) : 'Select an available date';
+        if (!state.selectedDate) return;
+        const key = dateValue(state.selectedDate);
+        dateInput.value = key;
+        const labels = {booked: 'Already booked', full: 'Daily limit reached', unavailable: 'Unavailable', past: 'Time passed'};
+        (state.days?.[key]?.slots || []).forEach(availability => {
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'booking-slot';
-            button.textContent = template.time_label;
-            button.disabled = !availability;
-
-            if (availability) {
-                button.addEventListener('click', () => selectAvailability(availability, button));
-            }
-
+            button.className = 'booking-slot is-' + availability.status;
+            button.disabled = availability.status !== 'available' || state.loading || state.submitting;
+            button.setAttribute('aria-pressed', 'false');
+            const time = document.createElement('span');
+            time.textContent = availability.time_label;
+            const description = document.createElement('small');
+            description.textContent = labels[availability.status] || availability.appointment_type_label + ' · ' + availability.meeting_type_label;
+            button.append(time, description);
+            button.addEventListener('click', () => selectAvailability(availability, button));
             slotGrid.append(button);
         });
     };
@@ -449,33 +362,68 @@
     const renderCalendar = () => {
         calendarGrid.replaceChildren();
         monthLabel.textContent = formatMonth(state.visibleMonth);
-
-        const firstOfMonth = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth(), 1);
-        const start = new Date(firstOfMonth);
-        start.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
-
-        for (let index = 0; index < 42; index += 1) {
+        const start = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth(), 1);
+        start.setDate(start.getDate() - start.getDay());
+        const firstAllowed = new Date(today().getFullYear(), today().getMonth(), 1);
+        const lastAllowed = new Date(firstAllowed.getFullYear(), firstAllowed.getMonth() + 12, 1);
+        root.querySelector('[data-calendar-prev]').disabled = state.visibleMonth <= firstAllowed || state.submitting;
+        root.querySelector('[data-calendar-next]').disabled = state.visibleMonth >= lastAllowed || state.submitting;
+        for (let index = 0; index < 42; index++) {
             const date = new Date(start);
             date.setDate(start.getDate() + index);
-
+            const key = dateValue(date);
+            const status = state.days?.[key]?.status || 'unavailable';
+            const selected = Boolean(state.selectedDate && sameDay(date, state.selectedDate));
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'booking-day';
-            button.textContent = String(date.getDate());
-
+            button.className = 'booking-day is-' + status;
+            button.textContent = date.getDate();
+            button.dataset.date = key;
+            button.disabled = state.loading || state.submitting || status !== 'available';
+            button.setAttribute('aria-label', formatSelectedDate(date) + ': ' + status);
+            button.setAttribute('aria-pressed', String(selected));
+            button.classList.toggle('is-selected', selected);
             if (date.getMonth() !== state.visibleMonth.getMonth()) button.classList.add('is-muted');
-            if (sameDay(date, today())) button.classList.add('is-today');
-            if (state.selectedDate && sameDay(date, state.selectedDate)) button.classList.add('is-selected');
-            if (date < today()) button.disabled = true;
-
-            button.addEventListener('click', () => {
-                state.selectedDate = date;
-                resetBookingFields();
-                renderCalendar();
-                renderSlots();
-            });
-
+            if (sameDay(date, today())) { button.classList.add('is-today'); button.setAttribute('aria-current', 'date'); }
+            button.addEventListener('click', () => { state.selectedDate = date; renderCalendar(); renderSlots(); });
             calendarGrid.append(button);
+        }
+    };
+
+    const loadCalendar = async () => {
+        calendarRequest?.abort();
+        calendarRequest = new AbortController();
+        const version = ++calendarVersion;
+        state.loading = true;
+        state.days = {};
+        resetBookingFields();
+        const status = root.querySelector('[data-calendar-status]');
+        const retry = root.querySelector('[data-calendar-retry]');
+        status.textContent = 'Checking live availability…';
+        retry.hidden = true;
+        renderCalendar();
+        renderSlots();
+        try {
+            const url = new URL(root.dataset.calendarUrl, location.origin);
+            url.searchParams.set('staff_id', state.doctor.id);
+            url.searchParams.set('month', dateValue(state.visibleMonth).slice(0, 7));
+            const response = await fetch(url, {signal: calendarRequest.signal, credentials: 'same-origin', cache: 'no-store', headers: {Accept: 'application/json'}});
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Availability could not be loaded.');
+            if (version !== calendarVersion) return;
+            state.days = payload.days;
+            if (!state.selectedDate || state.days[dateValue(state.selectedDate)]?.status !== 'available') {
+                const first = Object.keys(state.days).find(key => key.slice(0, 7) === dateValue(state.visibleMonth).slice(0, 7) && state.days[key].status === 'available');
+                state.selectedDate = first ? parseDate(first) : null;
+            }
+            status.textContent = state.selectedDate ? 'Choose an available time below.' : 'No available appointments this month. Try the next month.';
+        } catch (error) {
+            if (error.name === 'AbortError' || version !== calendarVersion) return;
+            status.textContent = 'Could not check availability. Please retry.';
+            retry.hidden = false;
+            state.selectedDate = null;
+        } finally {
+            if (version === calendarVersion) { state.loading = false; renderCalendar(); renderSlots(); }
         }
     };
 
@@ -493,7 +441,8 @@
         }
 
         state.doctor = doctor;
-        state.selectedDate = nextAvailableDate(doctor);
+        returnFocus = document.activeElement;
+        state.selectedDate = today();
         state.visibleMonth = new Date(state.selectedDate.getFullYear(), state.selectedDate.getMonth(), 1);
         state.selectedAvailability = null;
         form.reset();
@@ -501,11 +450,15 @@
         doctorLabel.textContent = `${doctor.name} - ${doctor.role}`;
         modal.hidden = false;
         document.body.classList.add('has-booking-modal');
-        renderCalendar();
-        renderSlots();
+        loadCalendar();
+        modal.querySelector('.booking-close').focus();
     };
 
     const closeBooking = () => {
+        if (state.submitting) return;
+        calendarRequest?.abort();
+        ++calendarVersion;
+        returnFocus?.focus();
         modal.hidden = true;
         document.body.classList.remove('has-booking-modal');
         setError('');
@@ -578,13 +531,17 @@
 
     root.querySelector('[data-calendar-prev]')?.addEventListener('click', () => {
         state.visibleMonth = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth() - 1, 1);
-        renderCalendar();
+        state.selectedDate = null;
+        loadCalendar();
     });
 
     root.querySelector('[data-calendar-next]')?.addEventListener('click', () => {
         state.visibleMonth = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth() + 1, 1);
-        renderCalendar();
+        state.selectedDate = null;
+        loadCalendar();
     });
+
+    root.querySelector('[data-calendar-retry]')?.addEventListener('click', loadCalendar);
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -603,6 +560,7 @@
         }
 
         state.submitting = true;
+        modal.querySelectorAll('button').forEach(button => { button.disabled = true; });
         submitButton.disabled = true;
         submitButton.textContent = 'Saving...';
         setError('');
@@ -624,6 +582,7 @@
             if (!response.ok) {
                 if (payload.active_appointment) {
                     setActiveAppointment(payload.active_appointment);
+                    state.submitting = false;
                     closeBooking();
                     setAlert(payload.message || payload.active_appointment.message || 'You already have an active appointment.', true);
                     return;
@@ -636,18 +595,37 @@
                 setActiveAppointment(payload.active_appointment);
             }
 
+            state.submitting = false;
             closeBooking();
             setAlert(payload.status || 'Appointment request sent. Please wait for the healthcare worker to confirm your appointment.');
+            // Reload the server-rendered appointment and its saved care team after booking.
+            window.location.reload();
         } catch (error) {
             setError(error.message || 'Appointment could not be saved.');
+            await loadCalendar();
         } finally {
             state.submitting = false;
             submitButton.textContent = 'Confirm Appointment';
-            submitButton.disabled = !state.selectedAvailability;
+            root.querySelectorAll('[data-booking-close]').forEach(button => { button.disabled = false; });
+            root.querySelector('[data-calendar-retry]').disabled = false;
+            renderCalendar();
+            renderSlots();
         }
     });
 
     document.addEventListener('keydown', (event) => {
+        const dialog = [modal, filterModal, detailModal].find(item => item && !item.hidden);
+        if (event.key === 'Tab' && dialog) {
+            const focusable = [...dialog.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')]
+                .filter(item => item.getClientRects().length && !item.className.includes('backdrop'));
+            const first = focusable[0];
+            const last = focusable.at(-1);
+            if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); last?.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); first?.focus();
+            }
+        }
         if (event.key !== 'Escape') return;
         if (detailModal && !detailModal.hidden) closeDetail();
         if (filterModal && !filterModal.hidden) closeFilter();

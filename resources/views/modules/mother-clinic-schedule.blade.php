@@ -2,6 +2,7 @@
 
 @section('title', 'Doctor List - Project INAY')
 @section('portal_title', 'Doctor List')
+@section('handles_status', '1')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/mother-appointments.css') }}?v={{ filemtime(public_path('css/mother-appointments.css')) }}">
@@ -29,6 +30,8 @@
         class="mother-appointments"
         data-mother-appointments
         data-booking-url="{{ route('mother.clinic-schedule.store') }}"
+        data-calendar-url="{{ route('mother.clinic-schedule.calendar') }}"
+        data-today="{{ today()->toDateString() }}"
         data-csrf="{{ csrf_token() }}"
     >
         <script type="application/json" data-doctor-json>{!! $doctorJson !!}</script>
@@ -84,6 +87,23 @@
                 </form>
             </div>
         </section>
+
+        @if ($appointments->isNotEmpty())
+            <section class="care-appointments" aria-labelledby="my-appointments-title">
+                <h2 id="my-appointments-title">My Appointments</h2>
+                @foreach ($upcomingAppointments as $appointment)
+                    @include('partials.mother-care-team-appointment', ['isHistory' => false])
+                @endforeach
+                @if ($historyAppointments->isNotEmpty())
+                    <details class="care-appointment-history">
+                        <summary>Appointment History ({{ $historyAppointments->count() }})</summary>
+                        @foreach ($historyAppointments as $appointment)
+                            @include('partials.mother-care-team-appointment', ['isHistory' => true])
+                        @endforeach
+                    </details>
+                @endif
+            </section>
+        @endif
 
         <header class="appointment-topbar">
             <h1>Doctor List</h1>
@@ -291,16 +311,7 @@
 
                 <section class="detail-section">
                     <h4>Reviews</h4>
-                    <div class="detail-review-grid">
-                        <article>
-                            <div class="detail-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                            <p>"The care was clear, kind, and easy to understand."</p>
-                        </article>
-                        <article>
-                            <div class="detail-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                            <p>"Helpful guidance and a smooth clinic visit."</p>
-                        </article>
-                    </div>
+                    <p>No verified reviews available.</p>
                 </section>
 
                 <footer class="detail-footer">
@@ -324,7 +335,7 @@
                             <h2 id="booking-appointment-title">Booking Appointment</h2>
                             <p data-booking-doctor>Choose a doctor and time slot.</p>
                         </div>
-                        <button class="booking-close" type="button" data-booking-close aria-label="Close booking appointment">x</button>
+                        <button class="booking-close" type="button" data-booking-close aria-label="Close booking appointment">{!! $iconClose !!}</button>
                     </header>
 
                     <div class="booking-calendar-head">
@@ -345,6 +356,14 @@
                         <span>Sat</span>
                     </div>
                     <div class="booking-calendar-grid" data-calendar-grid></div>
+                    <div class="booking-legend" aria-label="Calendar legend">
+                        <span><i class="legend-available"></i>Available</span>
+                        <span><i class="legend-selected"></i>Selected</span>
+                        <span><i class="legend-booked"></i>Booked / full</span>
+                        <span><i class="legend-unavailable"></i>Unavailable</span>
+                    </div>
+                    <p class="booking-loading" data-calendar-status role="status"></p>
+                    <button class="booking-retry" type="button" data-calendar-retry hidden>Retry availability</button>
 
                     <section class="booking-slots" aria-live="polite">
                         <h3 data-selected-date-label>Select a date</h3>
@@ -353,7 +372,7 @@
 
                     <label class="booking-concerns">
                         Patient Concerns
-                        <textarea name="notes" maxlength="2000" rows="6" placeholder="Describe your concerns, symptoms, or questions"></textarea>
+                        <textarea name="notes" maxlength="2000" rows="3" placeholder="Describe your concerns, symptoms, or questions"></textarea>
                     </label>
 
                     <p class="booking-error" data-booking-error hidden></p>

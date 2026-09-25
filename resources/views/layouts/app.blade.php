@@ -7230,7 +7230,7 @@
     @endif
 
     <main class="@hasSection('auth_screen') auth-page @else page @if($hasPortalShell) portal-main @endif @endif">
-        @if (session('status') && ! trim($__env->yieldContent('auth_screen')))
+        @if (session('status') && ! trim($__env->yieldContent('auth_screen')) && ! $__env->hasSection('handles_status'))
             <div class="alert @hasSection('auth_screen') auth-alert @endif">{{ session('status') }}</div>
         @endif
 

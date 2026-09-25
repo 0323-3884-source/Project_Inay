@@ -38,6 +38,17 @@ class ConsultationController extends Controller
 
         $this->ensureConversationsForMother($mother);
 
+        if ($request->filled('staff')) {
+            $conversation = Conversation::where('mother_id', $mother->id)
+                ->where('program_staff_id', $request->integer('staff'))->first();
+            if (! $conversation) {
+                return redirect()->route('mother.clinic-schedule.index')
+                    ->with('status', 'Book an appointment with this healthcare worker first to start your conversation.');
+            }
+
+            return redirect()->route('mother.consultation', ['conversation' => $conversation->id]);
+        }
+
         return view('mother.consultation', compact('mother'));
     }
 

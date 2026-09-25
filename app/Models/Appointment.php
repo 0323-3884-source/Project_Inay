@@ -24,6 +24,9 @@ class Appointment extends Model
     public const MEETING_CHAT = 'chat';
 
     protected $fillable = [
+        'healthcare_facility_id',
+        'midwife_profile_id',
+        'care_team_snapshot',
         'mother_id',
         'staff_id',
         'staff_availability_id',
@@ -50,6 +53,7 @@ class Appointment extends Model
     protected function casts(): array
     {
         return [
+            'care_team_snapshot' => 'array',
             'appointment_date' => 'date',
             'preferred_date' => 'date',
             'confirmed_at' => 'datetime',
@@ -120,6 +124,16 @@ class Appointment extends Model
     public function mother(): BelongsTo
     {
         return $this->belongsTo(Mother::class);
+    }
+
+    public function facility(): BelongsTo
+    {
+        return $this->belongsTo(HealthcareFacility::class, 'healthcare_facility_id');
+    }
+
+    public function midwife(): BelongsTo
+    {
+        return $this->belongsTo(MidwifeProfile::class, 'midwife_profile_id');
     }
 
     public function staff(): BelongsTo

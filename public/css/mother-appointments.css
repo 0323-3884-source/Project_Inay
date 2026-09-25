@@ -1,3 +1,21 @@
+.care-appointments { display: grid; gap: 16px; }
+.care-appointments h2 { margin: 0; color: #98154c; font-size: 1.35rem; }
+.care-appointment { background: #fff; border: 1px solid #f1d2df; border-radius: 12px; padding: 22px; scroll-margin-top: 24px; }
+.care-appointment header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.care-appointment h3 { margin: 0 0 8px; font-size: 1.1rem; }
+.care-appointment p { margin: 0; color: #667085; }
+.care-appointment-status { color: #98154c; background: #fff0f6; border-radius: 20px; padding: 6px 12px; font-size: .85rem; font-weight: 700; }
+.care-appointment-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 18px; margin: 22px 0 0; }
+.care-appointment-facts div { min-width: 0; overflow-wrap: anywhere; }
+.care-appointment-facts dt { color: #667085; font-size: .85rem; margin-bottom: 6px; }
+.care-appointment-facts dd { margin: 0; font-weight: 700; }
+.care-appointment-facts small { display: block; font-weight: 400; margin-top: 4px; }
+.care-appointment-midwife { border-left: 3px solid #df237d; padding-left: 12px; }
+.care-appointment-cancel { margin-top: 20px; padding: 10px 16px; background: #fff1f5; border: 1px solid #f3b5d0; border-radius: 8px; color: #98154c; font-weight: 700; cursor: pointer; }
+.care-appointment-history summary { cursor: pointer; font-weight: 700; color: #98154c; padding: 12px 0; }
+.care-appointment-history .care-appointment { margin-top: 12px; }
+@media (max-width: 540px) { .care-appointment { padding: 16px; } .care-appointment-cancel { width: 100%; } }
+
 .mother-appointments {
     --appointment-blue: #4f6df5;
     --appointment-purple: #6d5df7;
@@ -1325,38 +1343,72 @@ body.has-detail-modal {
     }
 }
 
-/* Pink actions, including link-based tabs; retain layout and modal backdrops. */
-.mother-appointments :is(button:not([class*="backdrop"]), .appointment-categories a, .doctor-message, .detail-chat) {
-    background: #db2777;
-    border-color: #db2777;
-    color: #ffffff;
-    box-shadow: none;
+/* Appointment controls have explicit primary, secondary, selected and occupied states. */
+.mother-appointments {
+    --appointment-blue: #db2777;
+    --appointment-purple: #9d174d;
 }
-
-.mother-appointments :is(button:not([class*="backdrop"]), .appointment-categories a, .doctor-message, .detail-chat):hover {
-    background: #be185d;
-    border-color: #be185d;
-    color: #ffffff;
+.mother-appointments :is(button, .doctor-message, .detail-chat, .appointment-categories a, .appointment-notice-button) {
+    font-weight: 600; box-shadow: none; transition: background-color .15s, border-color .15s;
 }
-
-.mother-appointments :is(button:not([class*="backdrop"]), .appointment-categories a, .doctor-message, .detail-chat):is(.is-active, .is-selected, [aria-selected="true"]) {
-    background: #9d174d;
-    border-color: #9d174d;
-    color: #ffffff;
+.mother-appointments :is(button, a):focus-visible { outline: 3px solid #f9a8d4; outline-offset: 3px; }
+.mother-appointments :is(.doctor-book, .detail-book, .booking-confirm, .filter-apply) {
+    color: #fff; background: #db2777; border: 1px solid #db2777;
 }
-
-.mother-appointments :is(button:not([class*="backdrop"]), .appointment-categories a, .doctor-message, .detail-chat):focus-visible {
-    outline: 3px solid #f9a8d4;
-    outline-offset: 3px;
+.mother-appointments :is(.doctor-book, .detail-book, .booking-confirm, .filter-apply):not(:disabled):hover { background: #be185d; border-color: #be185d; }
+.mother-appointments :is(.doctor-detail, .doctor-message, .detail-chat, .booking-cancel, .filter-clear, .appointment-filter-button, .booking-retry) {
+    background: #fff; border: 1px solid #d0d5dd; color: #344054;
 }
-
-.mother-appointments :is(button:not([class*="backdrop"]), .appointment-categories a, .doctor-message, .detail-chat):is(:disabled, .is-disabled, [aria-disabled="true"]) {
-    background: #fce7f3;
-    border-color: #fbcfe8;
-    color: #9d174d;
-    box-shadow: none;
+.mother-appointments :is(.doctor-detail, .doctor-message, .detail-chat, .booking-cancel, .filter-clear, .appointment-filter-button, .booking-retry):not(:disabled):hover {
+    background: #fff1f7; border-color: #db2777; color: #9d174d;
 }
-
-.mother-appointments input:is([type="checkbox"], [type="radio"]) {
-    accent-color: #db2777;
+.mother-appointments .appointment-categories a { background: #fff; color: #475467; border: 1px solid #e4e7ec; border-radius: 999px; padding: 10px 16px; }
+.mother-appointments .appointment-categories a:hover { background: #fff1f7; color: #9d174d; }
+.mother-appointments :is(.appointment-categories a.is-active, .appointment-filter-button.is-active) { background: #9d174d; border-color: #9d174d; color: #fff; }
+.mother-appointments :is(.booking-close, .detail-close, .filter-close, .booking-calendar-head button) {
+    color: #475467; background: #fff; border: 1px solid #e4e7ec; padding: 0; width: 40px; height: 40px; flex-shrink: 0;
+}
+.mother-appointments :is(.booking-close, .detail-close, .filter-close, .booking-calendar-head button):not(:disabled):hover { background: #f9fafb; border-color: #98a2b3; }
+.mother-appointments :is(.booking-close, .detail-close, .filter-close) svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.mother-appointments :is(.doctor-book, .detail-book, .booking-confirm, .booking-calendar-head button):disabled {
+    background: #f2f4f7; border-color: #e4e7ec; color: #667085; cursor: not-allowed; opacity: 1; box-shadow: none;
+}
+.mother-appointments :is(.doctor-book, .detail-book):is(.is-pending, .is-confirmed, .is-locked):disabled {
+    background: #344054; border-color: #344054; color: #fff;
+}
+.mother-appointments :is(.appointment-notice-cancel button, .care-appointment-cancel) { background: #fff; color: #b42318; border: 1px solid #fecdca; }
+.mother-appointments :is(.appointment-notice-cancel button, .care-appointment-cancel):hover { background: #fef3f2; border-color: #fda29b; }
+.mother-appointments .booking-dialog { width: min(560px, calc(100vw - 28px)); border-radius: 16px; max-height: calc(100dvh - 32px); }
+.mother-appointments .booking-dialog form { gap: 16px; padding: 24px; }
+.mother-appointments .booking-head h2 { font-size: 22px; font-weight: 700; }
+.mother-appointments .booking-day { aspect-ratio: auto; height: 44px; min-height: 40px; color: #9d174d; background: #fff; border: 1px solid #f2cfdf; box-shadow: none; }
+.mother-appointments .booking-day:not(:disabled):hover { background: #fdf2f8; border-color: #db2777; }
+.mother-appointments .booking-day.is-selected:not(:disabled) { color: #fff; background: #9d174d; border-color: #9d174d; }
+.mother-appointments .booking-day:disabled { color: #98a2b3; background: #f2f4f7; border-color: #f2f4f7; cursor: not-allowed; opacity: 1; }
+.mother-appointments .booking-slot { display: flex; flex-direction: column; justify-content: center; gap: 5px; min-height: 66px; padding: 10px; font-weight: 600; box-shadow: none; }
+.mother-appointments .booking-slot small { display: block; font-size: 11px; font-weight: 400; line-height: 1.4; }
+.mother-appointments .booking-slot:not(:disabled):hover { background: #fdf2f8; border-color: #db2777; }
+.mother-appointments .booking-slot.is-selected:not(:disabled) { background: #9d174d; border-color: #9d174d; color: #fff; }
+.mother-appointments .booking-slot:disabled { background: #f2f4f7; border-color: #e4e7ec; color: #667085; opacity: 1; }
+.mother-appointments :is(.booking-day.is-booked, .booking-slot.is-booked, .booking-slot.is-full):disabled {
+    background: #344054; border-color: #344054; color: #fff; opacity: 1;
+}
+.mother-appointments .booking-footer { position: static; display: grid; grid-template-columns: 1fr 2fr; margin: 0; padding: 16px 0 0; background: #fff; }
+.mother-appointments .booking-concerns textarea { min-height: 90px; border-color: #d0d5dd; box-shadow: none; }
+.mother-appointments .booking-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 11px; color: #667085; }
+.booking-legend span { display: inline-flex; gap: 5px; align-items: center; }
+.booking-legend i { width: 10px; height: 10px; border: 1px solid #e4e7ec; border-radius: 3px; }
+.booking-legend .legend-available { background: #fff; border-color: #db2777; }
+.booking-legend .legend-selected { background: #9d174d; border-color: #9d174d; }
+.booking-legend .legend-booked { background: #344054; border-color: #344054; }
+.booking-legend .legend-unavailable { background: #f2f4f7; }
+.booking-loading { margin: 0; font-size: 13px; color: #667085; line-height: 1.5; }
+.mother-appointments .booking-retry[hidden] { display: none; }
+.mother-appointments .doctor-photo { background: #fff1f7; color: #9d174d; border: 1px solid #f3d5e3; }
+.mother-appointments .doctor-card-copy :is(h2, li) { font-weight: 600; }
+@media (max-width: 560px) {
+    .mother-appointments .booking-dialog form { padding: 16px; gap: 12px; }
+    .mother-appointments .booking-day { min-height: 34px; border-radius: 6px; }
+    .mother-appointments .booking-weekdays, .mother-appointments .booking-calendar-grid { gap: 4px; }
+    .mother-appointments .booking-slot-grid { grid-template-columns: 1fr; }
 }
