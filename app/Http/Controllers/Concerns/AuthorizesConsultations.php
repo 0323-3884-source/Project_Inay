@@ -73,6 +73,16 @@ trait AuthorizesConsultations
 
     protected function ensureConversationsForStaff(ProgramStaff $staff): void
     {
+        $appointmentMotherIds = \App\Models\Appointment::where('staff_id', $staff->id)->pluck('mother_id');
+        foreach ($appointmentMotherIds as $motherId) {
+            if ($motherId) {
+                StaffMotherCasefile::firstOrCreate([
+                    'staff_id' => $staff->id,
+                    'mother_id' => $motherId,
+                ]);
+            }
+        }
+
         $motherIds = StaffMotherCasefile::where('staff_id', $staff->id)->pluck('mother_id');
 
         foreach ($motherIds as $motherId) {
@@ -85,6 +95,16 @@ trait AuthorizesConsultations
 
     protected function ensureConversationsForMother(Mother $mother): void
     {
+        $appointmentStaffIds = \App\Models\Appointment::where('mother_id', $mother->id)->pluck('staff_id');
+        foreach ($appointmentStaffIds as $staffId) {
+            if ($staffId) {
+                StaffMotherCasefile::firstOrCreate([
+                    'staff_id' => $staffId,
+                    'mother_id' => $mother->id,
+                ]);
+            }
+        }
+
         $staffIds = StaffMotherCasefile::where('mother_id', $mother->id)->pluck('staff_id');
 
         foreach ($staffIds as $staffId) {

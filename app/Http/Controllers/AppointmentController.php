@@ -207,7 +207,14 @@ class AppointmentController extends Controller
         $categories = $this->motherAppointmentCategories();
         $selectedCategory = array_key_exists($selectedCategory, $categories) ? $selectedCategory : 'all';
         $selectedBarangay = in_array($selectedBarangay, self::SAN_PABLO_BARANGAYS, true) ? $selectedBarangay : '';
-        $appointments = Appointment::with(['mother', 'staff', 'conversation'])
+        $appointments = Appointment::with([
+            'mother',
+            'staff.facility',
+            'conversation',
+            'facility',
+            'midwife.programStaff.facility',
+            'midwife.facility',
+        ])
             ->where('mother_id', $mother->id)
             ->orderBy('appointment_date')
             ->orderBy('start_time')

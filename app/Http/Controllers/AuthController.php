@@ -2174,10 +2174,17 @@ class AuthController extends Controller
             'auth_name' => $name,
             'auth_email' => $email,
         ]);
+        \App\Support\ChatPresence::recordPresence($role, $id);
     }
 
     private function clearLoginSession(Request $request): void
     {
+        $role = (string) $request->session()->get('auth_role');
+        $id = (int) $request->session()->get('auth_id');
+        if ($role !== '' && $id > 0) {
+            \App\Support\ChatPresence::recordOffline($role, $id);
+        }
+
         $request->session()->forget([
             'auth_role',
             'auth_id',

@@ -232,6 +232,11 @@
         const participant = conversation?.participant || {};
 
         selectedInitials.textContent = participant.initials || 'IN';
+        if (conversation) {
+            const presence = makeEl('span', `consultation-presence ${participant.online ? 'is-online' : ''}`);
+            presence.setAttribute('aria-hidden', 'true');
+            selectedInitials.append(presence);
+        }
         selectedName.textContent = participant.name || (hasStaffTools ? 'Select a mother' : 'Select Program Staff');
         selectedRole.textContent = participant.role_label || (hasStaffTools ? 'Mother' : 'Program Staff');
         selectedStatus.textContent = participant.status_text || 'Offline';

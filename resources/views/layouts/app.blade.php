@@ -6949,6 +6949,9 @@
     }
 
     $portalPhotoUrl = $isMotherPortal && $motherRecord?->profile_photo_path ? asset('storage/'.$motherRecord->profile_photo_path) : null;
+    $showConsultationPresence = request()->routeIs('mother.consultation', 'staff.consultation');
+    $consultationProfileOnline = $showConsultationPresence
+        && \App\Support\ChatPresence::isOnline($isMotherPortal ? $motherRecord : $staffRecord);
     $pregnancyStatus = $motherRecord->pregnancy_status ?? null;
     $pregnancyLabel = match ($pregnancyStatus) {
         'pregnant' => 'Pregnant',
@@ -7093,6 +7096,9 @@
                             @else
                                 {{ $portalInitials }}
                             @endif
+                            @if ($showConsultationPresence)
+                                <span class="consultation-presence {{ $consultationProfileOnline ? 'is-online' : '' }}" role="img" aria-label="{{ $consultationProfileOnline ? 'Online' : 'Offline' }}"></span>
+                            @endif
                         </span>
                         <div class="portal-header-copy">
                             <div class="portal-header-name">{{ $portalName }}</div>
@@ -7152,6 +7158,9 @@
                                     <img src="{{ $portalPhotoUrl }}" alt="{{ $portalName }}">
                                 @else
                                     {{ $portalInitials }}
+                                @endif
+                                @if ($showConsultationPresence)
+                                    <span class="consultation-presence {{ $consultationProfileOnline ? 'is-online' : '' }}" role="img" aria-label="{{ $consultationProfileOnline ? 'Online' : 'Offline' }}"></span>
                                 @endif
                             </span>
                             <div>

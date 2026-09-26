@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.auth' => EnsureAdminAuthenticated::class,
         ]);
+
+        $middleware->web(append: [
+            \App\Http\Middleware\UpdateChatPresence::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

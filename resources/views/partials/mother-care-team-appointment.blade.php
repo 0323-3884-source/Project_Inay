@@ -1,4 +1,34 @@
-@php($team = $appointment->care_team_snapshot ?? [])
+@php
+    $team = $appointment->care_team_snapshot ?? [];
+    $midwifeData = ! empty($team['midwife']) ? $team['midwife'] : null;
+    $midwifeModel = $appointment->midwife ?? null;
+    $midwifeStaff = $midwifeModel?->programStaff;
+
+    // Use snapshot midwife if present; fallback to database relationship if snapshot did not record it
+    $hasMidwife = ! empty($midwifeData) || ! empty($appointment->midwife_profile_id);
+
+    $midwifeName = $midwifeData['name']
+        ?? $midwifeModel?->display_name
+        ?? null;
+
+    $midwifeRole = $midwifeData['role']
+        ?? ($midwifeStaff?->role_label ?: 'Midwife');
+
+    $midwifeFacility = $midwifeData['facility']
+        ?? $midwifeModel?->currentFacility()?->name
+        ?? $midwifeStaff?->assigned_facility
+        ?? $midwifeModel?->facility?->name
+        ?? $team['facility']
+        ?? $appointment->facility?->name
+        ?? $appointment->location
+        ?? null;
+
+    $midwifeContact = $midwifeData['contact_number']
+        ?? $midwifeData['contact']
+        ?? $midwifeStaff?->contact_number
+        ?? $midwifeModel?->contact_number
+        ?? null;
+@endphp
 <article class="care-appointment" id="appointment-{{ $appointment->id }}">
     <header>
         <div>
@@ -12,12 +42,22 @@
         <div><dt>Barangay</dt><dd>{{ $team['barangay'] ?? 'Not recorded' }}</dd></div>
         <div><dt>Consultation type</dt><dd>{{ $appointment->meetingLabel() }}</dd></div>
         <div><dt>Assigned Healthcare Worker</dt><dd>{{ $team['worker_name'] ?? $appointment->staff?->full_name }}<small>{{ $team['worker_role'] ?? $appointment->staff?->role_label }}</small></dd></div>
-        @if (! empty($team['midwife']))
-            <div class="care-appointment-midwife"><dt>Assigned Midwife</dt><dd>{{ $team['midwife']['name'] }}<small>Midwife</small>
-                @if (! empty($team['midwife']['contact_number']))
-                    <small>Contact: {{ $team['midwife']['contact_number'] }}</small>
-                @endif
-            </dd></div>
+        @if ($hasMidwife && $midwifeName)
+            <div class="care-appointment-midwife">
+                <dt>Assigned Midwife</dt>
+                <dd>
+                    {{ $midwifeName }}
+                    <small>{{ $midwifeRole }}</small>
+                    @if ($midwifeFacility)
+                        <small>Facility: {{ $midwifeFacility }}</small>
+                    @endif
+                    @if ($midwifeContact && ! in_array(strtolower(trim($midwifeContact)), ['not provided', 'not set', 'none', ''], true))
+                        <small>Contact: {{ $midwifeContact }}</small>
+                    @elseif ($midwifeContact && in_array(strtolower(trim($midwifeContact)), ['not provided', 'not set', 'none'], true))
+                        <small>Contact: Not provided</small>
+                    @endif
+                </dd>
+            </div>
         @endif
     </dl>
     @if (! $isHistory && in_array($appointment->status, [\App\Models\Appointment::STATUS_PENDING, \App\Models\Appointment::STATUS_CONFIRMED], true))
