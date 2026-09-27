@@ -656,6 +656,10 @@
     </style>
 @endpush
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/maternal-graphs.css') }}?v={{ filemtime(public_path('css/maternal-graphs.css')) }}">
+@endpush
+
 @section('content')
     <section class="maternal-monitoring-shell" aria-label="Maternal monitoring">
         <header class="maternal-monitoring-heading">
@@ -1048,20 +1052,20 @@
             const point = (index, count, value, min, max) => {
                 const left = 76;
                 const right = 48;
-                const top = 30;
-                const bottom = 42;
+                const top = 40;
+                const bottom = 64;
                 const width = 640;
-                const height = 260;
+                const height = 360;
                 return {
                     x: count <= 1 ? (width - right + left) / 2 : left + (index * ((width - left - right) / (count - 1))),
                     y: top + ((max - value) / (max - min)) * (height - top - bottom),
                 };
             };
             const emptyChart = (message) => `
-                <svg viewBox="0 0 640 260" role="img" aria-label="${escapeHtml(message)}">
-                    <path d="M76 30v188h516" class="axis"/>
-                    <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
-                    <text x="250" y="132" class="empty">${escapeHtml(message)}</text>
+                <svg viewBox="0 0 640 360" role="img" aria-label="${escapeHtml(message)}">
+                    <path d="M76 40v256h516" class="axis"/>
+                    <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
+                    <text x="320" y="175" text-anchor="middle" class="empty">${escapeHtml(message)}</text>
                 </svg>
             `;
             const renderWeight = () => {
@@ -1077,13 +1081,13 @@
                 const labels = [max, Math.round((max + min) / 2), min];
                 const points = history.map((item, index) => ({ ...item, ...point(index, history.length, Number(item.weight), min, max) }));
                 target.innerHTML = `
-                    <svg viewBox="0 0 640 260" role="img" aria-label="Weight progression chart">
-                        <path d="M76 30v188h516" class="axis"/>
-                        <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
-                        ${labels.map((label, index) => `<text x="24" y="${66 + index * 74}">${label} kg</text>`).join('')}
+                    <svg viewBox="0 0 640 360" role="img" aria-label="Weight progression chart">
+                        <path d="M76 40v256h516" class="axis"/>
+                        <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
+                        ${labels.map((label, index) => `<text x="24" y="${44 + index * 128}">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${points.map((item) => `${item.x},${item.y}`).join(' ')}" class="weight-line"/>` : ''}
                         ${points.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="weight-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
-                        ${points.map((item) => `<text x="${item.x - 18}" y="244">${escapeHtml(item.label)}</text>`).join('')}
+                        ${points.map((item) => `<text x="${item.x - 18}" y="322">${escapeHtml(item.label)}</text>`).join('')}
                     </svg>
                 `;
             };
@@ -1101,15 +1105,15 @@
                 const systolic = history.map((item, index) => ({ ...item, ...point(index, history.length, Number(item.systolic), min, max) }));
                 const diastolic = history.map((item, index) => ({ ...item, ...point(index, history.length, Number(item.diastolic), min, max) }));
                 target.innerHTML = `
-                    <svg viewBox="0 0 640 260" role="img" aria-label="Blood pressure trends chart">
-                        <path d="M76 30v188h516" class="axis"/>
-                        <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
-                        ${labels.map((label, index) => `<text x="32" y="${66 + index * 74}">${label}</text>`).join('')}
+                    <svg viewBox="0 0 640 360" role="img" aria-label="Blood pressure trends chart">
+                        <path d="M76 40v256h516" class="axis"/>
+                        <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
+                        ${labels.map((label, index) => `<text x="32" y="${44 + index * 128}">${label}</text>`).join('')}
                         ${systolic.length > 1 ? `<polyline points="${systolic.map((item) => `${item.x},${item.y}`).join(' ')}" class="systolic-line"/>` : ''}
                         ${diastolic.length > 1 ? `<polyline points="${diastolic.map((item) => `${item.x},${item.y}`).join(' ')}" class="diastolic-line"/>` : ''}
                         ${systolic.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="systolic-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
                         ${diastolic.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="diastolic-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
-                        ${systolic.map((item) => `<text x="${item.x - 18}" y="244">${escapeHtml(item.label)}</text>`).join('')}
+                        ${systolic.map((item) => `<text x="${item.x - 18}" y="322">${escapeHtml(item.label)}</text>`).join('')}
                     </svg>
                 `;
             };

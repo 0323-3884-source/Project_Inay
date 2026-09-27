@@ -236,6 +236,7 @@ class AppointmentController extends Controller
                 ->sortByDesc(fn (Appointment $appointment): int => (int) $appointment->id)
                 ->first());
         $staffQuery = ProgramStaff::query()
+            ->where('email', '!=', 'sample.midwife@example.test')
             ->where('approval_status', 'approved')
             ->where(function ($query): void {
                 $query->where('accepting_appointments', true)
@@ -275,6 +276,7 @@ class AppointmentController extends Controller
         }
 
         $doctorCards = $staffQuery
+            ->with('assignedMidwife.programStaff')
             ->get()
             ->map(fn (ProgramStaff $staff): array => $this->doctorCardPayload(
                 $staff,
@@ -389,6 +391,8 @@ class AppointmentController extends Controller
             'category_key' => $categoryKey,
             'category_label' => $categoryLabel,
             'photo_url' => $staff->healthcare_worker_id_photo_url,
+            'assigned_midwife_name' => $staff->assignedMidwife?->display_name,
+            'assigned_midwife_available' => $staff->assignedMidwife?->is_available,
             'location' => $location,
             'consultation_type' => $this->doctorConsultationSummary($availabilities),
             'schedule' => $this->doctorScheduleSummary($availabilities, $location),

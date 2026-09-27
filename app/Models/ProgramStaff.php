@@ -11,6 +11,14 @@ use Illuminate\Support\Facades\Storage;
 
 class ProgramStaff extends Model
 {
+    public const ROLE_OPTIONS = [
+        'Program Staff',
+        'Nurse',
+        'Barangay Health Worker',
+        'Physician',
+        'Social Worker',
+    ];
+
     protected $table = 'program_staff';
 
     protected $fillable = [

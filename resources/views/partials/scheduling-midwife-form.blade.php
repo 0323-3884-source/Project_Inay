@@ -6,25 +6,32 @@
 @endphp
 <fieldset class="clinic-midwife" data-midwife-form>
     <legend>Midwife Information</legend>
-    <p class="clinic-panel-copy">Assign a midwife from the same barangay and facility to new appointments. Existing appointments keep their saved care team.</p>
+    <div class="clinic-midwife-bar">
+        <strong data-midwife-current>No assigned midwife</strong>
+        <button class="clinic-secondary" type="button" data-midwife-toggle aria-controls="midwife-editor" aria-expanded="false">Add Midwife</button>
+    </div>
+    <div id="midwife-editor" data-midwife-editor @if(!$errors->any() && $selectedMidwife !== 'new') hidden @endif>
+    <div class="clinic-midwife-picker">
     <label>
         Select midwife
         <select name="midwife_selection" data-midwife-selection>
             <option value="">No assigned midwife</option>
             @foreach ($midwifeOptions as $option)
                 <option value="{{ $option['value'] }}" @selected($selectedMidwife === $option['value'])>
-                    {{ $option['name'] }} — {{ $option['facility'] ?: 'Facility not set' }} ({{ $option['source'] }})
+                    {{ $option['name'] }} &middot; {{ $option['facility'] ?: 'Facility not set' }}
                 </option>
             @endforeach
-            <option value="new" @selected($selectedMidwife === 'new')>Enter a midwife not yet registered</option>
+            <option value="new" hidden @selected($selectedMidwife === 'new')>New midwife</option>
         </select>
     </label>
+    <button class="clinic-secondary" type="button" data-midwife-add>Add Midwife</button>
+    </div>
     @error('midwife_selection') <p class="clinic-midwife-error" role="alert">{{ $message }}</p> @enderror
     <script type="application/json" data-midwife-options>@json($midwifeOptions)</script>
     <div class="clinic-midwife-summary" data-midwife-summary hidden aria-live="polite"></div>
     @if ($assignedMidwife && ! $assignedMidwife->program_staff_id && (int) $assignedMidwife->created_by_staff_id === (int) $staff->id)
         <label data-midwife-existing-status="profile:{{ $assignedMidwife->id }}">
-            Availability status for this personnel record
+            Availability status
             <select name="existing_midwife_availability_status">
                 <option value="available" @selected(old('existing_midwife_availability_status', $assignedMidwife->availability_status) === 'available')>Available</option>
                 <option value="unavailable" @selected(old('existing_midwife_availability_status', $assignedMidwife->availability_status) === 'unavailable')>Unavailable</option>
@@ -35,20 +42,8 @@
         <label>Midwife full name
             <input name="midwife_full_name" value="{{ old('midwife_full_name') }}" maxlength="255" data-midwife-required>
         </label>
-        <label>Professional role
-            <input value="Midwife" readonly aria-label="Professional role">
-        </label>
-        <label>Assigned barangay
-            <select name="midwife_barangay" data-midwife-required>
-                <option value="">Select barangay</option>
-                @foreach ($barangays as $barangay)
-                    <option value="{{ $barangay }}" @selected(old('midwife_barangay', $staff->assigned_barangay) === $barangay)>{{ $barangay }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label>Assigned healthcare facility
-            <input name="midwife_facility" value="{{ old('midwife_facility', $staff->assigned_facility) }}" maxlength="255" data-midwife-required>
-        </label>
+        <input type="hidden" name="midwife_barangay" value="{{ old('assigned_barangay', $staff->assigned_barangay) }}">
+        <input type="hidden" name="midwife_facility" value="{{ old('assigned_facility', $staff->assigned_facility) }}">
         <label>Contact number (optional)
             <input type="tel" name="midwife_contact_number" value="{{ old('midwife_contact_number') }}" maxlength="30">
         </label>
@@ -59,5 +54,6 @@
             </select>
         </label>
     </div>
-    <p class="clinic-panel-copy">Unavailable midwives are not assigned to new bookings. Registered midwives manage their own hours and availability. A matching existing record is reused without replacing its details.</p>
+    <p class="clinic-panel-copy">Uses your barangay and facility. Click Save Profile to apply changes.</p>
+    </div>
 </fieldset>

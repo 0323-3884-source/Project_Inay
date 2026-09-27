@@ -240,6 +240,7 @@
                     <label class="is-wide">
                         Role
                         <select name="role" required>
+                            <option value="" disabled @selected(!in_array(old('role', $staff->role_label), $roleOptions, true))>Select a role</option>
                             @foreach($roleOptions as $roleOption)
                                 <option value="{{ $roleOption }}" @selected(old('role', $staff->role_label) === $roleOption)>{{ $roleOption }}</option>
                             @endforeach

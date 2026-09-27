@@ -50,7 +50,8 @@
     $selectedMotherInfants = collect($selectedMotherInfants ?? []);
     $selectedGrowth = $selectedInfant?->growthRecords ?? collect();
     $latestGrowth = $selectedGrowth->last();
-    $ageMonths = $selectedInfant ? ($latestGrowth?->age_months ?? ($selectedInfant->birth_date ? max(0, (int) $selectedInfant->birth_date->diffInMonths(now())) : 0)) : 0;
+    $ageMonths = \App\Support\ChildProfileDisplay::months($selectedInfant?->getRawOriginal('birth_date'));
+    $growthReviewAge = $latestGrowth?->age_months ?? $ageMonths;
     $selectedPhotoUrl = $selectedInfant?->photo_path ? asset('storage/'.$selectedInfant->photo_path) : null;
     $vaccineState = function ($record) use ($today) {
         if ($record->status === 'completed') return ['Completed', 'is-complete', 5];
@@ -60,32 +61,9 @@
         if ($record->due_date && $record->due_date->isBefore($today)) return ['Overdue', 'is-overdue', 1];
         return ['Upcoming', 'is-upcoming', 3];
     };
-    $chartData = function ($records, $field) {
-        $values = $records->filter(fn ($record) => $record->{$field} !== null)->sortBy('age_months')->values();
-        if ($values->isEmpty()) return ['has' => false, 'points' => collect(), 'path' => '', 'min' => null, 'mid' => null, 'max' => null, 'min_age' => 0, 'mid_age' => 1, 'max_age' => 3];
-        $numbers = $values->map(fn ($record) => (float) $record->{$field});
-        $ages = $values->map(fn ($record) => (int) ($record->age_months ?? 0));
-        $padding = max(0.5, ($numbers->max() - $numbers->min()) * 0.2);
-        $minValue = floor(($numbers->min() - $padding) * 10) / 10;
-        $maxValue = ceil(($numbers->max() + $padding) * 10) / 10;
-        if ($minValue === $maxValue) { $minValue -= 1; $maxValue += 1; }
-        $minAge = max(0, $ages->min());
-        $maxAge = max(3, $ages->max(), $minAge + 1);
-        $points = $values->map(function ($record) use ($field, $minValue, $maxValue, $minAge, $maxAge) {
-            $age = (int) ($record->age_months ?? 0);
-            $value = (float) $record->{$field};
-            return [
-                'x' => round(18 + ((($age - $minAge) / max(1, $maxAge - $minAge)) * 72), 2),
-                'y' => round(80 - ((($value - $minValue) / max(1, $maxValue - $minValue)) * 56), 2),
-                'age' => $age,
-                'value' => $value,
-                'date' => $record->measured_at?->format('M j, Y') ?? 'No date',
-            ];
-        });
-        return ['has' => true, 'points' => $points, 'path' => $points->map(fn ($p) => $p['x'].','.$p['y'])->implode(' '), 'min' => $minValue, 'mid' => round(($minValue + $maxValue) / 2, 1), 'max' => $maxValue, 'min_age' => $minAge, 'mid_age' => (int) round(($minAge + $maxAge) / 2), 'max_age' => $maxAge];
-    };
-    $weightChart = $chartData($selectedGrowth, 'weight');
-    $heightChart = $chartData($selectedGrowth, 'height');
+
+    $weightChart = \App\Support\ChildProfileDisplay::chart($selectedGrowth, 'weight', $selectedInfant?->getRawOriginal('birth_date'));
+    $heightChart = \App\Support\ChildProfileDisplay::chart($selectedGrowth, 'height', $selectedInfant?->getRawOriginal('birth_date'));
     $vaccines = $selectedInfant?->vaccineRecords ?? collect();
     $vaccineRows = $vaccines->map(function ($record) use ($vaccineState) { [$label, $class, $sort] = $vaccineState($record); $record->display_status = $label; $record->display_class = $class; $record->sort_rank = $sort; return $record; })->sortBy(fn ($record) => $record->sort_rank.'-'.($record->due_date?->format('Ymd') ?? '99999999'))->values();
     $completedVaccines = $vaccines->where('status', 'completed')->count();
@@ -94,9 +72,9 @@
     $activeAlerts = ($selectedInfant?->healthAlerts ?? collect())->where('status', 'active');
     $growthAlerts = collect();
     if ($latestGrowth && $selectedInfant) {
-        $minWeight = max(2.4, 2.6 + ($ageMonths * 0.45));
-        $maxWeight = max(4.6, 5.0 + ($ageMonths * 0.75));
-        $minHeight = max(45, 47 + ($ageMonths * 1.4));
+        $minWeight = max(2.4, 2.6 + ($growthReviewAge * 0.45));
+        $maxWeight = max(4.6, 5.0 + ($growthReviewAge * 0.75));
+        $minHeight = max(45, 47 + ($growthReviewAge * 1.4));
         if ((float) $latestGrowth->weight < $minWeight || (float) $latestGrowth->weight > $maxWeight) $growthAlerts->push(['title' => 'Weight needs review', 'text' => $selectedInfant->full_name.' weight needs review for age.']);
         if ((float) $latestGrowth->height < $minHeight) $growthAlerts->push(['title' => 'Height needs review', 'text' => $selectedInfant->full_name.' height needs review for age.']);
     } elseif ($selectedInfant) {
@@ -915,6 +893,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/child-profile.css') }}?v={{ filemtime(public_path('css/child-profile.css')) }}">
+    <script src="{{ asset('js/child-profile.js') }}?v={{ filemtime(public_path('js/child-profile.js')) }}" defer></script>
 
     <section class="neonatal-shell" aria-label="Staff Neonatal and Vaccine Workspace">
         <header class="neo-heading">
@@ -948,11 +928,15 @@
                 <div class="neo-sidebar-head">
                     <div><h2>Mother's Child</h2><p class="neo-muted">{{ $mothers->count() }} assigned mother{{ $mothers->count() === 1 ? '' : 's' }}</p></div>
                 </div>
-                <label class="neo-search">{!! $iconSearch !!}<input type="search" placeholder="Search mother and its child info" aria-label="Search mother and its child information" data-neo-search></label>
+                <div class="neo-search-wrap" data-neo-search-wrap>
+                    <label class="neo-search">{!! $iconSearch !!}<input type="search" placeholder="Search mother or child" aria-label="Search mother and child information" aria-controls="neo-search-results" aria-expanded="false" autocomplete="off" data-neo-search></label>
+                    <div class="neo-search-results" id="neo-search-results" aria-label="Matching mothers" hidden data-neo-search-results></div>
+                    <span class="neo-search-status" role="status" data-neo-search-status></span>
+                </div>
                 <div class="neo-list" data-neo-list>
                     @forelse($mothers as $mother)
                         @php
-                            $motherChildren = $children->where('mother_id', $mother->id)->sortBy(fn ($child) => ($child->birth_date?->format('Ymd') ?? '99999999').$child->full_name)->values();
+                            $motherChildren = $children->where('mother_id', $mother->id)->sortBy(fn ($child) => (\App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('Ymd') ?? '99999999').$child->full_name)->values();
                             $motherOverdue = $motherChildren->flatMap->vaccineRecords->filter(function ($record) use ($today) {
                                 return in_array($record->status, ['missed', 'overdue'], true) || ($record->status !== 'completed' && $record->due_date && $record->due_date->isBefore($today));
                             })->count();
@@ -960,14 +944,14 @@
                                 ? 'No child profile yet'
                                 : $motherChildren->pluck('full_name')->take(2)->implode(', ').($motherChildren->count() > 2 ? ' +' . ($motherChildren->count() - 2) : '');
                             $childSearchText = $motherChildren->map(function ($child) use ($formatNumber) {
-                                $childAge = $child->birth_date ? max(0, (int) $child->birth_date->diffInMonths(now())) : null;
+                                $childAge = \App\Support\ChildProfileDisplay::age($child->getRawOriginal('birth_date'));
                                 $latestChildGrowth = $child->growthRecords->last();
                                 return collect([
                                     $child->full_name,
                                     $child->sex,
-                                    $child->birth_date?->format('M j, Y'),
-                                    $child->birth_date?->format('Y-m-d'),
-                                    $childAge !== null ? $childAge.' month'.($childAge === 1 ? '' : 's') : null,
+                                    \App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('M j, Y'),
+                                    \App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('Y-m-d'),
+                                    $childAge,
                                     $child->blood_type,
                                     $child->facility,
                                     $latestChildGrowth?->measured_at?->format('M j, Y'),
@@ -1019,22 +1003,22 @@
                                 <div>
                                     <h2>{{ $selectedInfant->full_name }}</h2>
                                     <p>{{ $selectedInfant->mother?->full_name ?? 'Mother profile unavailable' }}</p>
-                                    @if($selectedMotherInfants->count() > 1)
-                                        <label class="neo-child-switch">Mother's Child
-                                            <select onchange="if(this.value){window.location=this.value}">
-                                                @foreach($selectedMotherInfants as $motherChild)
-                                                    @php $motherChildAge = $motherChild->birth_date ? max(0, (int) $motherChild->birth_date->diffInMonths(now())) : 0; @endphp
-                                                    <option value="{{ route('staff.neonatal', ['mother' => $selectedMother?->id, 'child' => $motherChild->id]) }}" @selected($selectedInfant->id === $motherChild->id)>{{ $motherChild->full_name }} ({{ $motherChildAge }} months)</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                    @endif
                                     <div class="neo-pills"><span class="neo-badge {{ $growthAlerts->count() > 0 ? 'is-danger' : 'is-good' }}">{{ $growthAlerts->count() }} alert{{ $growthAlerts->count() === 1 ? '' : 's' }}</span><span class="neo-badge is-blue">{{ $completedVaccines }} vaccines completed</span></div>
                                 </div>
                             </div>
+                            @if($selectedMotherInfants->count() > 1)
+                                <label class="neo-child-switch neo-profile-switch">Mother's Child
+                                    <select onchange="if(this.value){window.location=this.value}">
+                                        @foreach($selectedMotherInfants as $motherChild)
+                                            @php $motherChildAge = \App\Support\ChildProfileDisplay::age($motherChild->getRawOriginal('birth_date')); @endphp
+                                            <option value="{{ route('staff.neonatal', ['mother' => $selectedMother?->id, 'child' => $motherChild->id]) }}" @selected($selectedInfant->id === $motherChild->id)>{{ $motherChild->full_name }} ({{ $motherChildAge }})</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            @endif
                             <div class="neo-core-metrics">
-                                <article class="neo-metric"><span>{!! $iconBaby !!} Age</span><strong>{{ $ageMonths }} months</strong></article>
-                                <article class="neo-metric"><span>{!! $iconCalendar !!} Birth Date</span><strong>{{ $selectedInfant->birth_date?->format('M j, Y') ?? 'N/A' }}</strong></article>
+                                <article class="neo-metric"><span>{!! $iconBaby !!} Age</span><strong>{{ \App\Support\ChildProfileDisplay::age($selectedInfant->getRawOriginal('birth_date')) }}</strong></article>
+                                <article class="neo-metric"><span>{!! $iconCalendar !!} Birth Date</span><strong>{{ \App\Support\ChildProfileDisplay::date($selectedInfant->getRawOriginal('birth_date'))?->format('M j, Y') ?? 'N/A' }}</strong></article>
                                 <article class="neo-metric"><span>{!! $iconScale !!} Weight</span><strong>{{ $formatNumber($latestGrowth?->weight, ' kg') }}</strong></article>
                                 <article class="neo-metric"><span>{!! $iconRuler !!} Height</span><strong>{{ $formatNumber($latestGrowth?->height, ' cm') }}</strong></article>
                             </div>
@@ -1077,16 +1061,10 @@
                     <div class="neo-charts">
                         @foreach([['Weight Progress', 'kg', $weightChart, $latestGrowth?->weight, ''], ['Height Progress', 'cm', $heightChart, $latestGrowth?->height, 'is-purple']] as [$title, $unit, $chart, $latest, $purple])
                             <article class="neo-card neo-chart">
-                                <div class="neo-chart-head"><div><h3>{!! $iconTrend !!} {{ $title }}</h3><p>Latest: {{ $formatNumber($latest, ' '.$unit) }}</p></div><small>Unit: {{ strtoupper($unit) }}</small></div>
+                                <div class="neo-chart-head"><div><h3>{!! $iconTrend !!} {{ $title }}</h3><p>Latest: {{ $formatNumber($chart['latest'], ' '.$unit) }}</p></div><small>Unit: {{ strtoupper($unit) }}</small></div>
                                 <div class="neo-plot">
                                     @if($chart['has'])
-                                        <svg viewBox="0 0 100 100" role="img" aria-label="{{ $title }} by age in months">
-                                            <path class="grid" d="M18 24H90M18 52H90M18 80H90"/><path class="axis" d="M18 18V84H90"/>
-                                            <text class="label" x="8" y="25">{{ $chart['max'] }}</text><text class="label" x="8" y="53">{{ $chart['mid'] }}</text><text class="label" x="8" y="81">{{ $chart['min'] }}</text>
-                                            <text class="label" x="18" y="92" text-anchor="middle">{{ $chart['min_age'] }}</text><text class="label" x="54" y="92" text-anchor="middle">{{ $chart['mid_age'] }}</text><text class="label" x="90" y="92" text-anchor="middle">{{ $chart['max_age'] }}</text><text class="axis-title" x="54" y="97" text-anchor="middle">Age (months)</text>
-                                            @if($chart['points']->count() > 1)<polyline class="line {{ $purple }}" points="{{ $chart['path'] }}"/>@endif
-                                            @foreach($chart['points'] as $index => $point)<circle class="dot {{ $purple }}" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="{{ $index === $chart['points']->count() - 1 ? '2.1' : '1.6' }}"><title>Age {{ $point['age'] }} mo - {{ $formatNumber($point['value'], ' '.$unit) }} - {{ $point['date'] }}</title></circle>@endforeach
-                                        </svg>
+                                        @include('partials.child-growth-chart')
                                     @else
                                         <div class="neo-empty">No {{ strtolower(str_replace(' Progress', '', $title)) }} record yet.</div>
                                     @endif
@@ -1153,9 +1131,20 @@
                         @if($vaccineRows->isEmpty())
                             <div class="neo-empty">No vaccine records available yet.</div>
                         @else
+                            <div class="neo-vaccine-filter">
+                                <label for="vaccine-status-filter">Status</label>
+                                <select id="vaccine-status-filter" data-vaccine-status-filter>
+                                    <option value="">All statuses</option>
+                                    @foreach (['Completed', 'Overdue', 'Upcoming', 'Due Today', 'Missed', 'Cancelled'] as $filterStatus)
+                                        <option value="{{ $filterStatus }}">{{ $filterStatus }}</option>
+                                    @endforeach
+                                </select>
+                                <span data-vaccine-filter-count role="status"></span>
+                            </div>
+                            <div class="neo-empty" data-vaccine-filter-empty hidden>No vaccines match this status.</div>
                             <div class="neo-vaccine-grid">
                                 @foreach($vaccineRows as $vaccine)
-                                    <button type="button" class="neo-vaccine {{ $vaccine->display_class }}" data-neo-vaccine data-action="{{ route('staff.neonatal.vaccines.update', $vaccine) }}" data-name="{{ $vaccine->vaccine_name }}" data-dose="{{ $vaccine->dose_label }}" data-status="{{ $vaccine->status }}" data-date="{{ $vaccine->administered_at?->toDateString() }}" data-facility="{{ $vaccine->facility }}" data-lot="{{ $vaccine->lot_number }}" data-vaccinator="{{ $vaccine->vaccinator }}" data-remarks="{{ $vaccine->remarks }}">
+                                    <button type="button" class="neo-vaccine {{ $vaccine->display_class }}" data-due-date="{{ $vaccine->due_date?->toDateString() }}" data-neo-vaccine data-display-status="{{ $vaccine->display_status }}" data-action="{{ route('staff.neonatal.vaccines.update', $vaccine) }}" data-name="{{ $vaccine->vaccine_name }}" data-dose="{{ $vaccine->dose_label }}" data-status="{{ $vaccine->status }}" data-date="{{ $vaccine->administered_at?->toDateString() }}" data-facility="{{ $vaccine->facility }}" data-lot="{{ $vaccine->lot_number }}" data-vaccinator="{{ $vaccine->vaccinator }}" data-remarks="{{ $vaccine->remarks }}">
                                         <span class="neo-vaccine-top"><span><h3>{{ $vaccine->vaccine_name }}</h3><small>{{ $vaccine->dose_label }} / Due {{ $vaccine->due_date?->format('M j, Y') ?? 'Not scheduled' }}</small></span><span class="neo-status {{ $vaccine->display_class }}">{{ $vaccine->display_status }}</span></span>
                                         <dl><div><dt>Vaccination Date</dt><dd>{{ $vaccine->administered_at?->format('M j, Y') ?? 'Not recorded' }}</dd></div><div><dt>Facility</dt><dd>{{ $vaccine->facility ?: 'Not recorded' }}</dd></div><div><dt>Lot Number</dt><dd>{{ $vaccine->lot_number ?: 'N/A' }}</dd></div><div><dt>Vaccinator</dt><dd>{{ $vaccine->vaccinator ?: ($vaccine->recorder?->full_name ?? $staff->full_name) }}</dd></div></dl>
                                     </button>
@@ -1188,7 +1177,7 @@
                         <label class="is-wide">Mother<select name="mother_id" required>@foreach($mothers as $mother)<option value="{{ $mother->id }}" @selected(old('mother_id', $selectedInfant->mother_id) == $mother->id)>{{ $mother->full_name }} - {{ $mother->barangay }}</option>@endforeach</select></label>
                         <label class="is-wide">Child Name<input name="full_name" required maxlength="255" value="{{ old('full_name', $selectedInfant->full_name) }}"></label>
                         <label>Sex<select name="sex" required><option value="female" @selected(old('sex', $selectedInfant->sex) === 'female')>Female</option><option value="male" @selected(old('sex', $selectedInfant->sex) === 'male')>Male</option><option value="other" @selected(old('sex', $selectedInfant->sex) === 'other')>Other</option></select></label>
-                        <label>Birth Date<input type="date" name="birth_date" required max="{{ now()->toDateString() }}" value="{{ old('birth_date', $selectedInfant->birth_date?->toDateString()) }}"></label>
+                        <label>Birth Date<input type="date" name="birth_date" required max="{{ now()->toDateString() }}" value="{{ old('birth_date', \App\Support\ChildProfileDisplay::date($selectedInfant->getRawOriginal('birth_date'))?->toDateString()) }}"></label>
                         <label>Birth Weight (kg)<input type="number" step="0.01" min="0.5" max="12" name="birth_weight" value="{{ old('birth_weight', $selectedInfant->birth_weight) }}"></label>
                         <label>Birth Length (cm)<input type="number" step="0.01" min="20" max="80" name="birth_height" value="{{ old('birth_height', $selectedInfant->birth_height) }}"></label>
                         <label>Blood Type<select name="blood_type">@foreach($bloodTypeOptions as $type)<option value="{{ $type }}" @selected(old('blood_type', $selectedInfant->blood_type ?: 'Unknown') === $type)>{{ $type }}</option>@endforeach</select></label>
@@ -1224,12 +1213,15 @@
                     @csrf
                     <header><h2 data-vaccine-title>Update Vaccine</h2><button type="button" class="neo-close" data-neo-close aria-label="Close vaccine modal">{!! $iconClose !!}</button></header>
                     <div class="neo-form">
-                        <label>Status<select name="status" data-vaccine-status><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></select></label>
-                        <label>Administration Date<input type="date" name="administered_at" max="{{ now()->toDateString() }}" data-vaccine-date></label>
+                        <label>Status<select name="status" data-vaccine-status><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
+                        @include('partials.vaccine-date-field', ['dateName' => 'due_date', 'dateLabel' => 'Scheduled Date'])
+                        @include('partials.vaccine-date-field', ['dateName' => 'administered_at', 'dateLabel' => 'Date Given'])
+                        <details class="neo-vaccine-optional"><summary>More details (optional)</summary><div class="neo-vaccine-optional-fields">
                         <label>Facility<input name="facility" data-vaccine-facility></label>
                         <label>Lot Number<input name="lot_number" data-vaccine-lot></label>
                         <label>Vaccinator<input name="vaccinator" data-vaccine-vaccinator></label>
                         <label class="is-wide">Remarks<textarea name="remarks" data-vaccine-remarks></textarea></label>
+                        </div></details>
                     </div>
                     <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Vaccine</button></footer>
                 </form>
@@ -1244,13 +1236,15 @@
                         <label>Group<input name="vaccine_group" required maxlength="120"></label>
                         <label>Vaccine Name<input name="vaccine_name" required maxlength="255"></label>
                         <label>Dose Label<input name="dose_label" required maxlength="120"></label>
-                        <label>Due Date<input type="date" name="due_date"></label>
-                        <label>Status<select name="status" required><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></select></label>
-                        <label>Administration Date<input type="date" name="administered_at" max="{{ now()->toDateString() }}"></label>
+                        @include('partials.vaccine-date-field', ['dateName' => 'due_date', 'dateLabel' => 'Scheduled Date'])
+                        <label>Status<select name="status" required><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
+                        @include('partials.vaccine-date-field', ['dateName' => 'administered_at', 'dateLabel' => 'Date Given'])
+                        <details class="neo-vaccine-optional"><summary>More details (optional)</summary><div class="neo-vaccine-optional-fields">
                         <label>Facility<input name="facility"></label>
                         <label>Lot Number<input name="lot_number"></label>
                         <label>Vaccinator<input name="vaccinator"></label>
                         <label class="is-wide">Remarks<textarea name="remarks"></textarea></label>
+                        </div></details>
                     </div>
                     <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Dose</button></footer>
                 </form>
@@ -1305,13 +1299,125 @@
                 row,
                 text: normalizeSearch(`${row.dataset.searchText || ''} ${row.textContent || ''}`),
             }));
-            search?.addEventListener('input', () => {
+            const searchWrap = document.querySelector('[data-neo-search-wrap]');
+            const results = document.querySelector('[data-neo-search-results]');
+            const searchStatus = document.querySelector('[data-neo-search-status]');
+            const dismissSearch = () => {
+                results.hidden = true;
+                search.setAttribute('aria-expanded', 'false');
+            };
+            const showSearch = () => {
                 const terms = normalizeSearch(search.value).split(' ').filter(Boolean);
-                indexedRows.forEach(({ row, text }) => {
-                    row.hidden = terms.length > 0 && !terms.every((term) => text.includes(term));
-                });
+                results.replaceChildren();
+                if (!terms.length) {
+                    dismissSearch();
+                    searchStatus.textContent = '';
+                    return;
+                }
+                const matches = indexedRows.filter(({ text }) => terms.every(term => text.includes(term)));
+                matches.forEach(({ row }) => results.append(row.cloneNode(true)));
+                searchStatus.textContent = `${matches.length} matching mother${matches.length === 1 ? '' : 's'}`;
+                if (!matches.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'neo-search-empty';
+                    empty.textContent = 'No matching mother or child. Try another name.';
+                    results.append(empty);
+                }
+                results.hidden = false;
+                search.setAttribute('aria-expanded', 'true');
+            };
+            search?.addEventListener('input', showSearch);
+            search?.addEventListener('focus', showSearch);
+            searchWrap?.addEventListener('keydown', event => {
+                if (event.key === 'Escape') {
+                    search.focus();
+                    dismissSearch();
+                }
+                if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+                if (results.hidden) showSearch();
+                const links = Array.from(results.querySelectorAll('a'));
+                if (!links.length) return;
+                event.preventDefault();
+                const index = links.indexOf(document.activeElement);
+                const next = index < 0 ? (event.key === 'ArrowDown' ? 0 : links.length - 1)
+                    : (index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+                links[next].focus();
+            });
+            searchWrap?.addEventListener('focusout', event => {
+                if (!searchWrap.contains(event.relatedTarget)) dismissSearch();
+            });
+            document.addEventListener('pointerdown', event => {
+                if (searchWrap && !searchWrap.contains(event.target)) dismissSearch();
             });
 
+            const vaccineFilter = document.querySelector('[data-vaccine-status-filter]');
+            const vaccineCards = Array.from(document.querySelectorAll('[data-neo-vaccine]'));
+            const filterVaccines = () => {
+                let shown = 0;
+                vaccineCards.forEach(card => {
+                    card.hidden = Boolean(vaccineFilter.value && card.dataset.displayStatus !== vaccineFilter.value);
+                    if (!card.hidden) shown++;
+                });
+                document.querySelector('[data-vaccine-filter-count]').textContent = `${shown} of ${vaccineCards.length} doses`;
+                document.querySelector('[data-vaccine-filter-empty]').hidden = shown !== 0;
+            };
+            if (vaccineFilter) {
+                vaccineFilter.addEventListener('change', filterVaccines);
+                filterVaccines();
+            }
+            const syncDateField = (field) => {
+                const stored = field.querySelector('input[type="hidden"]');
+                const [year = '', month = '', day = ''] = stored.value.split('-');
+                field.querySelector('[data-date-year]').value = year;
+                field.querySelector('[data-date-month]').value = month ? Number(month) : '';
+                field.querySelector('[data-date-day]').value = day ? Number(day) : '';
+                field.querySelectorAll('select, input[type="number"]').forEach(control => {
+                    control.disabled = stored.disabled;
+                    control.required = stored.required;
+                    control.setCustomValidity('');
+                });
+            };
+            document.querySelectorAll('[data-vaccine-date-field]').forEach(field => {
+                const stored = field.querySelector('input[type="hidden"]');
+                const year = field.querySelector('[data-date-year]');
+                const month = field.querySelector('[data-date-month]');
+                const day = field.querySelector('[data-date-day]');
+                const saveDate = () => {
+                    year.setCustomValidity('');
+                    stored.value = '';
+                    if (!year.value || !month.value || !day.value) return;
+                    const value = `${year.value.padStart(4, '0')}-${month.value.padStart(2, '0')}-${day.value.padStart(2, '0')}`;
+                    const parsed = new Date(`${value}T12:00:00`);
+                    if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() !== Number(year.value) || parsed.getMonth() + 1 !== Number(month.value) || parsed.getDate() !== Number(day.value)) {
+                        year.setCustomValidity('Please choose a valid date.');
+                    } else if (stored.dataset.latestDate && value > stored.dataset.latestDate) {
+                        year.setCustomValidity('Date given must be today or earlier.');
+                    } else stored.value = value;
+                };
+                [year, month, day].forEach(control => control.addEventListener('input', saveDate));
+                field.querySelector('[data-date-today]').addEventListener('click', () => {
+                    stored.value = '{{ now()->toDateString() }}';
+                    syncDateField(field);
+                });
+            });
+            const updateVaccineFields = (form) => {
+                const status = form.querySelector('[name="status"]').value;
+                const completed = status === 'completed';
+                const given = form.querySelector('[name="administered_at"]');
+                given.closest('[data-vaccine-date-field]').hidden = !completed;
+                given.disabled = !completed;
+                given.required = completed;
+                const scheduled = form.querySelector('[name="due_date"]');
+                scheduled.closest('[data-vaccine-date-field]').hidden = status !== 'upcoming';
+                scheduled.disabled = status !== 'upcoming';
+                scheduled.required = status === 'upcoming';
+                form.querySelectorAll('[data-vaccine-date-field]').forEach(syncDateField);
+            };
+            document.querySelectorAll('[data-vaccine-date]').forEach(label => {
+                const form = label.closest('form');
+                form.querySelector('[name="status"]').addEventListener('change', () => updateVaccineFields(form));
+                updateVaccineFields(form);
+            });
             const vaccineForm = document.querySelector('[data-vaccine-form]');
             document.querySelectorAll('[data-neo-growth]').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -1336,8 +1442,11 @@
                     if (!vaccineForm) return;
                     vaccineForm.action = button.dataset.action || '';
                     document.querySelector('[data-vaccine-title]').textContent = `${button.dataset.name || 'Vaccine'} - ${button.dataset.dose || ''}`;
-                    vaccineForm.querySelector('[data-vaccine-status]').value = button.dataset.status || 'upcoming';
+                    vaccineForm.querySelector('[data-vaccine-status]').value = ['completed', 'cancelled'].includes(button.dataset.status) ? button.dataset.status : 'upcoming';
+                    vaccineForm.querySelector('.neo-vaccine-optional').open = false;
                     vaccineForm.querySelector('[data-vaccine-date]').value = button.dataset.date || '';
+                    vaccineForm.querySelector('[data-vaccine-due-date]').value = button.dataset.dueDate || '';
+                    updateVaccineFields(vaccineForm);
                     vaccineForm.querySelector('[data-vaccine-facility]').value = button.dataset.facility || '';
                     vaccineForm.querySelector('[data-vaccine-lot]').value = button.dataset.lot || '';
                     vaccineForm.querySelector('[data-vaccine-vaccinator]').value = button.dataset.vaccinator || '';

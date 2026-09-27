@@ -2057,6 +2057,7 @@ class AuthController extends Controller
         }
 
         $validated = $request->validate([
+            'due_date' => ['sometimes', 'nullable', 'date'],
             'status' => ['required', Rule::in(['upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
             'administered_at' => ['nullable', 'date', 'before_or_equal:today'],
             'facility' => ['nullable', 'string', 'max:255'],
@@ -2073,6 +2074,7 @@ class AuthController extends Controller
 
         $vaccine->update([
             'recorded_by_staff_id' => $staff->id,
+            'due_date' => array_key_exists('due_date', $validated) ? $validated['due_date'] : $vaccine->due_date,
             'status' => $validated['status'],
             'administered_at' => $validated['administered_at'] ?? null,
             'facility' => $validated['facility'] ?? null,

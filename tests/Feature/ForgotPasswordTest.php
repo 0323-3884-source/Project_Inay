@@ -74,15 +74,16 @@ class ForgotPasswordTest extends TestCase
         $this->assertTrue(Hash::check('original-password', $mother->fresh()->password));
     }
 
-    public function test_unknown_email_has_same_response_and_repeat_requests_are_throttled(): void
+    public function test_reset_messages_are_direct_and_repeat_requests_are_throttled(): void
     {
         Mail::fake();
         [$mother] = $this->accounts();
-        $this->post('/forgot-password', ['role' => 'mother', 'email' => 'missing@example.test'])->assertSessionHas('status');
-        $unknownStatus = session('status');
+        $this->post('/forgot-password', ['role' => 'mother', 'email' => 'missing@example.test'])
+            ->assertSessionHasErrors(['email' => 'No account found with this email and selected role.']);
         Mail::assertNothingSent();
-        $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])->assertSessionHas('status', $unknownStatus);
-        $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])->assertSessionHas('status', $unknownStatus);
+        $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])
+            ->assertSessionHas('status', 'Password reset link sent. Check your inbox or spam folder.');
+        $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])->assertSessionHasErrors('email');
         Mail::assertSentCount(1);
         $this->post('/forgot-password', ['role' => 'admin', 'email' => $mother->email])->assertSessionHasErrors('role');
     }

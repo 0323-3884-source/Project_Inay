@@ -15,18 +15,6 @@ use Throwable;
 
 class ProgramStaffController extends Controller
 {
-    private const ROLE_OPTIONS = [
-        'Program Staff',
-        'Midwife',
-        'Nurse',
-        'Barangay Health Worker',
-        'Physician',
-        'Administrator',
-        'Coordinator',
-        'Nutritionist',
-        'Social Worker',
-    ];
-
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
@@ -121,7 +109,7 @@ class ProgramStaffController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('program_staff', 'email')->ignore($programStaff->id)],
             'staff_id' => ['required', 'string', 'max:255', Rule::unique('program_staff', 'staff_id')->ignore($programStaff->id)],
-            'role' => ['required', 'string', 'max:80'],
+            'role' => ['required', Rule::in(ProgramStaff::ROLE_OPTIONS)],
             'contact_number' => ['required', 'string', 'max:30'],
             'healthcare_worker_id_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
@@ -268,15 +256,6 @@ class ProgramStaffController extends Controller
 
     private function roleOptions(): array
     {
-        return collect(self::ROLE_OPTIONS)
-            ->merge(ProgramStaff::query()->pluck('role'))
-            ->merge(ProgramStaff::query()->pluck('position'))
-            ->filter()
-            ->map(fn (string $role): string => trim($role))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
+        return ProgramStaff::ROLE_OPTIONS;
     }
 }

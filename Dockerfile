@@ -21,7 +21,10 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath \
+    libpq-dev \
+    ca-certificates \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql pdo_pgsql mbstring zip exif pcntl bcmath gd opcache \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -50,4 +53,10 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     /etc/apache2/apache2.conf \
     /etc/apache2/conf-available/*.conf
 
+COPY docker/start.sh /usr/local/bin/inay-start
+RUN sed -i 's/\r$//' /usr/local/bin/inay-start && chmod +x /usr/local/bin/inay-start
+
+ENV PORT=8080
+EXPOSE 8080
+ENTRYPOINT ["inay-start"]
 CMD ["apache2-foreground"]

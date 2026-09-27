@@ -1,0 +1,32 @@
+/* Keep chart labels readable at narrow widths by scrolling the plot itself. */
+.casefile-summary-page .casefile-chart-card,
+.maternal-chart-card { min-width: 0; }
+.casefile-summary-page .casefile-chart-canvas,
+.maternal-chart-area[data-mother-chart] {
+    display: block;
+    min-width: 0;
+    height: auto;
+    overflow-x: auto;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+.casefile-summary-page .casefile-chart-canvas > svg,
+.maternal-chart-area[data-mother-chart] > svg {
+    display: block;
+    width: 100%;
+    min-width: 640px;
+    height: auto;
+    aspect-ratio: 640 / 360;
+    padding: 8px;
+}
+.casefile-summary-page .casefile-chart-canvas svg text,
+.maternal-chart-area[data-mother-chart] svg text {
+    font-size: 14px;
+}
+.casefile-summary-page .casefile-chart-canvas svg .axis-label {
+    font-size: 14px;
+}
+@media print {
+    .casefile-summary-page .casefile-chart-canvas > svg,
+    .maternal-chart-area[data-mother-chart] > svg { min-width: 0; }
+}

@@ -68,6 +68,7 @@ class NeonatalVaccinesTest extends TestCase
 
     public function test_staff_selects_mother_then_switches_between_that_mothers_children(): void
     {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-09-26'));
         $staff = ProgramStaff::create([
             'first_name' => 'Miguel',
             'last_name' => 'Ponce Isles',
@@ -110,6 +111,15 @@ class NeonatalVaccinesTest extends TestCase
             'birth_date' => '2026-07-01',
         ]);
 
+        InfantGrowthRecord::create([
+            'infant_id' => $youngerChild->id,
+            'recorded_by_staff_id' => $staff->id,
+            'measured_at' => '2026-08-01',
+            'age_months' => 50,
+            'weight' => 5.1,
+            'height' => 53,
+        ]);
+
         $session = [
             'auth_role' => 'staff',
             'auth_id' => $staff->id,
@@ -137,7 +147,21 @@ class NeonatalVaccinesTest extends TestCase
             ->get('/staff/neonatal-vaccines?mother='.$mother->id.'&child='.$youngerChild->id)
             ->assertOk()
             ->assertSeeInOrder([$mother->full_name, 'Baby Beta'])
+            ->assertSee('Baby Beta (2 months)')
+            ->assertSee('<strong>2 months</strong>', false)
+            ->assertSee('data-child-growth-chart', false)
+            ->assertSee('&quot;age&quot;:1', false)
             ->assertSee('value="'.$youngerChildUrl.'" selected', false);
+
+        $this->withSession([
+            'auth_role' => 'mother', 'auth_id' => $mother->id,
+            'auth_name' => $mother->full_name, 'auth_email' => $mother->email,
+        ])->get('/child-health?child='.$youngerChild->id)
+            ->assertOk()
+            ->assertSee('Baby Beta (2 months)')
+            ->assertSee('<strong>2 months</strong>', false)
+            ->assertSee('data-child-growth-chart', false)
+            ->assertSee('&quot;age&quot;:1', false);
     }
 
     public function test_staff_can_update_child_profile_and_photo(): void

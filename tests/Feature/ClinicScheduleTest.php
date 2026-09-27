@@ -15,6 +15,39 @@ class ClinicScheduleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_staff_appointment_tables_preserve_details_and_actions(): void
+    {
+        $mother = Mother::create($this->motherAttributes());
+        $staff = ProgramStaff::create($this->staffAttributes());
+        \App\Models\StaffMotherCasefile::create(['staff_id' => $staff->id, 'mother_id' => $mother->id]);
+        foreach (['pending', 'confirmed', 'reschedule_requested', 'completed', 'cancelled'] as $status) {
+            for ($i = 0; $i < 6; $i++) {
+                Appointment::create([
+                    'mother_id' => $mother->id, 'staff_id' => $staff->id,
+                    'created_by_id' => $mother->id, 'created_by_role' => Message::ROLE_MOTHER,
+                    'appointment_type' => 'prenatal_checkup', 'meeting_type' => Appointment::MEETING_IN_PERSON,
+                    'appointment_date' => now()->addDays($i + 1)->toDateString(),
+                    'start_time' => '09:00', 'end_time' => '09:30', 'status' => $status,
+                    'preferred_date' => now()->addDays($i + 8)->toDateString(),
+                    'preferred_start_time' => '10:00', 'reschedule_reason' => 'Requested test reason',
+                    'notes' => 'Detailed appointment notes',
+                ]);
+            }
+        }
+        $page = $this->withSession($this->staffSession($staff))
+            ->get(route('staff.clinic-schedule.index', ['tab' => 'appointments']))
+            ->assertOk()->assertSee('data-appointment-table', false)
+            ->assertSee('Requested Date')->assertSee('Approve Requested Time')
+            ->assertSee('data-edit-appointment', false)->assertSee('data-reject-form', false)
+            ->assertSee('data-worker=', false)->assertSee('Detailed appointment notes');
+        $this->assertSame(3, substr_count($page->getContent(), 'data-appointment-table '));
+        if (getenv('INAY_APPOINTMENT_TABLE_FIXTURE') === '1') {
+            $directory = storage_path('framework/testing/appointment-tables');
+            if (!is_dir($directory)) mkdir($directory, 0777, true);
+            file_put_contents($directory.'/staff.html', $page->getContent());
+        }
+    }
+
     public function test_mother_appointment_page_shows_doctor_list_without_fee_text(): void
     {
         $mother = Mother::create($this->motherAttributes());

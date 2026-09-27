@@ -3353,7 +3353,58 @@
     </style>
 @endpush
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/maternal-graphs.css') }}?v={{ filemtime(public_path('css/maternal-graphs.css')) }}">
+@endpush
+
 @section('content')
+    <style>
+        /* Use the neonatal profile's compact, borderless label/value layout. */
+        .casefile-summary-page .casefile-profile-card { padding: 22px; gap: 20px; }
+        .casefile-summary-page .casefile-profile-main { margin: 0; }
+        .casefile-summary-page .casefile-contact-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px 20px;
+            margin: 0;
+        }
+        .casefile-summary-page .casefile-profile-facts {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 18px 20px;
+        }
+        .casefile-summary-page .casefile-contact-row article,
+        .casefile-summary-page .casefile-profile-facts > div {
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+        .casefile-summary-page .casefile-contact-row span,
+        .casefile-summary-page .casefile-profile-facts dt {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .casefile-summary-page .casefile-contact-row strong,
+        .casefile-summary-page .casefile-profile-facts dd {
+            color: #17233b;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .casefile-summary-page .casefile-contact-row article > div { gap: 4px; }
+        .casefile-summary-page .casefile-profile-card [hidden] { display: none !important; }
+        @media (max-width: 1000px) {
+            .casefile-summary-page .casefile-profile-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .casefile-summary-page .casefile-profile-card { padding: 16px; }
+            .casefile-summary-page .casefile-profile-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .casefile-summary-page .casefile-contact-row { grid-template-columns: minmax(0, 1fr); }
+        }
+    </style>
     <section class="casefile-summary-page" aria-label="Mother care summary">
         <!-- ===== HEADER ===== -->
         <header class="casefile-detail-heading">
@@ -3387,31 +3438,48 @@
                     </div>
                     <strong class="casefile-id">{{ $caseId }}</strong>
 
-                    <div class="casefile-contact-row">
-                        <article>
-                            {!! $iconPhone !!}
-                            <div>
-                                <span>Mother Contact</span>
-                                <strong>{{ $mother->contact_number ?: 'Phone not provided' }}</strong>
-                            </div>
-                        </article>
-                        <article>
-                            {!! $iconMap !!}
-                            <div>
-                                <span>Barangay</span>
-                                <strong>{{ $mother->barangay ?: 'No address recorded' }}</strong>
-                            </div>
-                        </article>
-                        <article>
-                            {!! $iconUser !!}
-                            <div>
-                                <span>Assigned Program Staff</span>
-                                <strong>{{ $staff->full_name }}</strong>
-                            </div>
-                        </article>
-                    </div>
                 </div>
             </div>
+
+            <div class="casefile-contact-row">
+                <article>
+                    {!! $iconPhone !!}
+                    <div>
+                        <span>Mother Contact</span>
+                        <strong>{{ $mother->contact_number ?: 'Phone not provided' }}</strong>
+                    </div>
+                </article>
+                <article>
+                    {!! $iconMap !!}
+                    <div>
+                        <span>Barangay</span>
+                        <strong>{{ $mother->barangay ?: 'No address recorded' }}</strong>
+                    </div>
+                </article>
+                <article>
+                    {!! $iconUser !!}
+                    <div>
+                        <span>Assigned Program Staff</span>
+                        <strong>{{ $staff->full_name }}</strong>
+                    </div>
+                </article>
+            </div>
+
+            <dl class="casefile-profile-facts">
+                <div><dt>Age</dt><dd>{{ $mother->age ? $mother->age.' years old' : 'Not provided' }}</dd></div>
+                <div><dt>Obstetric History</dt><dd>{{ $obstetricHistory }}</dd></div>
+                <div><dt>Blood Type</dt><dd>{{ $mother->blood_type ?: 'Unknown' }}</dd></div>
+                <div><dt>Civil Status</dt><dd>{{ $mother->civil_status ?: 'Not provided' }}</dd></div>
+                <div>
+                    <dt>Maternal Age Risk</dt>
+                    <dd>{{ $maternalAgeRisk }}</dd>
+                </div>
+                <div><dt>Pregnancy Status</dt><dd>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</dd></div>
+                <div><dt>Current Trimester</dt><dd>{{ $trimester }}</dd></div>
+                <div><dt>4Ps Status</dt><dd>{{ $fourPsLabel }}</dd></div>
+                <div><dt>Latest Vitals</dt><dd>{{ $latestRecordedLabel }}</dd></div>
+                <div><dt>Monitoring Records</dt><dd>{{ $records->count() }} {{ $records->count() === 1 ? 'record' : 'records' }}</dd></div>
+            </dl>
 
             <div class="casefile-profile-actions">
                 <button type="button" data-mother-edit aria-haspopup="dialog" aria-controls="mother-information-dialog" aria-expanded="{{ $errors->motherInformation->any() ? 'true' : 'false' }}">{!! $iconEdit !!} Edit Information</button>
@@ -3426,23 +3494,6 @@
             @endif
             @include('partials.mother-information-form')
 
-            <dl class="casefile-profile-facts">
-                <div><dt>Age</dt><dd>{{ $mother->age ? $mother->age.' years old' : 'Not provided' }}</dd></div>
-                <div><dt>Obstetric History</dt><dd>{{ $obstetricHistory }}</dd></div>
-                <div><dt>Blood Type</dt><dd>{{ $mother->blood_type ?: 'Unknown' }}</dd></div>
-                <div><dt>Civil Status</dt><dd>{{ $mother->civil_status ?: 'Not provided' }}</dd></div>
-                <div>
-                    <dt>Maternal Age Risk</dt>
-                    <dd>
-                        <span class="casefile-fact-badge {{ $maternalAgeRisk === 'Standard Maternal Age' ? 'is-standard' : ($maternalAgeRisk === 'Not provided' ? 'is-neutral' : '') }}">{{ $maternalAgeRisk }}</span>
-                    </dd>
-                </div>
-                <div><dt>Pregnancy Status</dt><dd>{{ $statusLabels[$mother->pregnancy_status] ?? 'Not provided' }}</dd></div>
-                <div><dt>Current Trimester</dt><dd>{{ $trimester }}</dd></div>
-                <div><dt>4Ps Status</dt><dd>{{ $fourPsLabel }}</dd></div>
-                <div><dt>Latest Vitals</dt><dd>{{ $latestRecordedLabel }}</dd></div>
-                <div><dt>Monitoring Records</dt><dd>{{ $records->count() }} {{ $records->count() === 1 ? 'record' : 'records' }}</dd></div>
-            </dl>
         </section>
 
         <!-- ===== STATUS GRID ===== -->
@@ -4352,11 +4403,11 @@
             };
 
             const renderChartEmpty = (message) => `
-                <svg viewBox="0 0 640 260" role="img" aria-label="${escapeHtml(message)}">
-                    <path d="M70 26v190h520" class="axis"/>
-                    <path d="M70 58h520M70 102h520M70 146h520M70 190h520" class="grid"/>
+                <svg viewBox="0 0 640 360" role="img" aria-label="${escapeHtml(message)}">
+                    <path d="M76 40v256h516" class="axis"/>
+                    <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
                     <text x="18" y="24" class="axis-label">Value</text>
-                    <text x="520" y="240" class="axis-label">Date</text>
+                    <text x="520" y="347" class="axis-label">Date</text>
                     <text x="260" y="130" class="empty">${escapeHtml(message)}</text>
                 </svg>
             `;
@@ -4376,10 +4427,10 @@
             const chartPoint = (index, count, value, min, max) => {
                 const left = 76;
                 const right = 48;
-                const top = 30;
-                const bottom = 42;
+                const top = 40;
+                const bottom = 64;
                 const width = 640;
-                const height = 260;
+                const height = 360;
                 const x = count <= 1 ? (width - right + left) / 2 : left + (index * ((width - left - right) / (count - 1)));
                 const y = top + ((max - value) / (max - min)) * (height - top - bottom);
                 return { x, y };
@@ -4415,15 +4466,15 @@
                 const points = chartHistory.map((item, index) => ({ ...item, ...chartPoint(index, chartHistory.length, Number(item.weight), min, max) }));
                 const polyline = points.map((point) => `${point.x},${point.y}`).join(' ');
                 target.innerHTML = `
-                    <svg viewBox="0 0 640 260" role="img" aria-label="Weight progression chart">
-                        <path d="M76 30v188h516" class="axis"/>
-                        <path d="M76 62h516M76 112h516M76 162h516M76 212h516" class="grid"/>
+                    <svg viewBox="0 0 640 360" role="img" aria-label="Weight progression chart">
+                        <path d="M76 40v256h516" class="axis"/>
+                        <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
                         <text x="18" y="24" class="axis-label">Weight</text>
-                        <text x="258" y="255" class="axis-label">Date / Pregnancy Week</text>
-                        ${labels.map((label, index) => `<text x="24" y="${66 + index * 74}">${label} kg</text>`).join('')}
+                        <text x="334" y="347" text-anchor="middle" class="axis-label">Date / Pregnancy Week</text>
+                        ${labels.map((label, index) => `<text x="24" y="${44 + index * 128}">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${polyline}" class="weight-line"/>` : ''}
                         ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="weight-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
-                        ${points.map((point) => `<text x="${point.x - 18}" y="244">${escapeHtml(point.label)}</text>`).join('')}
+                        ${points.map((point) => `<text x="${point.x - 18}" y="322">${escapeHtml(point.label)}</text>`).join('')}
                     </svg>
                 `;
             };

@@ -1,0 +1,105 @@
+/* Compact information uses the vaccine cards' label/value treatment. */
+.neonatal-shell .neo-simple-date { min-width: 0; margin: 0; padding: 0; border: 0; }
+.neonatal-shell .neo-simple-date[hidden] { display: none; }
+.neonatal-shell .neo-simple-date legend { margin-bottom: 7px; color: #64748b; font-size: 12px; font-weight: 700; }
+.neonatal-shell .neo-date-parts { display: grid; grid-template-columns: minmax(70px, 1fr) minmax(58px, .8fr) minmax(75px, 1fr); gap: 6px; }
+.neonatal-shell .neo-date-parts :is(select, input) { min-width: 0; padding: 0 7px; }
+.neonatal-shell .neo-date-parts button { grid-column: 1 / -1; justify-self: start; padding: 4px 0; border: 0; background: transparent; color: #be185d; font: inherit; font-size: 13px; cursor: pointer; }
+.neonatal-shell .neo-vaccine-help { grid-column: 1 / -1; margin: 0; color: #52627d; font-size: 13px; line-height: 1.5; }
+.neonatal-shell .neo-form label[hidden] { display: none; }
+.neonatal-shell .neo-vaccine-optional { grid-column: 1 / -1; border-top: 1px solid #e5edf5; padding-top: 12px; }
+.neonatal-shell .neo-vaccine-optional summary { cursor: pointer; color: #52627d; font-size: 13px; font-weight: 600; }
+.neonatal-shell .neo-vaccine-optional-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 12px; }
+@media (max-width: 600px) { .neonatal-shell .neo-vaccine-optional-fields { grid-template-columns: minmax(0, 1fr); } }
+.neonatal-shell .neo-vaccine-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; color: #64748b; font-size: 13px; }
+.neonatal-shell .neo-vaccine-filter label { font-weight: 700; }
+.neonatal-shell .neo-vaccine-filter select { min-height: 38px; max-width: 100%; padding: 7px 32px 7px 12px; border: 1px solid #dbe5f1; border-radius: 7px; background: #fff; color: #17233b; font: inherit; }
+.neonatal-shell .neo-vaccine[hidden],
+.neonatal-shell [data-vaccine-filter-empty][hidden] { display: none; }
+.neonatal-shell .neo-list {
+    max-height: min(360px, 50dvh);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+}
+.neonatal-shell .neo-search-wrap { position: relative; z-index: 5; min-width: 0; }
+.neonatal-shell .neo-search input { min-width: 0; }
+.neonatal-shell .neo-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: grid;
+    gap: 8px;
+    max-height: min(340px, 45dvh);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding: 8px;
+    border: 1px solid #dbe5f1;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .16);
+}
+.neonatal-shell .neo-search-results[hidden] { display: none; }
+.neonatal-shell .neo-search-results a:focus-visible { outline: 2px solid #ec008c; outline-offset: -2px; }
+.neonatal-shell .neo-search-empty { padding: 12px; margin: 0; color: #64748b; font-size: 14px; }
+.neonatal-shell .neo-search-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.neonatal-shell .neo-profile-head,
+.child-health .ch-profile-head { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.neonatal-shell .neo-profile-head .neo-title,
+.child-health .ch-child-title { grid-column: 1 / -1; padding: 0; }
+.neonatal-shell .neo-core-metrics,
+.child-health .ch-core-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 20px; }
+.neonatal-shell .neo-extra,
+.child-health .ch-profile-extra { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 20px; margin-top: 18px; }
+.neonatal-shell .neo-core-metrics .neo-metric,
+.neonatal-shell .neo-extra article,
+.child-health .ch-metric,
+.child-health .ch-profile-extra article { min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neonatal-shell .neo-metric span,
+.neonatal-shell .neo-extra span,
+.child-health .ch-metric span,
+.child-health .ch-profile-extra span { color: #64748b; font-size: 13px; font-weight: 700; text-transform: none; }
+.neonatal-shell .neo-metric strong,
+.neonatal-shell .neo-extra strong,
+.child-health .ch-metric strong,
+.child-health .ch-profile-extra strong { margin-top: 4px; color: #17233b; font-size: 16px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
+.neonatal-shell .neo-chart,
+.child-health .ch-chart { min-width: 0; }
+.neonatal-shell .neo-chart h3,
+.child-health .ch-chart h3 { font-size: 19px; }
+.neonatal-shell .neo-chart p,
+.child-health .ch-chart p { font-size: 15px; }
+.neonatal-shell .neo-plot,
+.child-health .ch-plot { height: auto; min-height: 260px; padding: 8px; }
+.child-growth-chart { position: relative; width: 100%; min-width: 0; }
+.child-growth-chart svg { display: block; width: 100%; height: 260px; }
+.child-growth-chart svg text { fill: #52627d; stroke: none; font-size: 13px; font-weight: 500; }
+.child-growth-chart svg .child-growth-axis-title { font-size: 14px; }
+.child-growth-chart circle { cursor: pointer; }
+.child-growth-chart circle:focus { outline: 2px solid #0f172a; }
+.child-growth-tooltip { padding: 8px 10px; border-radius: 6px; background: #17233b; color: white; font-size: 14px; line-height: 1.5; }
+.child-growth-empty { padding: 30px 16px; color: #64748b; text-align: center; }
+.neonatal-shell .neo-profile-head { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.neonatal-shell .neo-profile-head .neo-title { grid-column: 1; align-self: start; }
+.neonatal-shell .neo-profile-head .neo-core-metrics { grid-column: 1 / -1; }
+.neonatal-shell .neo-profile-switch {
+    display: grid;
+    gap: 6px;
+    width: clamp(240px, 26vw, 320px);
+    max-width: 100%;
+    margin: 0;
+    align-self: start;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+}
+.neonatal-shell .neo-profile-switch select { width: 100%; min-width: 0; min-height: 44px; }
+@media (max-width: 760px) {
+    .neonatal-shell .neo-profile-head { grid-template-columns: minmax(0, 1fr); }
+    .neonatal-shell .neo-profile-switch { width: 100%; grid-column: 1 / -1; }
+    .neonatal-shell .neo-core-metrics,
+    .neonatal-shell .neo-extra,
+    .child-health .ch-core-metrics,
+    .child-health .ch-profile-extra { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}

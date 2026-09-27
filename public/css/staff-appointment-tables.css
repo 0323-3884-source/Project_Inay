@@ -1,0 +1,43 @@
+.clinic-schedule .appointment-table-panel { padding: 16px; background: #fff; border: 1px solid #dbe5f1; box-shadow: none; }
+.appointment-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.clinic-schedule .appointment-table-heading h2 { margin: 0; color: #17233b; font-size: 18px; font-weight: 700; }
+.appointment-table-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.appointment-table-tools label:first-child { flex: 1 1 220px; max-width: 360px; }
+.appointment-table-tools input, .appointment-table-tools select { width: 100%; min-height: 38px; padding: 8px 12px; border: 1px solid #dbe5f1; border-radius: 7px; background: #fff; color: #17233b; font: inherit; font-size: 13px; }
+.appointment-table-scroll { overflow-x: auto; }
+.appointment-table { width: 100%; min-width: 780px; border-collapse: collapse; text-align: left; font-size: 13px; color: #17233b; }
+.appointment-table th { background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; }
+.appointment-table th, .appointment-table td { padding: 11px 12px; border-bottom: 1px solid #e8eef5; vertical-align: top; }
+.appointment-table td small { display: block; margin-top: 3px; color: #64748b; font-size: 12px; white-space: nowrap; }
+.appointment-table .clinic-pill { padding: 3px 8px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.appointment-reason { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 240px; overflow-wrap: anywhere; }
+.appointment-row-actions { display: flex; flex-wrap: wrap; align-items: start; gap: 6px; min-width: 150px; }
+.clinic-schedule .appointment-row-actions button, .clinic-schedule .appointment-row-actions a, .appointment-more summary { min-height: 30px; padding: 5px 9px; font-size: 12px; border-radius: 5px; }
+.appointment-more summary { cursor: pointer; border: 1px solid #dbe5f1; background: #fff; }
+.appointment-more-content { display: grid; gap: 6px; padding-top: 8px; }
+.appointment-more-content form { margin: 0; }
+.appointment-more-content[popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: 220px;
+    max-width: calc(100vw - 16px);
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid #dbe5f1;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .16);
+}
+.appointment-more-content[popover]:not(:popover-open) { display: none; }
+.appointment-more-content[popover] :is(button, a, .clinic-link-button) { width: 100%; text-align: left; justify-content: flex-start; min-height: 36px; }
+.appointment-table-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 14px; color: #64748b; font-size: 12px; }
+.appointment-table-footer nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.appointment-table-footer button { min-height: 32px; min-width: 32px; padding: 5px 9px; border: 1px solid #dbe5f1; border-radius: 5px; background: #fff; color: #334155; cursor: pointer; font: inherit; }
+.appointment-table-footer button[aria-current="page"] { background: #ec0a78; border-color: #ec0a78; color: #fff; }
+.appointment-table-footer button:disabled { opacity: .45; cursor: default; }
+.appointment-table-panel [hidden] { display: none !important; }
+@media (max-width: 600px) {
+    .clinic-schedule .appointment-table-panel { padding: 12px; }
+    .appointment-table-tools label:first-child { max-width: none; }
+}

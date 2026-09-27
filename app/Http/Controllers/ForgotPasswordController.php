@@ -38,15 +38,14 @@ class ForgotPasswordController extends Controller
     {
         $data = $request->validate(['role' => 'required|in:mother,staff', 'email' => 'required|email|max:255']);
         $key = $this->key($data['role'], $data['email']);
-        $response = back()->withInput($request->only('role', 'email'))
-            ->with('status', 'If an account matches that email and role, a password reset link will be sent. Please check your inbox and spam folder.');
+        $response = back()->withInput($request->only('role', 'email'));
         if (RateLimiter::tooManyAttempts('password-reset:'.$key, 1)) {
-            return $response;
+            return $response->withErrors(['email' => 'Please wait '.RateLimiter::availableIn('password-reset:'.$key).' seconds before trying again.']);
         }
         RateLimiter::hit('password-reset:'.$key, 60);
         $account = $this->account($data['role'], $data['email']);
         if (! $account) {
-            return $response;
+            return $response->withErrors(['email' => 'No account found with this email and selected role.']);
         }
         $token = Str::random(64);
         DB::table('password_reset_tokens')->updateOrInsert(['email' => $key], [
@@ -60,9 +59,10 @@ class ForgotPasswordController extends Controller
         } catch (\Throwable $exception) {
             DB::table('password_reset_tokens')->where('email', $key)->where('token', hash('sha256', $token))->delete();
             report($exception);
+            return $response->withErrors(['email' => 'Could not send the reset email. Please try again later.']);
         }
 
-        return $response;
+        return $response->with('status', 'Password reset link sent. Check your inbox or spam folder.');
     }
 
     public function resetForm(Request $request, string $token): View

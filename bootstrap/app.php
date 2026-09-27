@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Railway terminates HTTPS before forwarding requests to the PHP server.
+        // Railway and Render terminate HTTPS before forwarding to Apache.
         // Preserve the browser scheme for asset(), route(), and Vite URLs.
         $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_PROTO);
 

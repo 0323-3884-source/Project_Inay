@@ -1,0 +1,45 @@
+.clinic-schedule .clinic-profile-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 14px 18px;
+    margin-top: 8px;
+}
+.clinic-schedule .clinic-midwife-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.clinic-schedule .clinic-midwife-bar strong { color: #17233b; font-size: 14px; }
+.clinic-schedule .clinic-midwife-bar button { width: auto; min-height: 36px; padding: 6px 12px; font-size: 13px; }
+.clinic-schedule [data-midwife-editor] { margin-top: 12px; }
+.clinic-schedule .clinic-midwife-picker { display: flex; align-items: flex-end; gap: 10px; margin: 10px 0; max-width: 700px; }
+.clinic-schedule .clinic-midwife-picker label { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.clinic-schedule .clinic-midwife-picker button { width: auto; flex: 0 0 auto; min-height: 44px; padding: 8px 14px; }
+@media (max-width: 600px) {
+    .clinic-schedule .clinic-midwife-picker { flex-direction: column; align-items: stretch; }
+    .clinic-schedule .clinic-midwife-picker button { width: 100%; }
+}
+.clinic-schedule [data-midwife-editor] > label { display: grid; gap: 6px; margin: 10px 0; max-width: 520px; }
+.clinic-schedule [data-midwife-editor] .clinic-panel-copy { margin: 10px 0 0; font-size: 12px; }
+.clinic-schedule .clinic-profile-form > label:not(.clinic-check) { gap: 5px; font-size: 11px; }
+.clinic-schedule .clinic-profile-form > :is(label, button, fieldset) { min-width: 0; }
+.clinic-schedule .clinic-profile-form > .clinic-check { min-height: 42px; padding: 8px 10px; }
+.clinic-schedule .clinic-profile-form > .clinic-midwife { grid-column: 1 / -1; margin: 0; padding: 14px 16px; border: 1px solid #e5eaf0; border-radius: 7px; background: #fff; }
+.clinic-schedule .clinic-midwife legend { color: #344054; font-size: 14px; font-weight: 700; }
+.clinic-schedule .clinic-midwife > .clinic-panel-copy { margin: 0 0 10px; font-size: 12px; }
+.clinic-schedule .clinic-midwife > label { max-width: 520px; margin: 8px 0; }
+.clinic-schedule .clinic-midwife-fields,
+.clinic-schedule .clinic-midwife-summary { gap: 10px 14px; }
+.clinic-schedule .clinic-midwife-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.clinic-schedule .clinic-midwife-fields label { gap: 5px; font-size: 11px; }
+.clinic-schedule .clinic-midwife [data-midwife-new][hidden],
+.clinic-schedule .clinic-midwife [data-midwife-summary][hidden],
+.clinic-schedule .clinic-midwife [data-midwife-existing-status][hidden] { display: none !important; }
+.clinic-schedule .clinic-midwife > .clinic-panel-copy:last-child { margin: 8px 0 0; font-size: 11px; line-height: 1.5; }
+.clinic-schedule .clinic-profile-form > button { justify-self: start; min-height: 40px; padding: 8px 16px; }
+@media (max-width: 760px) {
+    .clinic-schedule .clinic-profile-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .clinic-schedule .clinic-profile-form > .clinic-midwife { grid-column: 1 / -1; }
+    .clinic-schedule .clinic-midwife-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .clinic-schedule .clinic-profile-form > button { grid-column: 1 / -1; justify-self: stretch; }
+}
+@media (max-width: 440px) {
+    .clinic-schedule .clinic-profile-form,
+    .clinic-schedule .clinic-midwife-fields { grid-template-columns: minmax(0, 1fr); }
+}

@@ -249,6 +249,9 @@
                                 <li>{!! $iconUser !!}<span>{{ $doctor['category_label'] }}</span></li>
                                 <li>{!! $iconLocation !!}<span>{{ $doctor['location'] ?: $doctor['consultation_type'] }}</span></li>
                                 <li>{!! $iconCalendar !!}<span>{{ $doctor['schedule'] }}</span></li>
+                                @if (!empty($doctor['assigned_midwife_name']))
+                                    <li>{!! $iconUser !!}<span>Assigned midwife: <strong>{{ $doctor['assigned_midwife_name'] }}</strong>@if(!$doctor['assigned_midwife_available']) <small>(Currently unavailable)</small>@endif</span></li>
+                                @endif
                             </ul>
                         </div>
                     </div>

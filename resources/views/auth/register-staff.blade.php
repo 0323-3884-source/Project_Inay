@@ -5,17 +5,7 @@
 @section('auth_screen', 'true')
 
 @php
-    $staffRoleOptions = [
-        'Program Staff',
-        'Midwife',
-        'Nurse',
-        'Barangay Health Worker',
-        'Physician',
-        'Administrator',
-        'Coordinator',
-        'Nutritionist',
-        'Social Worker',
-    ];
+    $staffRoleOptions = \App\Models\ProgramStaff::ROLE_OPTIONS;
     $fullName = old('full_name', trim(implode(' ', array_filter([
         old('first_name'),
         old('middle_name'),

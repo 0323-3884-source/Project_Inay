@@ -12,7 +12,8 @@ class AppointmentCareTeam
 {
     public function options(): Collection
     {
-        $registeredStaff = ProgramStaff::with('facility')->where('approval_status', 'approved')->get()
+        $registeredStaff = ProgramStaff::with('facility')->where('approval_status', 'approved')
+            ->where('email', '!=', 'sample.midwife@example.test')->get()
             ->filter(fn (ProgramStaff $staff): bool => $staff->is_midwife);
 
         $registered = $registeredStaff
@@ -28,7 +29,8 @@ class AppointmentCareTeam
 
         $registeredNormalizedNames = $registeredStaff->map(fn (ProgramStaff $s): string => HealthcareFacility::normalize($s->full_name))->all();
 
-        $manual = MidwifeProfile::with('facility')->whereNull('program_staff_id')->get()
+        $manual = MidwifeProfile::with('facility')->whereNull('program_staff_id')
+            ->where('full_name', '!=', 'Sample Midwife (Test Only)')->get()
             ->reject(fn (MidwifeProfile $midwife): bool => in_array(HealthcareFacility::normalize($midwife->full_name), $registeredNormalizedNames, true))
             ->map(fn (MidwifeProfile $midwife): array => [
                 'value' => 'profile:'.$midwife->id,

@@ -102,7 +102,8 @@ class AppointmentCareTeamTest extends TestCase
         $this->book($mother, $this->slot($nurse))->assertCreated()->assertJsonPath('appointment.care_team.midwife', null);
         $this->assertNull(Appointment::first()->midwife_profile_id);
         $this->withSession($this->sessionFor($mother))->get(route('mother.clinic-schedule.index'))
-            ->assertOk()->assertDontSee('Assigned Midwife')->assertDontSee('Rebecca Escote');
+            ->assertOk()->assertDontSee('Assigned Midwife')
+            ->assertSee('Assigned midwife:')->assertSee('Rebecca Escote')->assertSee('Currently unavailable');
     }
 
     public function test_midwife_who_moves_facility_is_not_assigned_to_future_bookings(): void
@@ -156,7 +157,8 @@ class AppointmentCareTeamTest extends TestCase
         ]);
         $this->saveProfile($nurse, $this->manual())->assertSessionHasNoErrors();
         $this->withSession($this->sessionFor($mother))->get(route('mother.clinic-schedule.index'))
-            ->assertOk()->assertDontSee('Assigned Midwife')->assertDontSee('Rebecca Escote');
+            ->assertOk()->assertDontSee('Assigned Midwife')
+            ->assertSee('Assigned midwife:')->assertSee('Rebecca Escote');
         $this->assertNull(Appointment::first()->care_team_snapshot);
     }
 

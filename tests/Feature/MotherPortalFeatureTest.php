@@ -64,7 +64,7 @@ class MotherPortalFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('Monitoring pending')
             ->assertSee('No maternal monitoring record has been synced yet.')
-            ->assertSee('Awaiting Program Staff record');
+            ->assertSee('No measurement available');
     }
 
     public function test_mother_maternal_vitals_endpoint_returns_only_authenticated_mother_records(): void

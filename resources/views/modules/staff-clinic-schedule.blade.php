@@ -6,6 +6,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/clinic-schedule.css') }}?v={{ filemtime(public_path('css/clinic-schedule.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/scheduling-profile.css') }}?v={{ filemtime(public_path('css/scheduling-profile.css')) }}">
     <style>
         /* ── Responsive overrides ── */
         :root {
@@ -496,9 +497,11 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/staff-appointment-tables.css') }}?v={{ filemtime(public_path('css/staff-appointment-tables.css')) }}">
 @endpush
 
 @push('scripts')
+    <script src="{{ asset('js/staff-appointment-tables.js') }}?v={{ filemtime(public_path('js/staff-appointment-tables.js')) }}" defer></script>
     <script src="{{ asset('js/scheduling-midwife.js') }}?v={{ filemtime(public_path('js/scheduling-midwife.js')) }}" defer></script>
     <script src="{{ asset('js/clinic-schedule.js') }}?v={{ filemtime(public_path('js/clinic-schedule.js')) }}" defer></script>
 @endpush
@@ -707,103 +710,14 @@
                         <span class="clinic-count">{{ $upcomingAppointments->count() }} upcoming</span>
                         <button class="clinic-primary" type="button" data-open-appointment-modal>Create Appointment</button>
                     </div>
-                    <form class="clinic-filter-form" method="GET" action="{{ route('staff.clinic-schedule.index') }}">
-                        <input type="hidden" name="tab" value="appointments">
-                        <input type="hidden" name="status" value="{{ $status }}">
-                        <label class="clinic-search">
-                            <span class="sr-only">Search by mother's name</span>
-                            <input type="search" name="q" value="{{ $search }}" placeholder="Search mother's name">
-                        </label>
-                        <button class="clinic-secondary" type="submit">Search</button>
-                    </form>
-                    <div class="clinic-status-tabs" aria-label="Appointment status filters">
-                        <a class="clinic-tab {{ $status === 'all' ? 'is-active' : '' }}" href="{{ route('staff.clinic-schedule.index', ['tab' => 'appointments', 'q' => $search]) }}">All</a>
-                        @foreach ($statusLabels as $statusValue => $statusLabel)
-                            @if ($statusValue !== 'missed')
-                                <a class="clinic-tab {{ $status === $statusValue ? 'is-active' : '' }}" href="{{ route('staff.clinic-schedule.index', ['tab' => 'appointments', 'q' => $search, 'status' => $statusValue]) }}">{{ $statusLabel }}</a>
-                            @endif
-                        @endforeach
-                    </div>
+                    @if ($search !== '' || $status !== 'all')
+                        <a href="{{ route('staff.clinic-schedule.index', ['tab' => 'appointments']) }}">Clear saved search and status filters</a>
+                    @endif
                 </section>
 
-                <!-- Upcoming Appointments -->
-                <section class="clinic-panel">
-                    <div class="clinic-panel-head">
-                        <h2>Upcoming Appointments</h2>
-                        <span class="clinic-count">{{ $upcomingAppointments->count() }} scheduled</span>
-                    </div>
-                    <div class="clinic-stack">
-                        @forelse ($appointmentsByDate as $date => $dateAppointments)
-                            <div class="clinic-date-group">
-                                <p class="clinic-date-label">{{ \Illuminate\Support\Carbon::parse($date)->format('l, F j, Y') }}</p>
-                                @foreach ($dateAppointments as $appointment)
-                                    @include('partials.staff-appointment-card', ['appointment' => $appointment, 'isHistory' => false])
-                                @endforeach
-                            </div>
-                        @empty
-                            <div class="clinic-empty">No upcoming appointments found.</div>
-                        @endforelse
-                    </div>
-                </section>
-
-                <!-- Reschedule Requests -->
-                <section class="clinic-panel">
-                    <div class="clinic-panel-head">
-                        <h2>Reschedule Requests</h2>
-                        <span class="clinic-count">{{ $appointments->where('status', 'reschedule_requested')->count() }}</span>
-                    </div>
-                    <div class="clinic-stack">
-                        @forelse ($appointments->where('status', 'reschedule_requested') as $appointment)
-                            <article class="clinic-card">
-                                <div>
-                                    <h3>{{ $appointment->mother->full_name }}</h3>
-                                    <p>{{ $appointment->typeLabel() }} · {{ $appointment->appointment_date->format('M j, Y') }}</p>
-                                </div>
-                                <div class="clinic-request">
-                                    Preferred: {{ $appointment->preferred_date?->format('M j, Y') ?? 'No date' }} at {{ $appointment->preferred_start_time ? $timeLabel($appointment->preferred_start_time) : 'No time' }}<br>
-                                    {{ $appointment->reschedule_reason ?: 'No reason provided.' }}
-                                </div>
-                                @php
-                                    $duration = max(15, \Illuminate\Support\Carbon::parse((string) $appointment->start_time)->diffInMinutes(\Illuminate\Support\Carbon::parse((string) $appointment->end_time), false));
-                                    $preferredEnd = $appointment->preferred_start_time ? \Illuminate\Support\Carbon::parse((string) $appointment->preferred_start_time)->addMinutes($duration)->format('H:i') : substr((string) $appointment->end_time, 0, 5);
-                                @endphp
-                                @if ($appointment->preferred_date && $appointment->preferred_start_time)
-                                    <form method="POST" action="{{ route('staff.clinic-schedule.update', $appointment) }}">
-                                        @csrf @method('PATCH')
-                                        <input type="hidden" name="mother_id" value="{{ $appointment->mother_id }}">
-                                        <input type="hidden" name="conversation_id" value="{{ $appointment->conversation_id }}">
-                                        <input type="hidden" name="appointment_type" value="{{ $appointment->appointment_type }}">
-                                        <input type="hidden" name="meeting_type" value="{{ $appointment->meeting_type }}">
-                                        <input type="hidden" name="appointment_date" value="{{ $appointment->preferred_date->toDateString() }}">
-                                        <input type="hidden" name="start_time" value="{{ substr((string) $appointment->preferred_start_time, 0, 5) }}">
-                                        <input type="hidden" name="end_time" value="{{ $preferredEnd }}">
-                                        <input type="hidden" name="location" value="{{ $appointment->location }}">
-                                        <input type="hidden" name="notes" value="{{ $appointment->notes }}">
-                                        <input type="hidden" name="status" value="confirmed">
-                                        <button class="clinic-success" type="submit">Approve Requested Time</button>
-                                    </form>
-                                @endif
-                            </article>
-                        @empty
-                            <div class="clinic-empty">No pending reschedule requests.</div>
-                        @endforelse
-                    </div>
-                </section>
-
-                <!-- Appointment History -->
-                <section class="clinic-panel">
-                    <div class="clinic-panel-head">
-                        <h2>Appointment History</h2>
-                        <span class="clinic-count">{{ $historyAppointments->count() }}</span>
-                    </div>
-                    <div class="clinic-stack">
-                        @forelse ($historyAppointments as $appointment)
-                            @include('partials.staff-appointment-card', ['appointment' => $appointment, 'isHistory' => true])
-                        @empty
-                            <div class="clinic-empty">No completed, cancelled, or past appointments yet.</div>
-                        @endforelse
-                    </div>
-                </section>
+                @include('partials.staff-appointment-table', ['tableId' => 'upcoming', 'tableTitle' => 'Upcoming Appointments', 'tableRecords' => $upcomingAppointments, 'isHistory' => false, 'isReschedule' => false])
+                @include('partials.staff-appointment-table', ['tableId' => 'reschedule', 'tableTitle' => 'Reschedule Requests', 'tableRecords' => $appointments->where('status', 'reschedule_requested'), 'isHistory' => false, 'isReschedule' => true])
+                @include('partials.staff-appointment-table', ['tableId' => 'history', 'tableTitle' => 'Appointment History', 'tableRecords' => $historyAppointments, 'isHistory' => true, 'isReschedule' => false])
             </div>
         </div>
 
@@ -825,6 +739,13 @@
                     <div class="clinic-fact"><span>Time</span><strong data-detail="timeLabel"></strong></div>
                     <div class="clinic-fact"><span>Meeting</span><strong data-detail="meetingLabel"></strong></div>
                     <div class="clinic-fact"><span>Location</span><strong data-detail="location"></strong></div>
+                    <div class="clinic-fact"><span>Healthcare worker</span><strong data-detail="worker"></strong></div>
+                    <div class="clinic-fact"><span>Healthcare facility</span><strong data-detail="facility"></strong></div>
+                    <div class="clinic-fact"><span>Barangay</span><strong data-detail="barangay"></strong></div>
+                    <div class="clinic-fact"><span>Assigned midwife</span><strong data-detail="midwife"></strong></div>
+                    <div class="clinic-fact"><span>Conversation</span><strong data-detail="conversation"></strong></div>
+                    <div class="clinic-fact"><span>Requested date and time</span><strong data-detail="requested"></strong></div>
+                    <div class="clinic-fact clinic-wide"><span>Reschedule reason</span><strong data-detail="reason"></strong></div>
                     <div class="clinic-fact clinic-wide"><span>Notes</span><strong data-detail="notes"></strong></div>
                 </div>
             </section>
