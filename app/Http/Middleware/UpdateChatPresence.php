@@ -15,7 +15,7 @@ class UpdateChatPresence
             $role = (string) $request->session()->get('auth_role');
             $id = (int) $request->session()->get('auth_id');
 
-            if ($role !== '' && $id > 0) {
+            if (in_array($role, ['mother', 'staff', 'program_staff'], true) && $id > 0) {
                 ChatPresence::recordPresence($role, $id);
             }
         }

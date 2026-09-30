@@ -30,6 +30,9 @@ Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('adm
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.store');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 Route::middleware('admin.auth')->group(function () {
+    Route::get('/admin/dswd-staff', [\App\Http\Controllers\Admin\DswdStaffController::class, 'index'])->name('admin.dswd-staff.index');
+    Route::post('/admin/dswd-staff', [\App\Http\Controllers\Admin\DswdStaffController::class, 'store'])->name('admin.dswd-staff.store');
+    Route::patch('/admin/dswd-staff/{dswdStaff}', [\App\Http\Controllers\Admin\DswdStaffController::class, 'update'])->name('admin.dswd-staff.update');
     Route::get('/admin', fn () => redirect()->route('admin.statistics'))->name('admin.dashboard');
     Route::get('/admin/statistics', AdminStatisticsController::class)->name('admin.statistics');
     Route::get('/admin/educational-content', [EducationalContentController::class, 'index'])->name('admin.educational-content.index');
@@ -188,3 +191,18 @@ Route::prefix('admin-staff-messages')->name('admin-staff-messages.')->group(func
     Route::post('/messages/{message}/unsend', [AdminStaffMessageController::class, 'unsend'])->name('messages.unsend');
 });
 
+
+Route::prefix('dswd')->name('dswd.')->middleware('dswd.auth')->controller(\App\Http\Controllers\DswdController::class)->group(function () {
+    Route::get('/', fn () => redirect()->route('dswd.dashboard'))->name('home');
+    Route::get('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/beneficiaries', 'beneficiaries')->name('beneficiaries');
+    Route::get('/beneficiaries/{beneficiary}', 'beneficiary')->whereNumber('beneficiary')->name('beneficiaries.show');
+    Route::get('/beneficiaries/{beneficiary}/documents/{document}/preview', 'previewDocument')->whereNumber('beneficiary')->whereNumber('document')->name('documents.preview');
+    Route::get('/statistics', 'statistics')->name('statistics');
+    Route::get('/reports', 'reports')->name('reports');
+    Route::get('/reports/download', 'reports')->name('reports.download');
+    Route::get('/evaluation', 'evaluation')->name('evaluation');
+    Route::post('/evaluation', 'storeEvaluation')->middleware('throttle:10,1')->name('evaluation.store');
+    Route::get('/profile', 'profile')->name('profile');
+    Route::patch('/profile', 'updateProfile')->name('profile.update');
+});

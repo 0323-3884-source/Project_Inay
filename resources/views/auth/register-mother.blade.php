@@ -74,6 +74,11 @@
             </div>
 
             <div class="auth-field">
+                <label class="auth-label" for="municipality_city">Municipality/City</label>
+                <input class="auth-input" id="municipality_city" name="municipality_city" value="{{ old('municipality_city') }}" maxlength="255" autocomplete="address-level2">
+                @error('municipality_city')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+            <div class="auth-field">
                 <label class="auth-label" for="barangay">Barangay (San Pablo City, Laguna)</label>
                 <input
                     class="auth-input"

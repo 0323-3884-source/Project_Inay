@@ -19,9 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin.auth' => EnsureAdminAuthenticated::class,
+            'dswd.auth' => \App\Http\Middleware\EnsureDswdAuthenticated::class,
         ]);
 
         $middleware->web(append: [
+            \App\Http\Middleware\RestrictDswdPortal::class,
             \App\Http\Middleware\UpdateChatPresence::class,
         ]);
     })

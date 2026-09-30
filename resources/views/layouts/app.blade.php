@@ -6925,7 +6925,8 @@
     $portalRole = session('auth_role');
     $isMotherPortal = $portalRole === 'mother';
     $isStaffPortal = $portalRole === 'staff';
-    $hasPortalShell = $isMotherPortal || $isStaffPortal;
+    $isDswdPortal = $portalRole === 'dswd_staff';
+    $hasPortalShell = $isMotherPortal || $isStaffPortal || $isDswdPortal;
     $portalName = session('auth_name', 'Project INAY User');
     $portalEmail = session('auth_email');
     $portalAuthId = (int) session('auth_id');
@@ -6970,7 +6971,7 @@
     $portalBrandSubtitle = $isStaffPortal ? 'Clinical Monitoring System' : 'Maternal & Child Health';
     $portalRoleLabel = $isStaffPortal ? ($staffRecord?->role_label ?? 'Program Staff') : 'Mother';
     $portalNotificationRole = $isStaffPortal ? 'program_staff' : 'mother';
-    $portalNotificationCount = $hasPortalShell
+    $portalNotificationCount = $hasPortalShell && ! $isDswdPortal
         ? \App\Models\AppNotification::where('recipient_id', $portalAuthId)
             ->where('recipient_role', $portalNotificationRole)
             ->whereNull('read_at')
@@ -7035,6 +7036,17 @@
         ['label' => 'Dynamic Reports', 'icon' => 'report', 'href' => route('staff.dynamic-reports'), 'active' => request()->routeIs('staff.dynamic-reports')],
     ];
     $portalNavItems = $isStaffPortal ? $staffNavItems : $motherNavItems;
+    if ($isDswdPortal) {
+        $pageTitle = html_entity_decode(trim($__env->yieldContent('heading')), ENT_QUOTES, 'UTF-8') ?: 'Dashboard Overview';
+        $portalKicker = 'DSWD / 4Ps Staff Portal';
+        $portalBrandTitle = 'Project INAY';
+        $portalBrandSubtitle = 'DSWD / 4Ps Staff';
+        $portalRoleLabel = 'DSWD / 4Ps Staff';
+        $portalNavItems = [];
+        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+            $portalNavItems[] = ['label' => $label, 'icon' => $icon, 'href' => route('dswd.'.$route), 'active' => request()->routeIs('dswd.'.$route, 'dswd.'.$route.'.*')];
+        }
+    }
 @endphp
 <body class="@yield('body_class') @if($hasPortalShell) portal-shell portal-{{ $portalRole }} @endif">
     @hasSection('auth_screen')
@@ -7061,6 +7073,7 @@
                         </span>
                     @endif
 
+                    @if (! $isDswdPortal)
                     <div
                         class="portal-notification-wrap"
                         data-notification-root
@@ -7089,6 +7102,7 @@
                         </div>
                     </div>
 
+                    @endif
                     <div class="portal-header-profile">
                         <span class="portal-avatar">
                             @if ($portalPhotoUrl)
@@ -7111,14 +7125,16 @@
                             {!! $portalIconSvgs['chevron'] !!}
                         </summary>
                         <div class="portal-dropdown">
-                            <a class="portal-dropdown-item" href="{{ route($isMotherPortal ? 'mother.profile.show' : 'staff.profile.show') }}">
+                            <a class="portal-dropdown-item" href="{{ route($isDswdPortal ? 'dswd.profile' : ($isMotherPortal ? 'mother.profile.show' : 'staff.profile.show')) }}">
                                 {!! $portalIconSvgs['user'] !!}
                                 My Profile
                             </a>
+                            @if (! $isDswdPortal)
                             <a class="portal-dropdown-item" href="{{ route($isMotherPortal ? 'mother.settings' : 'staff.settings') }}">
                                 {!! $portalIconSvgs['settings'] !!}
                                 Settings
                             </a>
+                            @endif
                             <form class="portal-dropdown-form" method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button class="portal-dropdown-item is-danger" type="submit">
@@ -7133,7 +7149,7 @@
 
             <aside class="portal-sidebar" aria-label="{{ $portalKicker }} navigation">
                 <div class="portal-brand">
-                    <a class="portal-brand-link" href="{{ $isStaffPortal ? route('staff.dashboard') : route('mother.dashboard') }}">
+                    <a class="portal-brand-link" href="{{ $isDswdPortal ? route('dswd.dashboard') : ($isStaffPortal ? route('staff.dashboard') : route('mother.dashboard')) }}">
                         <span class="portal-mark">
                             {!! $portalIconSvgs[$isStaffPortal ? 'hospital' : 'heart'] !!}
                         </span>
@@ -7175,7 +7191,7 @@
                     </section>
                     <p class="portal-sidebar-label">Mother Care Navigation</p>
                 @else
-                    <p class="portal-sidebar-label">Clinical Navigation</p>
+                    <p class="portal-sidebar-label">{{ $isDswdPortal ? '4Ps Navigation' : 'Clinical Navigation' }}</p>
                 @endif
 
                 <nav class="portal-nav">
@@ -7239,6 +7255,9 @@
     @endif
 
     <main class="@hasSection('auth_screen') auth-page @else page @if($hasPortalShell) portal-main @endif @endif">
+        @if ($isDswdPortal && $errors->any())
+            <div class="alert error" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+        @endif
         @if (session('status') && ! trim($__env->yieldContent('auth_screen')) && ! $__env->hasSection('handles_status'))
             <div class="alert @hasSection('auth_screen') auth-alert @endif">{{ session('status') }}</div>
         @endif

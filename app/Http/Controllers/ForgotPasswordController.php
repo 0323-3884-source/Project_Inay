@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\AccountPasswordReset;
 use App\Models\Mother;
+use App\Models\DswdStaff;
 use App\Models\ProgramStaff;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -23,20 +24,20 @@ class ForgotPasswordController extends Controller
         return $role.':'.hash('sha256', Str::lower($email));
     }
 
-    private function account(string $role, string $email): Mother|ProgramStaff|null
+    private function account(string $role, string $email): Mother|ProgramStaff|DswdStaff|null
     {
-        return ($role === 'mother' ? Mother::query() : ProgramStaff::query())
+        return (match ($role) { 'mother' => Mother::query(), 'dswd_staff' => DswdStaff::query()->where('is_active', true), default => ProgramStaff::query() })
             ->where('email', $email)->first();
     }
 
     public function requestForm(Request $request): View
     {
-        return view('auth.forgot-password', ['role' => $request->query('role') === 'staff' ? 'staff' : 'mother']);
+        return view('auth.forgot-password', ['role' => in_array($request->query('role'), ['staff', 'dswd_staff'], true) ? $request->query('role') : 'mother']);
     }
 
     public function send(Request $request): RedirectResponse
     {
-        $data = $request->validate(['role' => 'required|in:mother,staff', 'email' => 'required|email|max:255']);
+        $data = $request->validate(['role' => 'required|in:mother,staff,dswd_staff', 'email' => 'required|email|max:255']);
         $key = $this->key($data['role'], $data['email']);
         $response = back()->withInput($request->only('role', 'email'));
         if (RateLimiter::tooManyAttempts('password-reset:'.$key, 1)) {
@@ -67,7 +68,7 @@ class ForgotPasswordController extends Controller
 
     public function resetForm(Request $request, string $token): View
     {
-        $data = $request->validate(['role' => 'required|in:mother,staff', 'email' => 'required|email|max:255']);
+        $data = $request->validate(['role' => 'required|in:mother,staff,dswd_staff', 'email' => 'required|email|max:255']);
 
         return view('auth.reset-password', $data + ['token' => $token]);
     }
@@ -75,7 +76,7 @@ class ForgotPasswordController extends Controller
     public function reset(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'role' => 'required|in:mother,staff', 'email' => 'required|email|max:255',
+            'role' => 'required|in:mother,staff,dswd_staff', 'email' => 'required|email|max:255',
             'token' => 'required|string|size:64', 'password' => 'required|string|min:8|max:255|confirmed',
         ]);
         $changed = DB::transaction(function () use ($data) {

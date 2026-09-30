@@ -7,7 +7,7 @@
 @section('content')
 <header class="auth-header"><h1 class="auth-title">Project INAY</h1><p class="auth-subtitle">Account Recovery</p></header>
 <section class="auth-card">
-    <h2 class="auth-card-title">Set a New Password</h2><p class="auth-card-subtitle">Reset your {{ $role === 'staff' ? 'Program Staff' : 'Mother/User' }} password. Use at least 8 characters.</p>
+    <h2 class="auth-card-title">Set a New Password</h2><p class="auth-card-subtitle">Reset your {{ match ($role) { 'staff' => 'Program Staff', 'dswd_staff' => 'DSWD / 4Ps Staff', default => 'Mother/User' } }} password. Use at least 8 characters.</p>
     @if ($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif
     <form method="POST" action="{{ route('password.update') }}" data-recovery-form>
         @csrf

@@ -12,6 +12,9 @@
 @push('styles')
     <style>
         .auth-inline-status { margin: 0 0 18px; color: #704814; background: #fff8e1; border-color: #e8c56d; font-size: 13px; line-height: 1.45; }
+        #loginForm .role-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        #loginForm .role-option { min-width: 0; }
+        @media (max-width: 420px) { #loginForm .role-grid { grid-template-columns: 1fr; gap: 8px; } #loginForm .role-option { display: flex; justify-content: center; min-height: 52px; } }
     </style>
 @endpush
 
@@ -67,6 +70,12 @@
                     </svg>
                     <span>Program Staff</span>
                 </button>
+                <button type="button" class="role-option {{ $selectedRole === 'dswd_staff' ? 'is-active' : '' }}"
+                    data-role="dswd_staff" data-button-label="Login as DSWD / 4Ps Staff"
+                    aria-pressed="{{ $selectedRole === 'dswd_staff' ? 'true' : 'false' }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c1-3 5-3 6 0M15 9h3M15 13h3M15 17h3"/></svg>
+                    <span>DSWD / 4Ps Staff</span>
+                </button>
             </div>
 
             @error('role')
@@ -101,12 +110,13 @@
                     <rect x="5" y="11" width="14" height="10" rx="2" />
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
                 </svg>
-                <span>{{ $selectedRole === 'staff' ? 'Login as Program Staff' : 'Login as Mother/User' }}</span>
+                <span>{{ match ($selectedRole) { 'staff' => 'Login as Program Staff', 'dswd_staff' => 'Login as DSWD / 4Ps Staff', default => 'Login as Mother/User' } }}</span>
             </button>
         </form>
 
         <div class="auth-footer-link">
-            <a id="registerLink" href="{{ $selectedRole === 'staff' ? route('staff.register') : route('mother.register') }}">Wala pang account? Mag-register</a>
+            <a id="registerLink" @if($selectedRole === 'dswd_staff') hidden @endif href="{{ $selectedRole === 'staff' ? route('staff.register') : route('mother.register') }}">Wala pang account? Mag-register</a>
+            <span id="dswdAccountHelp" @if($selectedRole !== 'dswd_staff') hidden @endif>Contact your administrator for a DSWD / 4Ps Staff account.</span>
         </div>
     </section>
 
@@ -120,7 +130,7 @@
         const refreshSubmitLabel = () => {
             const activeRole = document.querySelector('[data-role].is-active');
 
-            if (loginIdentifier.value.trim().toLowerCase() === 'admin') {
+            if (roleInput.value !== 'dswd_staff' && loginIdentifier.value.trim().toLowerCase() === 'admin') {
                 loginSubmitLabel.textContent = 'Login as Admin';
                 return;
             }
@@ -131,7 +141,9 @@
         roleButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 roleInput.value = button.dataset.role;
-                registerLink.href = button.dataset.registerUrl;
+                registerLink.hidden = button.dataset.role === 'dswd_staff';
+                document.getElementById('dswdAccountHelp').hidden = button.dataset.role !== 'dswd_staff';
+                if (button.dataset.registerUrl) registerLink.href = button.dataset.registerUrl;
                 const forgotUrl = new URL(document.getElementById('forgotPasswordLink').href);
                 forgotUrl.searchParams.set('role', button.dataset.role);
                 document.getElementById('forgotPasswordLink').href = forgotUrl;

@@ -15,6 +15,7 @@ class Mother extends Model
         'email',
         'password',
         'barangay',
+        'municipality_city',
         'contact_number',
         'age',
         'civil_status',

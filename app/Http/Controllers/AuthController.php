@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mother;
+use App\Models\DswdStaff;
 use App\Models\Conversation;
 use App\Models\InayKaalamanProgress;
 use App\Models\InayKaalamanUpload;
@@ -160,6 +161,7 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:mothers,email'],
             'password' => ['required', 'string', 'min:8'],
             'barangay' => ['required', 'string', 'max:255'],
+            'municipality_city' => ['nullable', 'string', 'max:255'],
             'contact_number' => ['required', 'string', 'max:30'],
             'age' => ['nullable', 'integer', 'between:10,60'],
             'civil_status' => ['nullable', Rule::in(self::CIVIL_STATUSES)],
@@ -194,6 +196,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'barangay' => $validated['barangay'],
+            'municipality_city' => $validated['municipality_city'] ?? null,
             'contact_number' => $validated['contact_number'],
             'age' => $validated['age'] ?? null,
             'civil_status' => $validated['civil_status'] ?? null,
@@ -277,19 +280,30 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'role' => ['required', Rule::in(['mother', 'staff'])],
+            'role' => ['required', Rule::in(['mother', 'staff', 'dswd_staff'])],
             'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
         $identifier = trim($validated['email']);
 
-        if ($adminRedirect = $this->attemptAdminLoginFromSharedForm($request, $identifier, $validated['password'])) {
-            return $adminRedirect;
+        if ($validated['role'] !== 'dswd_staff') {
+            if ($adminRedirect = $this->attemptAdminLoginFromSharedForm($request, $identifier, $validated['password'])) {
+                return $adminRedirect;
+            }
         }
 
         if (! filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             $this->throwLoginError();
+        }
+
+        if ($validated['role'] === 'dswd_staff') {
+            $staff = DswdStaff::where('email', $identifier)->where('is_active', true)->first();
+            if (! $staff || ! Hash::check($validated['password'], $staff->password)) {
+                $this->throwLoginError();
+            }
+            $this->startLoginSession($request, 'dswd_staff', $staff->id, $staff->name, $staff->email);
+            return redirect()->route('dswd.dashboard');
         }
 
         if ($validated['role'] === 'mother') {
@@ -1114,6 +1128,7 @@ class AuthController extends Controller
                 }
             }],
             'barangay' => ['required', 'string', 'max:255'],
+            'municipality_city' => ['nullable', 'string', 'max:255'],
             'age' => ['nullable', 'integer', 'min:10', 'max:65'],
             'civil_status' => ['nullable', Rule::in(self::CIVIL_STATUSES)],
             'gravidity' => ['nullable', 'integer', 'min:0', 'max:30'],
@@ -2827,6 +2842,7 @@ class AuthController extends Controller
         return match ($request->session()->get('auth_role')) {
             'mother' => redirect()->route('mother.dashboard'),
             'staff' => redirect()->route('staff.dashboard'),
+            'dswd_staff' => redirect()->route('dswd.dashboard'),
             default => null,
         };
     }

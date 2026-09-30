@@ -17,6 +17,7 @@
         </div>
     @endif
     <div class="vitals-field-grid">
+        <label><span>Municipality/City</span><input type="text" name="municipality_city" value="{{ old('municipality_city', $mother->municipality_city) }}" maxlength="255"></label>
         @foreach (['first_name' => 'First Name', 'middle_name' => 'Middle Name', 'last_name' => 'Last Name', 'contact_number' => 'Contact Number', 'barangay' => 'Barangay'] as $field => $label)
             <label>
                 <span>{{ $label }}</span>

@@ -11,7 +11,7 @@
     @if ($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif
     <form method="POST" action="{{ route('password.email') }}" data-recovery-form>
         @csrf
-        <div class="auth-field"><label class="auth-label" for="reset-role">Account role</label><select class="auth-input" id="reset-role" name="role" required><option value="mother" @selected(old('role', $role) === 'mother')>Mother/User</option><option value="staff" @selected(old('role', $role) === 'staff')>Program Staff</option></select></div>
+        <div class="auth-field"><label class="auth-label" for="reset-role">Account role</label><select class="auth-input" id="reset-role" name="role" required><option value="mother" @selected(old('role', $role) === 'mother')>Mother/User</option><option value="staff" @selected(old('role', $role) === 'staff')>Program Staff</option><option value="dswd_staff" @selected(old('role', $role) === 'dswd_staff')>DSWD / 4Ps Staff</option></select></div>
         <div class="auth-field"><label class="auth-label" for="reset-email">Email address</label><input class="auth-input" id="reset-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" maxlength="255" required></div>
         <button class="auth-submit" type="submit">Send Reset Link</button>
     </form>
