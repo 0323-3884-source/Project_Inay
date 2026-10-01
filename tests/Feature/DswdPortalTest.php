@@ -77,6 +77,23 @@ class DswdPortalTest extends TestCase
         $this->get('/dswd/statistics')->assertRedirect('/login')->assertSessionMissing('auth_role');
     }
 
+    public function test_location_groups_merge_missing_values_and_sort_equal_totals_by_label(): void
+    {
+        $this->mother(['barangay' => '', 'municipality_city' => null]);
+        $this->mother(['barangay' => '', 'municipality_city' => '']);
+        $this->mother(['barangay' => 'Alpha', 'municipality_city' => 'City A']);
+        $this->mother(['barangay' => 'Alpha', 'municipality_city' => 'City A']);
+        $this->mother(['barangay' => 'Beta', 'municipality_city' => 'City B']);
+        $this->mother(['barangay' => 'Excluded', 'municipality_city' => 'Excluded', 'is_4ps_beneficiary' => false]);
+
+        $summary = app(DswdStatistics::class)->summary([]);
+        $this->assertSame(['Alpha' => 2, 'Not recorded' => 2, 'Beta' => 1], $summary['groups']['barangay']);
+        $this->assertSame(['City A' => 2, 'Not recorded' => 2, 'City B' => 1], $summary['groups']['municipality_city']);
+        $filtered = app(DswdStatistics::class)->summary(['municipality_city' => '__unrecorded__']);
+        $this->assertSame(['Not recorded' => 2], $filtered['groups']['barangay']);
+        $this->assertSame(['Not recorded' => 2], $filtered['groups']['municipality_city']);
+    }
+
     public function test_summary_counts_4ps_only_and_handles_age_boundaries(): void
     {
         $this->travelTo(now()->setDate(2026, 9, 30)->startOfDay());

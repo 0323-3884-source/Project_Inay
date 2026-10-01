@@ -108,8 +108,10 @@ class DswdStatistics
         $groups = [];
         foreach (['barangay', 'municipality_city'] as $column) {
             $expr = "COALESCE(NULLIF($column, ''), 'Not recorded')";
+            // Reuse the selected label so MariaDB's strict GROUP BY validation
+            // does not resolve the ORDER BY expression against the raw column.
             $groups[$column] = (clone $mothers)->select([])->selectRaw("$expr AS label, COUNT(*) AS total")
-                ->groupByRaw($expr)->orderByDesc('total')->orderByRaw($expr)->pluck('total', 'label')->all();
+                ->groupBy('label')->orderByDesc('total')->orderBy('label')->pluck('total', 'label')->all();
         }
         return [
             'total' => (clone $mothers)->count(),
