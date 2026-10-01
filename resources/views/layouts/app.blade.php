@@ -7278,7 +7278,7 @@
             <span>Install App</span>
         </button>
     @endif
-    <script src="{{ asset('js/pwa.js') }}?v={{ filemtime(public_path('js/pwa.js')) }}" defer></script>
+    <script src="{{ asset('js/pwa.js') }}?v={{ filemtime(public_path('js/pwa.js')) }}" data-base="{{ asset('/') }}" data-role="{{ session('auth_role') }}" defer></script>
     @if ($hasPortalShell)
         <div class="photo-crop-modal" data-photo-crop-modal hidden>
             <div class="photo-crop-backdrop" data-photo-crop-cancel></div>

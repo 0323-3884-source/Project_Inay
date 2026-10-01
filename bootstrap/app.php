@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            \App\Http\Middleware\OfflineResponse::class,
             \App\Http\Middleware\RestrictDswdPortal::class,
             \App\Http\Middleware\UpdateChatPresence::class,
         ]);
