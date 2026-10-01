@@ -14,8 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Railway and Render terminate HTTPS before forwarding to Apache.
-        // Preserve the browser scheme for asset(), route(), and Vite URLs.
-        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_PROTO);
+        // Preserve browser scheme, host, and port for asset(), route(), and Vite URLs.
+        $middleware->trustProxies(at: '*');
 
         $middleware->alias([
             'admin.auth' => EnsureAdminAuthenticated::class,

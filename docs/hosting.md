@@ -37,7 +37,7 @@ Use a managed database, not localhost or the local XAMPP database. Set either DB
 
 For MySQL requiring a CA, set `MYSQL_ATTR_SSL_CA=/var/www/html/storage/certificates/ca.pem` if that file is the correct CA for your provider. A Windows path will not work in Linux. Keep TLS verification enabled. Do not put client private keys in the image.
 
-Run `php artisan migrate --force` as a pre-deploy/release command where supported. Otherwise set `RUN_MIGRATIONS=true` for a single web instance to run migrations on startup. Back up an existing database before migration. Never use `migrate:fresh`, `db:wipe`, or test seeders against hosted records. New installations need migrations before database sessions/cache can work.
+Migrations run automatically on container startup (`RUN_MIGRATIONS` defaults to `true`). If you want to disable automatic startup migrations, set `RUN_MIGRATIONS=false`. Back up an existing database before migration. Never use `migrate:fresh`, `db:wipe`, or test seeders against hosted records. New installations need migrations before database sessions/cache can work.
 
 ## Persistent uploads
 

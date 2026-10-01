@@ -3,6 +3,9 @@
 @push('styles')@include('dswd.partials.styles')@endpush
 @section('content')
 <header class="admin-topbar"><div><h1>DSWD / 4Ps Staff</h1><p>Create and manage access to the 4Ps portal.</p></div></header>
+@if(!empty($migrationPending))
+<div class="admin-alert is-error">The DSWD Staff database table is not initialized yet. Please check your database connection or execute migrations.</div>
+@endif
 @if(session('status'))<div class="admin-alert is-success">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="admin-alert is-error">{{ $errors->first() }}</div>@endif
 <div class="dswd-stack"><section class="admin-card"><h2>Create staff account</h2>

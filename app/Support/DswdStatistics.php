@@ -107,8 +107,9 @@ class DswdStatistics
         }
         $groups = [];
         foreach (['barangay', 'municipality_city'] as $column) {
-            $groups[$column] = (clone $mothers)->select([])->selectRaw("COALESCE(NULLIF($column, ''), 'Not recorded') AS label, COUNT(*) AS total")
-                ->groupBy('label')->orderByDesc('total')->orderBy('label')->pluck('total', 'label')->all();
+            $expr = "COALESCE(NULLIF($column, ''), 'Not recorded')";
+            $groups[$column] = (clone $mothers)->select([])->selectRaw("$expr AS label, COUNT(*) AS total")
+                ->groupByRaw($expr)->orderByDesc('total')->orderByRaw($expr)->pluck('total', 'label')->all();
         }
         return [
             'total' => (clone $mothers)->count(),

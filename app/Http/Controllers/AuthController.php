@@ -298,6 +298,18 @@ class AuthController extends Controller
         }
 
         if ($validated['role'] === 'dswd_staff') {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('dswd_staff')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            if (! \Illuminate\Support\Facades\Schema::hasTable('dswd_staff')) {
+                $this->throwLoginError();
+            }
+
             $staff = DswdStaff::where('email', $identifier)->where('is_active', true)->first();
             if (! $staff || ! Hash::check($validated['password'], $staff->password)) {
                 $this->throwLoginError();

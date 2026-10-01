@@ -24,7 +24,12 @@ class DswdController extends Controller
 
     public function dashboard(Request $request)
     {
-        return view('dswd.dashboard', ['summary' => $this->statistics->summary([])]);
+        $staff = $request->attributes->get('dswd_staff') ?? \App\Models\DswdStaff::find($request->session()->get('auth_id'));
+
+        return view('dswd.dashboard', [
+            'summary' => $this->statistics->summary([]),
+            'staff' => $staff,
+        ]);
     }
 
     public function beneficiaries(Request $request)

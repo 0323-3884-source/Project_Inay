@@ -28,9 +28,20 @@ php artisan view:cache
 php artisan storage:link
 chown -R www-data:www-data storage/framework bootstrap/cache
 
-# Optional fallback for platforms without a pre-deploy command. Never seed or reset data.
-if [ "${RUN_MIGRATIONS:-false}" = 'true' ]; then
-    php artisan migrate --force
+# Run database migrations on deployment by default (can be disabled with RUN_MIGRATIONS=false)
+if [ "${RUN_MIGRATIONS:-true}" = 'true' ]; then
+    echo "Running database migrations..."
+    n=0
+    until [ "$n" -ge 5 ]
+    do
+        if php artisan migrate --force; then
+            echo "Database migrations completed successfully."
+            break
+        fi
+        n=$((n+1))
+        echo "Database migration failed or not ready yet. Retrying in 2 seconds (attempt $n/5)..."
+        sleep 2
+    done
 fi
 
 exec docker-php-entrypoint "$@"
