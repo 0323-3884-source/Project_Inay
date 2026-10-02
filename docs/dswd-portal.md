@@ -1,5 +1,7 @@
 # DSWD / 4Ps portal
 
+The dashboard and beneficiary detail workflow now use the read-only F1KD module. See [F1KD monitoring](f1kd-monitoring.md) for monthly compliance, checklist verification by assigned Program Staff, and reporting. DSWD medical document previews have been removed.
+
 Apply migrations with `php artisan migrate`. On the configured local database, the migration was applied on September 30, 2026.
 
 An administrator creates accounts under **Admin → DSWD / 4Ps Staff** (`/admin/dswd-staff`). Accounts have their own `dswd_staff` table; existing mother, program staff and admin accounts retain their original tables and behavior. No default DSWD password or public self-registration is provided. Select **DSWD / 4Ps Staff** on the shared login page. Staff can change their password in Profile or use the existing email recovery flow.

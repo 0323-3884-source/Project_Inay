@@ -43,7 +43,7 @@
         onlineStatus = 'Saving pages for offline viewing… Keep this page open.';
         showStatus();
         const seeds = role === 'mother'
-            ? ['mother/dashboard', 'mother/profile', 'mother/settings', 'mother/consultation', 'maternal-monitoring', 'child-health', 'inay-kaalaman', 'health-services', 'mother/clinic-schedule', 'api/mother/maternal-vitals', 'consultation/conversations', 'notifications']
+            ? ['mother/dashboard', 'mother/documents', 'mother/profile', 'mother/settings', 'mother/consultation', 'maternal-monitoring', 'child-health', 'inay-kaalaman', 'health-services', 'mother/clinic-schedule', 'api/mother/maternal-vitals', 'consultation/conversations', 'notifications']
             : ['staff/dashboard', 'staff/profile', 'staff/mothers', 'staff/neonatal-vaccines', 'staff/dynamic-reports', 'staff/clinic-schedule'];
         const queue = [...new Set([location.href.split('#')[0], ...seeds.map(path => new URL(path, base).href)])];
         if (role === 'mother') {

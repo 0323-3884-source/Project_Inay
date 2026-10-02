@@ -1,0 +1,1 @@
+<span class="dswd-badge f1kd-status f1kd-{{ $status }}">{{ \App\Support\F1kdCompliance::STATUSES[$status] }}</span>

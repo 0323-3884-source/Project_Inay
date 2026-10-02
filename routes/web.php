@@ -95,6 +95,11 @@ Route::patch('/child-health/children/{infant}', [AuthController::class, 'updateM
 Route::patch('/child-health/children/{infant}/photo', [AuthController::class, 'updateMotherChildPhoto'])->name('child-health.children.photo.update');
 Route::patch('/mother/profile-photo', [AuthController::class, 'updateMotherProfilePhoto'])->name('mother.profile-photo.update');
 Route::get('/inay-kaalaman', [AuthController::class, 'inayKaalaman'])->name('inay-kaalaman');
+Route::get('/mother/documents', [\App\Http\Controllers\MotherDocumentController::class, 'index'])->name('mother.documents.index');
+Route::post('/mother/documents', [AuthController::class, 'uploadInayKaalamanRecord'])->name('mother.documents.store');
+Route::get('/mother/documents/{upload}/preview', [\App\Http\Controllers\MotherDocumentController::class, 'file'])->name('mother.documents.preview');
+Route::get('/mother/documents/{upload}/download', [\App\Http\Controllers\MotherDocumentController::class, 'file'])->name('mother.documents.download');
+Route::delete('/mother/documents/{upload}', [AuthController::class, 'deleteInayKaalamanRecord'])->name('mother.documents.destroy');
 Route::get('/health-services', [AuthController::class, 'healthServices'])->name('health-services');
 Route::get('/mother/consultation', [ConsultationController::class, 'mother'])->name('mother.consultation');
 Route::get('/mother/clinic-schedule', [AppointmentController::class, 'motherIndex'])->name('mother.clinic-schedule.index');
@@ -194,10 +199,10 @@ Route::prefix('admin-staff-messages')->name('admin-staff-messages.')->group(func
 
 Route::prefix('dswd')->name('dswd.')->middleware('dswd.auth')->controller(\App\Http\Controllers\DswdController::class)->group(function () {
     Route::get('/', fn () => redirect()->route('dswd.dashboard'))->name('home');
-    Route::get('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\F1kdController::class, 'dashboard'])->name('dashboard');
     Route::get('/beneficiaries', 'beneficiaries')->name('beneficiaries');
     Route::get('/beneficiaries/{beneficiary}', 'beneficiary')->whereNumber('beneficiary')->name('beneficiaries.show');
-    Route::get('/beneficiaries/{beneficiary}/documents/{document}/preview', 'previewDocument')->whereNumber('beneficiary')->whereNumber('document')->name('documents.preview');
+    // DSWD must not access uploaded medical documents.
     Route::get('/statistics', 'statistics')->name('statistics');
     Route::get('/reports', 'reports')->name('reports');
     Route::get('/reports/download', 'reports')->name('reports.download');
@@ -206,3 +211,12 @@ Route::prefix('dswd')->name('dswd.')->middleware('dswd.auth')->controller(\App\H
     Route::get('/profile', 'profile')->name('profile');
     Route::patch('/profile', 'updateProfile')->name('profile.update');
 });
+
+Route::prefix('dswd/f1kd')->name('dswd.f1kd.')->middleware('dswd.auth')->controller(\App\Http\Controllers\F1kdController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/reports', 'reports')->name('reports');
+    Route::get('/reports/download', 'reports')->name('reports.download');
+    Route::get('/{subject}', 'show')->where('subject', '(mother|child)-[0-9]+')->name('show');
+});
+Route::get('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'edit'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.edit');
+Route::put('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'update'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.update');

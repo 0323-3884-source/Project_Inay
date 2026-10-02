@@ -7002,12 +7002,14 @@
         'search' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
     ];
 
+    $portalIconSvgs['documents'] = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>';
     $motherNavItems = [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => route('mother.dashboard'), 'active' => request()->routeIs('mother.dashboard')],
         ['label' => 'Maternal Monitoring', 'icon' => 'activity', 'href' => route('maternal-monitoring'), 'active' => request()->routeIs('maternal-monitoring')],
         ['label' => 'Child Health', 'icon' => 'baby', 'href' => route('child-health'), 'active' => request()->routeIs('child-health')],
         ['label' => 'My Appointments', 'icon' => 'calendar', 'href' => route('mother.clinic-schedule.index'), 'active' => request()->routeIs('mother.clinic-schedule.*')],
         ['label' => 'INAY Kaalaman', 'icon' => 'book', 'href' => route('inay-kaalaman'), 'active' => request()->routeIs('inay-kaalaman*')],
+        ['label' => 'Documents', 'icon' => 'documents', 'href' => route('mother.documents.index'), 'active' => request()->routeIs('mother.documents.*')],
         ['label' => 'Health Services', 'icon' => 'services', 'href' => route('health-services'), 'active' => request()->routeIs('health-services')],
         [
             'label' => 'Messages',
@@ -7043,8 +7045,8 @@
         $portalBrandSubtitle = 'DSWD / 4Ps Staff';
         $portalRoleLabel = 'DSWD / 4Ps Staff';
         $portalNavItems = [];
-        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
-            $portalNavItems[] = ['label' => $label, 'icon' => $icon, 'href' => route('dswd.'.$route), 'active' => request()->routeIs('dswd.'.$route, 'dswd.'.$route.'.*')];
+        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['f1kd.index', 'F1KD Monitoring', 'users'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['f1kd.reports', 'Monthly F1KD Reports', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+            $portalNavItems[] = ['label' => $label, 'icon' => $icon, 'href' => route('dswd.'.$route), 'active' => request()->routeIs('dswd.'.$route, 'dswd.'.$route.'.*') || ($route === 'f1kd.index' && request()->routeIs('dswd.f1kd.show'))];
         }
     }
 @endphp

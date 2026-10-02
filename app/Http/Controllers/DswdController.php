@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DswdStaff;
+use App\Models\F1kdMonitoring;
 use App\Support\DswdStatistics;
-use App\Models\InayKaalamanUpload;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +24,7 @@ class DswdController extends Controller
 
     public function dashboard(Request $request)
     {
-        $staff = $request->attributes->get('dswd_staff') ?? \App\Models\DswdStaff::find($request->session()->get('auth_id'));
+        $staff = $request->attributes->get('dswd_staff') ?? DswdStaff::find($request->session()->get('auth_id'));
 
         return view('dswd.dashboard', [
             'summary' => $this->statistics->summary([]),
@@ -45,37 +45,11 @@ class DswdController extends Controller
     public function beneficiary(string $beneficiary)
     {
         $mother = $this->statistics->withChildren($this->statistics->mothers())->findOrFail($beneficiary);
-        $uploads = DB::table('inay_kaalaman_uploads')->where('mother_id', $mother->id)
-            ->whereBetween('month', [1, 9])->select('month')->selectRaw('COUNT(*) AS total, MAX(created_at) AS last_received')
-            ->groupBy('month')->get()->keyBy('month');
-        $learning = DB::table('inay_kaalaman_progress')->where('mother_id', $mother->id)
-            ->whereBetween('month', [1, 9])->whereIn('activity_type', ['reading', 'video', 'infographic'])
-            ->select('month', 'activity_type', 'status')->get()->groupBy('month');
+        if ($mother->pregnancy_status === 'pregnant' || F1kdMonitoring::where('subject_key', 'mother-'.$mother->id)->whereDate('reporting_month', now()->startOfMonth())->exists()) {
+            return redirect()->route('dswd.f1kd.show', ['subject' => 'mother-'.$mother->id]);
+        }
 
-        return view('dswd.beneficiary', [
-            'beneficiary' => $mother,
-            'journeyUploads' => $uploads,
-            'journeyLearning' => $learning,
-            'journeyDocuments' => InayKaalamanUpload::where('mother_id', $mother->id)->whereBetween('month', [1, 9])
-                ->orderByDesc('created_at')->get(['id', 'month', 'original_name', 'record_type', 'created_at'])->groupBy('month'),
-        ]);
-    }
-
-    public function previewDocument(string $beneficiary, string $document)
-    {
-        $mother = $this->statistics->mothers()->findOrFail($beneficiary);
-        $upload = InayKaalamanUpload::where('mother_id', $mother->id)->whereBetween('month', [1, 9])->findOrFail($document);
-        $disk = Storage::disk('public');
-        abort_unless($disk->exists($upload->path), 404, 'This document is no longer available.');
-        $mime = $disk->mimeType($upload->path);
-        abort_unless(in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true), 415, 'This file type cannot be previewed.');
-
-        return response()->file($disk->path($upload->path), [
-            'Content-Type' => $mime,
-            'Cache-Control' => 'private, no-store',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Frame-Options' => 'SAMEORIGIN',
-        ]);
+        return redirect()->route('dswd.f1kd.index', ['q' => 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT)]);
     }
 
     public function statistics(Request $request)

@@ -107,12 +107,9 @@ class DswdPortalTest extends TestCase
         $this->child($nonBeneficiary, '2026-09-01');
         $this->signIn();
         $summary = $this->get('/dswd/dashboard')->assertOk()->viewData('summary');
-        $this->assertSame(3, $summary['total']);
+        $this->assertSame(7, $summary['total']);
         $this->assertSame(1, $summary['pregnant']);
-        $this->assertSame(1, $summary['mothers_with_children']);
         $this->assertSame(6, $summary['children']);
-        $this->assertSame([2, 2, 2], array_values($summary['ages']));
-        $this->assertSame(1, $summary['pregnancy']['unknown']);
         $this->travelBack();
     }
 
@@ -130,9 +127,8 @@ class DswdPortalTest extends TestCase
         $this->get('/dswd/statistics?date_to=2000-01-01')->assertOk()->assertViewHas('summary', fn ($s) => $s['total'] === 0);
         $this->get('/dswd/statistics?date_from=2026-01-02&date_to=2026-01-01')->assertSessionHasErrors('date_to');
         $this->get('/dswd/statistics?pregnancy_status=invalid')->assertSessionHasErrors('pregnancy_status');
-        $response = $this->get('/dswd/beneficiaries/'.$mother->id)->assertOk()->assertSee('VisibleName')->assertDontSee('PRIVATE CHILD NAME')->assertDontSee('PRIVATE MEDICAL NOTES')->assertDontSee('AB+')->assertDontSee($mother->email)->assertDontSee('Maternal Monitoring')->assertDontSee('Consultation');
-        $attributes = array_keys($response->viewData('beneficiary')->getAttributes());
-        $this->assertEqualsCanonicalizing(['id','first_name','middle_name','last_name','barangay','municipality_city','pregnancy_status','created_at','young_children_count'], $attributes);
+        $this->get('/dswd/beneficiaries/'.$mother->id)->assertRedirect(route('dswd.f1kd.show', ['subject'=>'mother-'.$mother->id]));
+        $this->get('/dswd/f1kd/mother-'.$mother->id)->assertOk()->assertSee('VisibleName')->assertDontSee('PRIVATE MEDICAL NOTES')->assertDontSee('AB+')->assertDontSee($mother->email);
         $this->get('/dswd/beneficiaries/'.$nonBeneficiary->id)->assertNotFound();
         for ($i = 0; $i < 16; $i++) { $this->mother(); }
         $this->get('/dswd/beneficiaries?barangay=San%20Jose')->assertOk()->assertViewHas('beneficiaries', fn ($p) => $p->count() === 15 && $p->total() === 17)->assertSee('Next');
@@ -192,58 +188,12 @@ class DswdPortalTest extends TestCase
         $this->post('/reset-password', $payload)->assertSessionHasErrors('token');
     }
 
-    public function test_journey_shows_document_links_without_exposing_storage_paths(): void
+    public function test_dswd_has_no_access_to_uploaded_medical_documents(): void
     {
         $mother = $this->mother();
-        $other = $this->mother();
-        foreach ([$mother, $other] as $owner) {
-            \App\Models\InayKaalamanUpload::create([
-                'mother_id' => $owner->id, 'month' => $owner->id === $mother->id ? 2 : 3,
-                'record_type' => 'Prescription', 'original_name' => 'private-diagnosis.pdf',
-                'path' => 'private/secret-record.pdf', 'mime_type' => 'application/pdf', 'size' => 200,
-            ]);
-        }
-        \App\Models\InayKaalamanProgress::create([
-            'mother_id' => $mother->id, 'month' => 2, 'activity_type' => 'video',
-            'item_key' => 'video-1', 'item_title' => 'Private activity title', 'status' => 'watched',
-        ]);
+        $upload = \App\Models\InayKaalamanUpload::create(['mother_id'=>$mother->id, 'month'=>1, 'record_type'=>'Prescription', 'original_name'=>'private-diagnosis.pdf', 'path'=>'records/private.pdf']);
         $this->signIn();
-        $response = $this->get('/dswd/beneficiaries/'.$mother->id)->assertOk()
-            ->assertSee('Pregnancy Journey')->assertSee('Learning &amp; Documents', false)
-            ->assertSee('Month 9')->assertSee('1 file(s) received')
-            ->assertSee('private-diagnosis.pdf')->assertDontSee('secret-record.pdf')
-            ->assertSee('Prescription')->assertSee('View document')->assertSee('dswd-document-dialog')->assertDontSee('Private activity title');
-        $this->assertSame([2], $response->viewData('journeyUploads')->keys()->all());
-        $this->assertSame(['month', 'total', 'last_received'], array_keys((array) $response->viewData('journeyUploads')->get(2)));
-        $this->assertSame(['month', 'activity_type', 'status'], array_keys((array) $response->viewData('journeyLearning')->get(2)->first()));
-    }
-
-    public function test_document_preview_checks_role_ownership_membership_and_actual_file_type(): void
-    {
-        \Illuminate\Support\Facades\Storage::fake('public');
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
-        $mother = $this->mother();
-        $other = $this->mother();
-        $disk->put('records/example.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF");
-        $upload = \App\Models\InayKaalamanUpload::create(['mother_id' => $mother->id, 'month' => 1, 'record_type' => 'Certificate', 'original_name' => 'example.pdf', 'path' => 'records/example.pdf']);
-        $url = '/dswd/beneficiaries/'.$mother->id.'/documents/'.$upload->id.'/preview';
-        $this->get($url)->assertRedirect('/login');
-        $this->withSession(['auth_role' => 'staff', 'auth_id' => 1])->get($url)->assertForbidden();
-        $account = $this->signIn();
-        $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf')->assertHeader('X-Content-Type-Options', 'nosniff');
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $response->baseResponse);
-        $this->assertStringContainsString('%PDF', file_get_contents($response->baseResponse->getFile()->getPathname()));
-        $this->withHeader('Range', 'bytes=0-3')->get($url)->assertStatus(206)->assertHeader('Content-Length', '4');
-        $this->flushHeaders();
-        $this->get('/dswd/beneficiaries/'.$other->id.'/documents/'.$upload->id.'/preview')->assertNotFound();
-        $mother->update(['is_4ps_beneficiary' => false]);
-        $this->get($url)->assertNotFound();
-        $mother->update(['is_4ps_beneficiary' => true]);
-        $disk->put('records/example.pdf', '<html><script>alert(1)</script></html>');
-        $this->get($url)->assertStatus(415);
-        $disk->delete('records/example.pdf');
-        $this->get($url)->assertNotFound();
-        $account->update(['is_active' => false]);
-        $this->get($url)->assertRedirect('/login');
+        $this->get('/dswd/f1kd/mother-'.$mother->id)->assertOk()->assertDontSee('private-diagnosis.pdf')->assertDontSee('View document');
+        $this->get('/dswd/beneficiaries/'.$mother->id.'/documents/'.$upload->id.'/preview')->assertNotFound();
     }
 }

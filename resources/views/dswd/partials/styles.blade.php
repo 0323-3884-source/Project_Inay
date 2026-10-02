@@ -41,4 +41,15 @@
 @media(max-width:860px) { .dswd-menu { display:flex; justify-content:space-between; margin:10px 20px; padding:12px; border:1px solid #eadfe4; background:white; border-radius:8px; font:inherit; } .dswd-navigation { display:none; } .dswd-navigation.is-open { display:block; } .dswd-shell .admin-sidebar { height:auto; } .dswd-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:540px) { .dswd-filters,.dswd-details { grid-template-columns:1fr; } .dswd-shell .admin-main { padding:16px; } }
 @media print { .admin-sidebar,.dswd-filters,.dswd-actions { display:none!important; } .admin-shell { display:block; } .admin-main { padding:0; } .admin-card { box-shadow:none; break-inside:avoid; } }
+.dswd-shell .portal-main, .dswd-shell .portal-main * { box-sizing:border-box; }
+.f1kd-charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.f1kd-compliant { background:#e6f6ed; color:#17643b; }
+.f1kd-verification { background:#fff3d8; color:#765000; }
+.f1kd-unavailable { background:#fde9ec; color:#9d2638; }
+.f1kd-not_applicable { background:#edf0f5; color:#52627d; }
+.dswd-shell .admin-summary-grid.f1kd-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media(max-width:1180px) { .dswd-shell .admin-summary-grid.f1kd-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:540px) { .dswd-shell .admin-summary-grid.f1kd-summary { grid-template-columns:1fr; } }
+@media(max-width:640px) { .f1kd-charts { grid-template-columns:1fr; } }
+@media print { .portal-sidebar,.portal-topbar,.portal-sidebar-overlay,.account-heading>a { display:none!important; } .portal-main { margin:0!important; padding:0!important; } }
 </style>

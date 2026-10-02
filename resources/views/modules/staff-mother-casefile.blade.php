@@ -3358,6 +3358,16 @@
 @endpush
 
 @section('content')
+@if($mother->is_4ps_beneficiary)
+<div class="account-card"><h2>F1KD compliance monitoring</h2><p>Verify monthly 4Ps service compliance.</p>
+@if($mother->pregnancy_status === 'pregnant')<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>'mother-'.$mother->id]) }}">Pregnant woman checklist</a>@endif
+@foreach($mother->infants as $f1kdChild)
+@if($f1kdChild->birth_date && $f1kdChild->birth_date->lte(today()) && $f1kdChild->birth_date->gt(today()->subMonthsNoOverflow(25)))
+<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>'child-'.$f1kdChild->id]) }}">{{ $f1kdChild->full_name }} / F1KD checklist</a>
+@endif
+@endforeach</div>
+@endif
+
     <style>
         /* Use the neonatal profile's compact, borderless label/value layout. */
         .casefile-summary-page .casefile-profile-card { padding: 22px; gap: 20px; }
@@ -3419,6 +3429,15 @@
             </div>
             <a class="casefile-back-link" href="{{ route('staff.mothers') }}">{!! $iconArrowLeft !!} Back to Casefiles</a>
         </header>
+
+        <!-- ===== TABS ===== -->
+        <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
+            <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="documents"><strong>Documents</strong><small>{{ $uploads->count() }} files · View & download</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
+        </div>
 
         <!-- ===== PROFILE CARD ===== -->
         <section class="casefile-profile-card">
@@ -3504,13 +3523,6 @@
             <article class="is-green"><span>Learning Progress</span><strong>{{ $learningPercent }}%</strong><small>{{ $learningCompleted }}/{{ $learningTotal }} months completed</small><em style="--progress: {{ $learningPercent }}%"></em>{!! $iconFile !!}</article>
         </div>
 
-        <!-- ===== TABS ===== -->
-        <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
-            <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
-        </div>
 
         <!-- ===== OVERVIEW PANEL ===== -->
         <section data-casefile-panel="overview">
@@ -3823,6 +3835,14 @@
                 @endforeach
             </div>
         </section>
+
+        <section class="casefile-panel" data-casefile-panel="documents" hidden>
+            <h2>{!! $iconFile !!} Mother's Documents</h2>
+            <p class="casefile-panel-note">All records and receipts sent through Documents or INAY Kaalaman. Search, filter, or select a file to preview it. Refresh to check for new uploads.</p>
+            @include('partials.document-library', ['documentAudience' => 'staff'])
+        </section>
+        <link rel="stylesheet" href="{{ asset('css/documents.css') }}?v={{ filemtime(public_path('css/documents.css')) }}">
+        <script src="{{ asset('js/document-library.js') }}?v={{ filemtime(public_path('js/document-library.js')) }}" defer></script>
 
         <dialog id="document-preview-dialog" class="document-preview-dialog" aria-labelledby="document-preview-title">
             <header class="vitals-dialog-header">

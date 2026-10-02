@@ -176,6 +176,17 @@
     @endforelse
 @endforeach
 @endif
+@if($section === 'documents')
+<h2>Submitted Documents</h2>
+<table><thead><tr><th>Month</th><th>Document type</th><th>File</th><th>Uploaded</th></tr></thead><tbody>
+@forelse($mother->inayKaalamanUploads->sortByDesc('created_at') as $upload)
+<tr><td>{{ $upload->month }}</td><td>{{ $upload->record_type }}</td><td>{{ $upload->original_name }}</td><td>{{ $upload->created_at->format('M j, Y') }}</td></tr>
+@empty
+<tr><td colspan="4">No documents received yet.</td></tr>
+@endforelse
+</tbody></table>
+@endif
+
 @if($section === 'notes')
 <h2 class="section-title">CLINICAL NOTES</h2>
 <p class="clinical-notes">{{ $latestRecord?->notes ?: 'No staff notes recorded for this patient yet.' }}</p>

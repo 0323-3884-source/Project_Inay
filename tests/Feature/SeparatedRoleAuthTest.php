@@ -207,13 +207,16 @@ class SeparatedRoleAuthTest extends TestCase
         $this->assertDatabaseHas('mothers', [
             'email' => 'mother-civil-status@example.test',
             'civil_status' => 'Married',
-            'gravidity' => 2,
-            'parity' => 1,
+            'gravidity' => null,
+            'parity' => null,
         ]);
     }
 
-    public function test_mother_registration_rejects_parity_greater_than_gravidity(): void
+    public function test_mother_registration_does_not_accept_staff_only_obstetric_fields(): void
     {
+        $this->get(route('mother.register'))->assertOk()
+            ->assertDontSee('name="gravidity"', false)
+            ->assertDontSee('name="parity"', false);
         $this->from(route('mother.register'))
             ->post(route('mother.register.store'), [
                 'full_name' => 'Maria Santos Reyes',
@@ -226,13 +229,13 @@ class SeparatedRoleAuthTest extends TestCase
                 'is_4ps_beneficiary' => 'no',
                 'privacy_policy' => '1',
             ])
-            ->assertRedirect(route('mother.register'))
-            ->assertSessionHasErrors([
-                'parity' => 'Parity cannot be greater than Gravidity.',
-            ]);
+            ->assertRedirect('/login')
+            ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseMissing('mothers', [
+        $this->assertDatabaseHas('mothers', [
             'email' => 'mother-invalid-obstetric@example.test',
+            'gravidity' => null,
+            'parity' => null,
         ]);
     }
 

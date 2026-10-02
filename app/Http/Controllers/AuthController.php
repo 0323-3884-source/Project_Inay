@@ -165,8 +165,6 @@ class AuthController extends Controller
             'contact_number' => ['required', 'string', 'max:30'],
             'age' => ['nullable', 'integer', 'between:10,60'],
             'civil_status' => ['nullable', Rule::in(self::CIVIL_STATUSES)],
-            'gravidity' => ['nullable', 'integer', 'min:0'],
-            'parity' => ['nullable', 'integer', 'min:0'],
             'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
             'pregnancy_status' => ['nullable', Rule::in(self::PREGNANCY_STATUSES)],
             'location_latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -174,20 +172,7 @@ class AuthController extends Controller
             'location_accuracy' => ['nullable', 'integer', 'min:0'],
             'privacy_policy' => ['accepted'],
             'is_4ps_beneficiary' => ['required', Rule::in(['yes', 'no'])],
-        ], [
-            'gravidity.integer' => 'Gravidity must be a non-negative whole number.',
-            'gravidity.min' => 'Gravidity must be a non-negative whole number.',
-            'parity.integer' => 'Parity must be a non-negative whole number.',
-            'parity.min' => 'Parity must be a non-negative whole number.',
         ]);
-
-        if (($validated['gravidity'] ?? null) !== null
-            && ($validated['parity'] ?? null) !== null
-            && (int) $validated['parity'] > (int) $validated['gravidity']) {
-            throw ValidationException::withMessages([
-                'parity' => 'Parity cannot be greater than Gravidity.',
-            ]);
-        }
 
         $mother = Mother::create([
             'first_name' => $validated['first_name'],
@@ -200,8 +185,6 @@ class AuthController extends Controller
             'contact_number' => $validated['contact_number'],
             'age' => $validated['age'] ?? null,
             'civil_status' => $validated['civil_status'] ?? null,
-            'gravidity' => $validated['gravidity'] ?? null,
-            'parity' => $validated['parity'] ?? null,
             'blood_type' => $validated['blood_type'] ?? null,
             'pregnancy_status' => $validated['pregnancy_status'] ?? null,
             'location_latitude' => $validated['location_latitude'] ?? null,
@@ -752,8 +735,8 @@ class AuthController extends Controller
         $upload->delete();
 
         return redirect()
-            ->route('inay-kaalaman')
-            ->with('status', 'Prenatal record deleted.');
+            ->route($request->routeIs('mother.documents.*') ? 'mother.documents.index' : 'inay-kaalaman')
+            ->with('status', 'Document removed from Documents and INAY Kaalaman.');
     }
 
     public function uploadInayKaalamanRecord(Request $request): RedirectResponse
@@ -787,7 +770,7 @@ class AuthController extends Controller
 
         if ($duplicateUpload) {
             return redirect()
-                ->route('inay-kaalaman')
+                ->route($request->routeIs('mother.documents.*') ? 'mother.documents.index' : 'inay-kaalaman')
                 ->with('status', 'This document was already uploaded for the selected month.');
         }
 
@@ -799,13 +782,13 @@ class AuthController extends Controller
             'record_type' => $validated['record_type'],
             'original_name' => $document->getClientOriginalName(),
             'path' => $path,
-            'mime_type' => $document->getClientMimeType(),
+            'mime_type' => $document->getMimeType(),
             'size' => $document->getSize() ?: 0,
         ]);
 
         return redirect()
-            ->route('inay-kaalaman')
-            ->with('status', 'Prenatal record uploaded successfully.');
+            ->route($request->routeIs('mother.documents.*') ? 'mother.documents.index' : 'inay-kaalaman')
+            ->with('status', 'Document uploaded and shared with your program staff.');
     }
 
     public function saveInayKaalamanProgress(Request $request): JsonResponse
@@ -1162,9 +1145,9 @@ class AuthController extends Controller
         abort_unless($staff, 401);
         abort_unless($staff->is_approved && $this->casefileForStaffMother($staff, $mother), 403);
 
-        $request->validate(['section' => ['sometimes', 'string', 'in:overview,monitoring,learning-documents,notes']]);
+        $request->validate(['section' => ['sometimes', 'string', 'in:overview,monitoring,learning-documents,documents,notes']]);
         $section = $request->query('section', 'overview');
-        $sectionTitle = ['overview' => 'Overview', 'monitoring' => 'Monitoring', 'learning-documents' => 'Learning & Documents', 'notes' => 'Notes'][$section];
+        $sectionTitle = ['overview' => 'Overview', 'monitoring' => 'Monitoring', 'learning-documents' => 'Learning & Documents', 'documents' => 'Documents', 'notes' => 'Notes'][$section];
 
         try {
             $mother->load([
