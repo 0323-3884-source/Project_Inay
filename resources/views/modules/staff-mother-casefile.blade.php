@@ -3420,18 +3420,6 @@
             <a class="casefile-back-link" href="{{ route('staff.mothers') }}">{!! $iconArrowLeft !!} Back to Casefiles</a>
         </header>
 
-        <!-- ===== TABS ===== -->
-        <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
-            <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
-            @if($mother->is_4ps_beneficiary)
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="f1kd"><strong>F1KD 4Ps Summary</strong><small>Monthly attendance</small></button>
-            @endif
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="documents"><strong>Documents</strong><small>{{ $uploads->count() }} files · View & download</small></button>
-            <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
-        </div>
-
         <!-- ===== PROFILE CARD ===== -->
         <section class="casefile-profile-card">
             <div class="casefile-profile-header">
@@ -3516,6 +3504,18 @@
             <article class="is-green"><span>Learning Progress</span><strong>{{ $learningPercent }}%</strong><small>{{ $learningCompleted }}/{{ $learningTotal }} months completed</small><em style="--progress: {{ $learningPercent }}%"></em>{!! $iconFile !!}</article>
         </div>
 
+
+        <!-- ===== TABS ===== -->
+        <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
+            <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
+            @if($mother->is_4ps_beneficiary)
+            <button type="button" data-f1kd-monitoring-url="{{ route('staff.f1kd.edit', ['subject' => 'mother-'.$mother->id, 'month' => $f1kdPeriod]) }}"><strong>F1KD 4Ps Summary</strong><small>Monthly attendance</small></button>
+            @endif
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="documents"><strong>Documents</strong><small>{{ $uploads->count() }} files · View & download</small></button>
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="notes"><strong>Notes</strong><small><span>{{ $latestRecord?->notes ? 1 : 0 }}</span> {{ $latestRecord?->notes ? 'entry' : 'entries' }}</small></button>
+        </div>
 
         <!-- ===== OVERVIEW PANEL ===== -->
         <section data-casefile-panel="overview">
@@ -4684,9 +4684,9 @@
                 });
             });
 
-            if (new URLSearchParams(window.location.search).has('f1kd_month')) {
-                tabs.find((tab) => tab.dataset.casefileTab === 'f1kd')?.click();
-            }
+            document.querySelector('[data-f1kd-monitoring-url]')?.addEventListener('click', (event) => {
+                window.location.assign(event.currentTarget.dataset.f1kdMonitoringUrl);
+            });
 
             document.querySelector('[data-activity-toggle]')?.addEventListener('click', (event) => {
                 const list = document.querySelector('[data-activity-list]');

@@ -6,7 +6,10 @@
     <button class="account-button" type="submit">View Period</button>
 </form>
 <p class="casefile-panel-note">Saved attendance and remarks are shared with DSWD for the same beneficiary and reporting month. Historical lists contain saved records only.</p>
-<p class="casefile-panel-note">Monthly health attendance for pregnant women and children aged 0–24 months in this registered 4Ps household.</p>
+<p class="casefile-panel-note">Shared monthly attendance for this 4Ps mother and eligible children. Barangay: {{ $mother->barangay ?: 'Not recorded' }}. 4Ps status: Registered beneficiary.</p>
+@if($f1kdHousehold)
+<p class="casefile-panel-note">Assigned Program Staff: {{ $f1kdHousehold->assigned_staff }}.<br>Registered children: @forelse($f1kdHousehold->registered_children as $child){{ $child->name }} (CHILD-{{ $child->id }})@if(!$loop->last), @endif @empty None registered @endforelse</p>
+@endif
 <div style="overflow-x:auto">
     <table class="f1kd-casefile-table">
         <thead><tr><th scope="col">Beneficiary</th><th scope="col">Beneficiary ID</th><th scope="col">Classification</th><th scope="col">Attendance</th><th scope="col">Remarks</th><th scope="col">Action</th></tr></thead>
@@ -21,7 +24,7 @@
                     @elseif($beneficiary->attendance_status === 'did_not_attend')<span aria-hidden="true">●</span> Did Not Attend
                     @else Not Yet Recorded
                     @endif
-                </span></td>
+                </span><br><small>{{ $beneficiary->dswd_verified_at ? 'Verified by DSWD: '.$beneficiary->dswd_verified_at->format('M j, Y H:i') : 'Not yet verified by DSWD' }}</small></td>
                 <td>{{ \App\Support\F1kdCompliance::REMARKS[$beneficiary->remark_code] ?? '—' }}</td>
                 <td>@if($staff->approval_status === 'approved')<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>$beneficiary->key, 'month'=>$beneficiary->month]) }}">View / Record Attendance</a>@else Approved Program Staff record attendance.@endif</td>
             </tr>

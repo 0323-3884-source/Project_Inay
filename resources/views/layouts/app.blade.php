@@ -7049,7 +7049,19 @@
         $portalBrandSubtitle = 'DSWD / 4Ps Staff';
         $portalRoleLabel = 'DSWD / 4Ps Staff';
         $portalNavItems = [];
-        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['f1kd.index', 'F1KD 4Ps Beneficiaries', 'users'], ['f1kd.reports', 'Monthly 4Ps Reports', 'report'], ['messaging', 'Messaging', 'message'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['f1kd.index', 'F1KD Monitoring', 'users'], ['f1kd.reports', 'Monthly 4Ps Reports', 'report'], ['messaging', 'Messaging', 'message'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+            if ($route === 'f1kd.index') {
+                $monitoringActive = request()->routeIs('dswd.f1kd.index', 'dswd.f1kd.show');
+                $monitoringClass = request('classification') ?? ($beneficiary->classification ?? null);
+                $portalNavItems[] = [
+                    'label' => 'F1KD Monitoring', 'icon' => 'users', 'active' => $monitoringActive,
+                    'children' => [
+                        ['label' => 'Maternal Monitoring', 'icon' => 'users', 'href' => route('dswd.f1kd.index', ['classification' => 'pregnant']), 'active' => $monitoringActive && $monitoringClass === 'pregnant'],
+                        ['label' => 'Children 0–2 Years', 'icon' => 'baby', 'href' => route('dswd.f1kd.index', ['classification' => 'child']), 'active' => $monitoringActive && $monitoringClass === 'child'],
+                    ],
+                ];
+                continue;
+            }
             if ($route === 'messaging') {
                 $portalNavItems[] = [
                     'label' => 'Messages', 'icon' => 'message', 'active' => request()->routeIs('dswd.messaging*'),

@@ -63,7 +63,25 @@ class NeonatalVaccinesTest extends TestCase
             ->assertDontSee('data-neo-open="add-child"', false)
             ->assertDontSee('data-neo-modal="add-child"', false)
             ->assertDontSee('Add Child Case Record')
-            ->assertSee($mother->full_name);
+            ->assertSee($mother->full_name)
+            ->assertDontSee('4Ps Beneficiary / F1KD Monitoring');
+
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $child = Infant::create([
+            'mother_id' => $mother->id,
+            'full_name' => 'Baby INAY',
+            'sex' => 'female',
+            'birth_date' => now()->subMonths(2)->toDateString(),
+        ]);
+        $this->get('/staff/neonatal-vaccines?child='.$child->id)
+            ->assertOk()
+            ->assertSee('4Ps Beneficiary / F1KD Monitoring')
+            ->assertSee(route('staff.f1kd.edit', ['subject' => 'child-'.$child->id, 'month' => now()->format('Y-m')]));
+
+        $child->update(['birth_date' => now()->subYears(3)->toDateString()]);
+        $this->get('/staff/neonatal-vaccines?child='.$child->id)
+            ->assertOk()
+            ->assertDontSee('4Ps Beneficiary / F1KD Monitoring');
     }
 
     public function test_staff_selects_mother_then_switches_between_that_mothers_children(): void

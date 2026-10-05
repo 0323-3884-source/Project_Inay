@@ -1,6 +1,6 @@
 # DSWD / 4Ps F1KD monitoring
 
-The DSWD dashboard and **F1KD Monitoring** navigation focus on pregnant 4Ps beneficiaries and children through 24 completed calendar months in registered 4Ps households. Eligibility follows the existing DSWD age definition: birth date after today minus 25 months, through today. Future and missing birth dates are excluded. Each eligible child has an individual row; a pregnant mother and her child are separate beneficiaries.
+Both portals use `mothers` as the shared 4Ps household profile and `f1kd_monitorings` as the single monthly attendance source. All mothers flagged `is_4ps_beneficiary=true` appear in current-month maternal monitoring, irrespective of pregnancy status. Children through 24 completed calendar months have individual child records linked by `mother_id`. Future and missing birth dates are excluded from current child monitoring. Existing classification/filter key `pregnant` is retained for URL compatibility but now labels the maternal category, not a claim that every mother is pregnant.
 
 ## Pages and access
 
@@ -11,7 +11,7 @@ The DSWD dashboard and **F1KD Monitoring** navigation focus on pregnant 4Ps bene
 - `GET /staff/f1kd/mother-{id}` or `/staff/f1kd/child-{id}`: attendance form, linked from the mother's existing casefile.
 - `PUT /staff/f1kd/{subject}`: save attendance with `month`, `attendance_status` and optional `remark_code`.
 
-DSWD routes require an active DSWD account and remain read-only. Only approved Program Staff with an assigned mother casefile can save the mother's or her child's attendance. DSWD, mothers, unapproved staff, and unassigned staff cannot write monitoring records. No clinical notes, diagnoses, prescriptions, medical uploads or detailed medical measurements are passed to DSWD pages. The former DSWD medical document preview route has been removed; old beneficiary links lead to the appropriate F1KD records.
+Approved, assigned Program Staff can record attendance. Active DSWD staff can update and verify attendance via `PUT /dswd/f1kd/{subject}`. Both write the same unique subject/month row. Mothers/public users and unauthorized staff cannot write. DSWD verification stores its officer ID and timestamp; a later Program Staff correction clears that verification for re-review. DSWD updates preserve the original Program Staff recorder when present. DSWD-origin rows may have no Program Staff recorder; no fake staff ID is assigned. Profile headers include assigned staff and all registered children without clinical details. Existing checklist JSON remains untouched. Data is shared on the next request/page refresh; there is no separate portal copy or push synchronization.
 
 Household references use Project INAY mother registration IDs, not official DSWD household numbers. Membership uses the existing `is_4ps_beneficiary` registration flag. The module does not claim to sync with an external DSWD registry.
 

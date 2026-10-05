@@ -9,7 +9,6 @@ use App\Support\F1kdCompliance;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
 
 class F1kdController extends Controller
 {
@@ -19,19 +18,10 @@ class F1kdController extends Controller
     {
         $filters = $this->compliance->filters($request);
         $rows = $this->compliance->rows($filters);
-        $charts = [];
-        foreach (F1kdCompliance::CLASSES as $key => $label) {
-            $charts[$label.' by barangay'] = $rows->where('classification', $key)->countBy('barangay')->all();
-        }
-        $charts['F1KD compliance status'] = $rows->countBy(fn ($r) => F1kdCompliance::STATUSES[$r->status])->all();
-        $monthly = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->startOfMonth()->subMonths($i)->format('Y-m');
-            $monthly[$month] = $this->compliance->rows(['month' => $month])->count();
-        }
-        $charts['Monthly F1KD monitoring (beneficiaries)'] = $monthly;
-
-        return view('dswd.f1kd.dashboard', ['summary' => $this->compliance->summary($rows), 'charts' => $charts, 'filters' => $filters]);
+        return view('dswd.f1kd.dashboard', [
+            'summary' => $this->compliance->summary($rows),
+            'filters' => $filters,
+        ]);
     }
 
     public function index(Request $request)
@@ -41,7 +31,18 @@ class F1kdController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $paginator = new LengthAwarePaginator($rows->forPage($page, 15)->values(), $rows->count(), 15, $page, ['path' => $request->url(), 'query' => $request->query()]);
 
-        return view('dswd.f1kd.index', $this->viewData($filters) + ['beneficiaries' => $paginator]);
+        $sections = [];
+        foreach (['pregnant'=>'Maternal Monitoring', 'child'=>'Children 0–2 Years Monitoring'] as $classification=>$title) {
+            $sectionRows = $rows->where('classification', $classification)->values();
+            $pageName = $classification.'_page';
+            $sectionPage = max(1, (int) $request->input($pageName, 1));
+            $sections[] = [
+                'title'=>$title, 'classification'=>$classification,
+                'beneficiaries'=>new LengthAwarePaginator($sectionRows->forPage($sectionPage, 15)->values(), $sectionRows->count(), 15, $sectionPage, ['path'=>$request->url(), 'query'=>$request->query(), 'pageName'=>$pageName]),
+            ];
+        }
+
+        return view('dswd.f1kd.index', $this->viewData($filters) + ['beneficiaries' => $paginator, 'sections'=>$sections]);
     }
 
     private function viewData(array $filters): array
@@ -78,7 +79,7 @@ class F1kdController extends Controller
                         $write([$key, $value]);
                     }
                 }
-                $write(['Municipality / Barangay', 'Total', 'Pregnant', 'Children 0–24 months', 'Compliant', 'For Verification', 'Non-Compliant']);
+                $write(['Municipality / Barangay', 'Total', '4Ps Mothers', 'Children 0–24 months', 'Compliant', 'For Verification', 'Non-Compliant']);
                 $write(['All selected areas', ...array_values($summary)]);
                 foreach ($breakdown as $area => $counts) {
                     $write([$area, ...array_values($counts)]);
@@ -87,7 +88,9 @@ class F1kdController extends Controller
             }, 'inay-f1kd-'.$filters['month'].'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
         }
 
-        return view('dswd.f1kd.reports', $this->viewData($filters) + compact('summary', 'breakdown'));
+        $page = max(1, (int) $request->input('page', 1));
+        $beneficiaries = new LengthAwarePaginator($rows->forPage($page, 15)->values(), $rows->count(), 15, $page, ['path' => $request->url(), 'query' => $request->query()]);
+        return view('dswd.f1kd.reports', $this->viewData($filters) + compact('summary', 'breakdown', 'beneficiaries'));
     }
 
     private function authorizeStaff(Request $request, int $motherId): void
@@ -119,22 +122,23 @@ class F1kdController extends Controller
             'attendance_status' => ['required', Rule::in(array_keys(F1kdCompliance::ATTENDANCE))],
             'remark_code' => ['nullable', Rule::in(array_keys(F1kdCompliance::REMARKS))],
         ]);
-        DB::transaction(function () use ($subject, $filters, $beneficiary, $data, $request) {
-            // Atomic upsert respects the existing unique subject/month index,
-            // even for simultaneous saves. Never update legacy checklist JSON.
-            F1kdMonitoring::upsert([[
-                'subject_key' => $subject, 'reporting_month' => (new F1kdMonitoring)->fromDateTime($filters['month'].'-01'),
-                'mother_id' => $beneficiary->mother_id, 'infant_id' => $beneficiary->infant_id,
-                'classification' => $beneficiary->classification, 'barangay' => $beneficiary->barangay,
-                'municipality_city' => $beneficiary->municipality_city, 'checklist' => '[]',
-                'attendance_status' => $data['attendance_status'], 'remark_code' => $data['remark_code'] ?? null,
-                'status' => F1kdCompliance::attendanceStatus($data['attendance_status']),
-                'recorded_by_staff_id' => $request->session()->get('auth_id'),
-            ]], ['subject_key', 'reporting_month'], [
-                'attendance_status', 'remark_code', 'status', 'recorded_by_staff_id',
-            ]);
-        });
+        $this->compliance->saveAttendance($beneficiary, $data, 'staff', (int) $request->session()->get('auth_id'));
 
         return redirect()->route('staff.f1kd.edit', ['subject' => $subject, 'month' => $filters['month']])->with('status', 'Monthly F1KD attendance saved.');
+    }
+
+    public function updateDswd(Request $request, string $subject)
+    {
+        // dswd.auth checks role, account existence and active status.
+        abort_unless($request->attributes->get('dswd_staff'), 403);
+        $data = $request->validate([
+            'month'=>['required','date_format:Y-m','before_or_equal:'.now()->format('Y-m')],
+            'attendance_status'=>['required',Rule::in(array_keys(F1kdCompliance::ATTENDANCE))],
+            'remark_code'=>['nullable',Rule::in(array_keys(F1kdCompliance::REMARKS))],
+        ]);
+        $beneficiary = $this->compliance->beneficiary($subject, $data['month']);
+        abort_unless($beneficiary, 404);
+        $this->compliance->saveAttendance($beneficiary, $data, 'dswd_staff', $request->attributes->get('dswd_staff')->id);
+        return redirect()->route('dswd.f1kd.show', ['subject'=>$subject, 'month'=>$data['month']])->with('status', 'Shared attendance updated and verified.');
     }
 }

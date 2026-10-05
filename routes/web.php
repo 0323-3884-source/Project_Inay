@@ -227,6 +227,7 @@ Route::prefix('dswd/f1kd')->name('dswd.f1kd.')->middleware('dswd.auth')->control
     Route::get('/reports', 'reports')->name('reports');
     Route::get('/reports/download', 'reports')->name('reports.download');
     Route::get('/{subject}', 'show')->where('subject', '(mother|child)-[0-9]+')->name('show');
+    Route::put('/{subject}', 'updateDswd')->where('subject', '(mother|child)-[0-9]+')->name('update');
 });
 Route::get('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'edit'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.edit');
 Route::put('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'update'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.update');

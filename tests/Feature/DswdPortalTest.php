@@ -107,8 +107,8 @@ class DswdPortalTest extends TestCase
         $this->child($nonBeneficiary, '2026-09-01');
         $this->signIn();
         $summary = $this->get('/dswd/dashboard')->assertOk()->viewData('summary');
-        $this->assertSame(7, $summary['total']);
-        $this->assertSame(1, $summary['pregnant']);
+        $this->assertSame(9, $summary['total']);
+        $this->assertSame(3, $summary['pregnant']);
         $this->assertSame(6, $summary['children']);
         $this->travelBack();
     }

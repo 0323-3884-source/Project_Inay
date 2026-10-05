@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class F1kdCompliance
 {
@@ -32,7 +33,7 @@ class F1kdCompliance
             default => 'verification',
         };
     }
-    public const CLASSES = ['pregnant' => 'Pregnant Woman', 'child' => 'Child 0–24 Months'];
+    public const CLASSES = ['pregnant' => 'Mother / 4Ps Beneficiary', 'child' => 'Child 0–24 Months'];
     public const MATERNAL = [
         'immunization' => 'Maternal immunization / tetanus and diphtheria toxoid',
         'micronutrients' => 'Micronutrient supplementation (iron-folic acid, calcium, iodine)',
@@ -90,6 +91,7 @@ class F1kdCompliance
         $month = CarbonImmutable::parse(($filters['month'] ?? now()->format('Y-m')).'-01');
         $records = F1kdMonitoring::whereDate('reporting_month', $month)->get()->keyBy('subject_key');
         $mothers = Mother::where('is_4ps_beneficiary', true)
+            ->with(['casefileStaff:id,first_name,middle_name,last_name'])
             ->when(isset($filters['mother_id']), fn ($query) => $query->where('id', $filters['mother_id']))
             ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status'])->keyBy('id');
         $children = Infant::whereIn('mother_id', $mothers->keys())
@@ -97,7 +99,7 @@ class F1kdCompliance
         $rows = collect();
         $current = $month->format('Y-m') === now()->format('Y-m');
         $asOf = $current ? CarbonImmutable::today() : $month->endOfMonth();
-        $add = function ($mother, $child, $record = null) use (&$rows, $month) {
+        $add = function ($mother, $child, $record = null) use (&$rows, $month, $children) {
             $key = $child ? 'child-'.$child->id : 'mother-'.$mother->id;
             $classification = $child ? 'child' : 'pregnant';
             $checklist = $record?->checklist ?? $this->defaults($classification);
@@ -107,6 +109,10 @@ class F1kdCompliance
                 'beneficiary_id' => $child ? 'CHILD-'.$child->id : 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'name' => $child?->full_name ?? $mother->full_name, 'sex' => $child?->sex ?? 'Female',
                 'mother_name' => $mother->full_name,
+                'four_ps_status'=>'Registered 4Ps beneficiary',
+                'assigned_staff'=>$mother->casefileStaff->pluck('full_name')->implode(', ') ?: 'Not assigned',
+                'registered_children'=>$children->where('mother_id', $mother->id)->values()->map(fn ($infant)=>(object)['id'=>$infant->id, 'name'=>$infant->full_name, 'birth_date'=>$infant->birth_date]),
+                'dswd_verified_at'=>$record?->dswd_verified_at,
                 'barangay' => $record ? ($record->barangay ?: 'Not recorded') : ($mother->barangay ?: 'Not recorded'),
                 'municipality_city' => $record ? ($record->municipality_city ?: 'Not recorded') : ($mother->municipality_city ?: 'Not recorded'),
                 'classification' => $classification, 'month' => $month->format('Y-m'),
@@ -123,7 +129,7 @@ class F1kdCompliance
         }
         if ($current) {
             foreach ($mothers as $mother) {
-                if ($mother->pregnancy_status === 'pregnant' && ! $rows->has('mother-'.$mother->id)) $add($mother, null);
+                if (! $rows->has('mother-'.$mother->id)) $add($mother, null);
             }
             foreach ($children as $child) {
                 if ($child->birth_date && $child->birth_date->lte($asOf) && $child->birth_date->gt($asOf->subMonthsNoOverflow(25)) && ! $rows->has('child-'.$child->id)) $add($mothers->get($child->mother_id), $child);
@@ -166,7 +172,28 @@ class F1kdCompliance
 
         $row->month = $month;
         $row->attendance_status = $row->remark_code = $row->updated_at = null;
+        $row->dswd_verified_at = null;
         $row->status = 'verification';
         return $row;
+    }
+
+    public function saveAttendance(object $beneficiary, array $data, string $role, int $actorId): void
+    {
+        $dswd = $role === 'dswd_staff';
+        $values = [
+            'subject_key'=>$beneficiary->key,
+            'reporting_month'=>(new F1kdMonitoring)->fromDateTime($beneficiary->month.'-01'),
+            'mother_id'=>$beneficiary->mother_id, 'infant_id'=>$beneficiary->infant_id,
+            'classification'=>$beneficiary->classification, 'barangay'=>$beneficiary->barangay,
+            'municipality_city'=>$beneficiary->municipality_city, 'checklist'=>'[]',
+            'attendance_status'=>$data['attendance_status'], 'remark_code'=>$data['remark_code'] ?? null,
+            'status'=>self::attendanceStatus($data['attendance_status']),
+            'recorded_by_staff_id'=>$dswd ? null : $actorId,
+            'verified_by_dswd_staff_id'=>$dswd ? $actorId : null,
+            'dswd_verified_at'=>$dswd ? now() : null,
+        ];
+        $updates = ['attendance_status', 'remark_code', 'status', 'verified_by_dswd_staff_id', 'dswd_verified_at'];
+        if (! $dswd) $updates[] = 'recorded_by_staff_id';
+        DB::transaction(fn () => F1kdMonitoring::upsert([$values], ['subject_key','reporting_month'], $updates));
     }
 }

@@ -520,10 +520,11 @@ class StaffCasefilesTest extends TestCase
         $staff = $this->createStaff();
         $mother = $this->createMother('Ana', null, 'Cruz', 'summary@example.test', '09170002222', 'San Jose');
         $this->withStaffSession($staff)->get('/staff/mothers/'.$mother->id)->assertOk()
-            ->assertDontSee('data-casefile-tab="f1kd"', false)->assertDontSee('F1KD 4Ps Beneficiary Summary');
+            ->assertDontSee('data-f1kd-monitoring-url=', false)->assertDontSee('F1KD 4Ps Beneficiary Summary');
         $mother->update(['is_4ps_beneficiary'=>true]);
         $this->withStaffSession($staff)->get('/staff/mothers/'.$mother->id)->assertOk()
-            ->assertSee('data-casefile-tab="f1kd"', false)
+            ->assertSee('data-f1kd-monitoring-url=', false)
+            ->assertSee(route('staff.f1kd.edit', ['subject' => 'mother-'.$mother->id, 'month' => now()->format('Y-m')]))
             ->assertSee('data-casefile-panel="f1kd" hidden', false)
             ->assertSee('F1KD 4Ps Beneficiary Summary')
             ->assertViewHas('f1kdBeneficiaries', fn ($rows)=>$rows->count()===1 && $rows->first()->mother_id===$mother->id);

@@ -1033,6 +1033,9 @@
                         <div class="neo-last">
                             <span>Last measurement: <strong>{{ $latestGrowth?->measured_at?->format('M j, Y') ?? 'No growth measurement yet' }}</strong></span>
                             <div class="neo-actions">
+                                @if($childF1kdUrl)
+                                    <a class="neo-button is-light" href="{{ $childF1kdUrl }}">4Ps Beneficiary / F1KD Monitoring</a>
+                                @endif
                                 <button class="neo-button is-light" type="button" data-neo-open="edit-child">{!! $iconEdit !!} Edit Child</button>
                                 <button class="neo-button is-green" type="button" data-neo-open="growth">{!! $iconTrend !!} Update Growth</button>
                                 <button class="neo-button is-light" type="button" data-casefile-record="print" data-record-kind="child" data-record-url="{{ route('staff.neonatal.print', $selectedInfant) }}">Print Record</button>

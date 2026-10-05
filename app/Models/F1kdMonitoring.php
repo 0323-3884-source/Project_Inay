@@ -16,6 +16,6 @@ class F1kdMonitoring extends Model
 
     protected function casts(): array
     {
-        return ['reporting_month' => 'date', 'checklist' => 'array'];
+        return ['reporting_month' => 'date', 'checklist' => 'array', 'dswd_verified_at'=>'datetime'];
     }
 }

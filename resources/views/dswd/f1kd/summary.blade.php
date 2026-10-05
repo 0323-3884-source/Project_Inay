@@ -1,5 +1,5 @@
 <div class="admin-summary-grid f1kd-summary">
-@foreach (['total'=>'Total 4Ps F1KD beneficiaries','pregnant'=>'Pregnant 4Ps beneficiaries','children'=>'Children 0-24 months','compliant'=>'Attended / Compliant','verification'=>'Not Yet Recorded / For Verification','non_compliant'=>'Did Not Attend / Non-Compliant'] as $key=>$label)
+@foreach (['total'=>'Total 4Ps F1KD beneficiaries','pregnant'=>'Registered 4Ps Mothers','children'=>'Children 0-24 months','compliant'=>'Attended / Compliant','verification'=>'Not Yet Recorded / For Verification','non_compliant'=>'Did Not Attend / Non-Compliant'] as $key=>$label)
 <article class="admin-summary-card"><span class="admin-summary-icon">@include('dswd.partials.icon', ['icon'=>'users'])</span><div><span>{{ $label }}</span><strong>{{ number_format($summary[$key]) }}</strong></div></article>
 @endforeach
 </div>

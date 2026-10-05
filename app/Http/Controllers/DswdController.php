@@ -45,11 +45,7 @@ class DswdController extends Controller
     public function beneficiary(string $beneficiary)
     {
         $mother = $this->statistics->withChildren($this->statistics->mothers())->findOrFail($beneficiary);
-        if ($mother->pregnancy_status === 'pregnant' || F1kdMonitoring::where('subject_key', 'mother-'.$mother->id)->whereDate('reporting_month', now()->startOfMonth())->exists()) {
-            return redirect()->route('dswd.f1kd.show', ['subject' => 'mother-'.$mother->id]);
-        }
-
-        return redirect()->route('dswd.f1kd.index', ['q' => 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT)]);
+        return redirect()->route('dswd.f1kd.show', ['subject' => 'mother-'.$mother->id]);
     }
 
     public function statistics(Request $request)

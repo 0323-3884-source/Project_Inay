@@ -96,7 +96,11 @@ class F1kdMonitoringTest extends TestCase
         $this->assertStringNotContainsString('SECRET',$csv);
         for ($i=0;$i<16;$i++) $this->mother();
         $this->get('/dswd/f1kd')->assertOk()->assertViewHas('beneficiaries', fn ($p) => $p->count()===15 && $p->total()===17)->assertSee('Next');
-        $this->get('/dswd/f1kd/reports')->assertOk()->assertSee('Print report');
+        $this->get('/dswd/f1kd/reports')->assertOk()->assertSee('Print report')
+            ->assertSee('Monthly 4Ps Reports')->assertSee('Monthly beneficiary attendance')
+            ->assertSee('View / Verify')->assertViewHas('beneficiaries', fn ($p) => $p->count()===15 && $p->total()===17);
+        $this->get('/dswd/dashboard')->assertOk()->assertSee('Monthly 4Ps Overview')
+            ->assertSee('name="month"', false)->assertSee('Maternal Monitoring')->assertSee('Monthly 4Ps Reports');
     }
 
     public function test_attendance_updates_one_record_and_preserves_other_periods_and_legacy_checklist(): void
@@ -153,9 +157,9 @@ class F1kdMonitoringTest extends TestCase
         Infant::create(['mother_id'=>$mother->id, 'full_name'=>'Adult child', 'birth_date'=>today()->subYears(25)]);
         $this->dswd();
         $this->get('/dswd/f1kd?q=Martha%20Isles')->assertOk()->assertSee('James Juan Dela Cruz')->assertSee('Mother: Martha Isles')
-            ->assertViewHas('beneficiaries', fn ($rows)=>$rows->total()===1 && $rows->first()->key==='child-'.$child->id);
+            ->assertViewHas('beneficiaries', fn ($rows)=>$rows->total()===2 && $rows->contains(fn ($row)=>$row->key==='child-'.$child->id));
         $this->get('/dswd/f1kd/child-'.$child->id)->assertOk()->assertSee('Martha Isles');
-        $this->get('/dswd/f1kd/mother-'.$mother->id)->assertNotFound();
+        $this->get('/dswd/f1kd/mother-'.$mother->id)->assertOk();
     }
 
     public function test_staff_and_dswd_share_the_same_beneficiary_and_reporting_period(): void
@@ -187,6 +191,57 @@ class F1kdMonitoringTest extends TestCase
         $this->get('/dswd/f1kd/'.$subject.'?month=2026-09')->assertOk()->assertViewHas('beneficiary', fn ($row)=>$row->status==='compliant' && $row->remark_code===null);
         $this->assertDatabaseCount('f1kd_monitorings', 2);
         $this->travelBack();
+    }
+
+    public function test_dswd_verifies_shared_record_and_staff_sees_and_updates_it(): void
+    {
+        $mother = $this->mother(['pregnancy_status'=>'not_pregnant']);
+        $staff = $this->staff($mother);
+        $subject = 'mother-'.$mother->id;
+        $month = now()->format('Y-m');
+        $payload = ['month'=>$month,'attendance_status'=>'did_not_attend','remark_code'=>'service_unavailable'];
+        $this->put('/staff/f1kd/'.$subject, $payload)->assertSessionHasNoErrors();
+        $id = F1kdMonitoring::firstOrFail()->id;
+        $this->dswd();
+        $this->put('/dswd/f1kd/'.$subject, ['month'=>$month,'attendance_status'=>'attended'])->assertSessionHasNoErrors();
+        $record = F1kdMonitoring::firstOrFail();
+        $this->assertSame($id, $record->id);
+        $this->assertSame($staff->id, $record->recorded_by_staff_id);
+        $this->assertNotNull($record->dswd_verified_at);
+        $this->assertNotNull($record->verified_by_dswd_staff_id);
+        $this->withSession(['auth_role'=>'staff','auth_id'=>$staff->id]);
+        $this->get('/staff/f1kd/'.$subject)->assertOk()->assertSee('Assigned Program Staff')->assertSee('DSWD verification')->assertViewHas('beneficiary', fn ($row)=>$row->attendance_status==='attended' && $row->dswd_verified_at!==null);
+        $this->get('/staff/mothers/'.$mother->id)->assertOk()->assertSee('Verified by DSWD')->assertSee($staff->full_name);
+        $this->put('/staff/f1kd/'.$subject, $payload)->assertSessionHasNoErrors();
+        $this->assertNull($record->fresh()->dswd_verified_at);
+        $this->put('/dswd/f1kd/'.$subject, $payload)->assertForbidden();
+        $this->dswd();
+        $other = $this->mother(['is_4ps_beneficiary'=>false]);
+        $this->put('/dswd/f1kd/mother-'.$other->id, $payload)->assertNotFound();
+        $this->put('/dswd/f1kd/'.$subject, ['month'=>$month,'attendance_status'=>'invalid'])->assertSessionHasErrors('attendance_status');
+        $this->assertDatabaseCount('f1kd_monitorings', 1);
+    }
+
+    public function test_dswd_can_create_a_shared_month_without_faking_a_program_staff_recorder(): void
+    {
+        $mother = $this->mother(['pregnancy_status'=>'postpartum']);
+        $this->dswd();
+        $subject = 'mother-'.$mother->id;
+        $month = now()->startOfMonth()->subMonth()->format('Y-m');
+        $payload = ['month'=>$month,'attendance_status'=>'attended','remark_code'=>'delivered'];
+        $this->put('/dswd/f1kd/'.$subject, $payload)->assertSessionHasNoErrors();
+        $record = F1kdMonitoring::firstOrFail();
+        $this->assertNull($record->recorded_by_staff_id);
+        $this->assertNotNull($record->verified_by_dswd_staff_id);
+        $staff = $this->staff($mother);
+        $this->get('/staff/f1kd/'.$subject.'?month='.$month)->assertOk()->assertSee('Delivered')
+            ->assertViewHas('beneficiary', fn ($row)=>$row->attendance_status==='attended' && $row->dswd_verified_at!==null);
+        $this->get('/staff/mothers/'.$mother->id.'?f1kd_month='.$month)->assertOk()->assertViewHas('f1kdBeneficiaries', fn ($rows)=>$rows->count()===1 && $rows->first()->remark_code==='delivered');
+        $this->withSession(['auth_role'=>'mother','auth_id'=>$mother->id])->put('/dswd/f1kd/'.$subject, $payload)->assertForbidden();
+        $this->dswd();
+        DswdStaff::firstOrFail()->update(['is_active'=>false]);
+        $this->put('/dswd/f1kd/'.$subject, $payload)->assertRedirect('/login');
+        $this->assertDatabaseCount('f1kd_monitorings', 1);
     }
 
     public function test_child_attendance_is_individual_and_summary_uses_only_attendance(): void
