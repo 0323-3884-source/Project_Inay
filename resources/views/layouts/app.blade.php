@@ -7049,7 +7049,7 @@
         $portalBrandSubtitle = 'DSWD / 4Ps Staff';
         $portalRoleLabel = 'DSWD / 4Ps Staff';
         $portalNavItems = [];
-        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['messaging', 'Messaging', 'message'], ['f1kd.index', 'F1KD Monitoring', 'users'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['f1kd.reports', 'Monthly F1KD Reports', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['f1kd.index', 'F1KD 4Ps Beneficiaries', 'users'], ['f1kd.reports', 'Monthly 4Ps Reports', 'report'], ['messaging', 'Messaging', 'message'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
             if ($route === 'messaging') {
                 $portalNavItems[] = [
                     'label' => 'Messages', 'icon' => 'message', 'active' => request()->routeIs('dswd.messaging*'),
