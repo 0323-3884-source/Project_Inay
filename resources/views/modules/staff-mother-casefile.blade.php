@@ -3358,16 +3358,6 @@
 @endpush
 
 @section('content')
-@if($mother->is_4ps_beneficiary)
-<div class="account-card"><h2>F1KD compliance monitoring</h2><p>Verify monthly 4Ps service compliance.</p>
-@if($mother->pregnancy_status === 'pregnant')<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>'mother-'.$mother->id]) }}">Pregnant woman checklist</a>@endif
-@foreach($mother->infants as $f1kdChild)
-@if($f1kdChild->birth_date && $f1kdChild->birth_date->lte(today()) && $f1kdChild->birth_date->gt(today()->subMonthsNoOverflow(25)))
-<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>'child-'.$f1kdChild->id]) }}">{{ $f1kdChild->full_name }} / F1KD checklist</a>
-@endif
-@endforeach</div>
-@endif
-
     <style>
         /* Use the neonatal profile's compact, borderless label/value layout. */
         .casefile-summary-page .casefile-profile-card { padding: 22px; gap: 20px; }
@@ -3433,6 +3423,9 @@
         <!-- ===== TABS ===== -->
         <div class="casefile-tabs" role="tablist" aria-label="Casefile sections">
             <button class="is-active" type="button" role="tab" aria-selected="true" data-casefile-tab="overview"><strong>Overview</strong><small>Summary</small></button>
+            @if($mother->is_4ps_beneficiary)
+            <button type="button" role="tab" aria-selected="false" data-casefile-tab="f1kd"><strong>F1KD 4Ps Summary</strong><small>Monthly attendance</small></button>
+            @endif
             <button type="button" role="tab" aria-selected="false" data-casefile-tab="monitoring"><strong>Monitoring</strong><small><span data-monitoring-count>{{ $records->count() }}</span> {{ $records->count() === 1 ? 'record' : 'records' }}</small></button>
             <button type="button" role="tab" aria-selected="false" data-casefile-tab="learning-documents"><strong>Learning & Documents</strong><small>{{ $uploads->count() }} document{{ $uploads->count() === 1 ? '' : 's' }} received</small></button>
             <button type="button" role="tab" aria-selected="false" data-casefile-tab="documents"><strong>Documents</strong><small>{{ $uploads->count() }} files · View & download</small></button>
@@ -3854,6 +3847,12 @@
             <div class="document-preview-content" data-document-content></div>
             <p><a data-document-download>Download file</a></p>
         </dialog>
+
+        @if($mother->is_4ps_beneficiary)
+        <section class="casefile-panel" data-casefile-panel="f1kd" hidden>
+            @include('modules.partials.staff-f1kd-summary')
+        </section>
+        @endif
 
         <!-- ===== NOTES PANEL ===== -->
         <section class="casefile-panel" data-casefile-panel="notes" hidden>
@@ -4684,6 +4683,10 @@
                     });
                 });
             });
+
+            if (new URLSearchParams(window.location.search).has('f1kd_month')) {
+                tabs.find((tab) => tab.dataset.casefileTab === 'f1kd')?.click();
+            }
 
             document.querySelector('[data-activity-toggle]')?.addEventListener('click', (event) => {
                 const list = document.querySelector('[data-activity-list]');

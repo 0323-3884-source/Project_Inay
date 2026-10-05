@@ -1092,6 +1092,11 @@ class AuthController extends Controller
             ->take(5)
             ->get();
 
+        $f1kdPeriod = $request->validate(['f1kd_month' => ['nullable', 'date_format:Y-m']])['f1kd_month'] ?? now()->format('Y-m');
+        $f1kdBeneficiaries = $mother->is_4ps_beneficiary
+            ? app(\App\Support\F1kdCompliance::class)->rows(['month'=>$f1kdPeriod, 'mother_id'=>$mother->id])
+            : collect();
+
         return view('modules.staff-mother-casefile', compact(
             'staff',
             'mother',
@@ -1104,6 +1109,8 @@ class AuthController extends Controller
             'careCompletion',
             'maternalVitalsPayload',
             'consultations',
+            'f1kdBeneficiaries',
+            'f1kdPeriod',
         ));
     }
 

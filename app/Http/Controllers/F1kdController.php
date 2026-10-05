@@ -9,6 +9,7 @@ use App\Support\F1kdCompliance;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class F1kdController extends Controller
 {
@@ -53,12 +54,12 @@ class F1kdController extends Controller
     public function show(Request $request, string $subject)
     {
         $filters = $this->compliance->filters($request);
-        $beneficiary = $this->compliance->rows(['month' => $filters['month']])->firstWhere('key', $subject);
+        $beneficiary = $this->compliance->beneficiary($subject, $filters['month']);
         abort_unless($beneficiary, 404);
-        $history = F1kdMonitoring::where('subject_key', $subject)->where('reporting_month', '<', $filters['month'].'-01')
+        $history = F1kdMonitoring::where('subject_key', $subject)
             ->orderByDesc('reporting_month')->paginate(12)->withQueryString();
 
-        return view('dswd.f1kd.show', compact('beneficiary', 'history', 'filters') + ['conditions' => $this->compliance->conditions($beneficiary->classification)]);
+        return view('dswd.f1kd.show', compact('beneficiary', 'history', 'filters'));
     }
 
     public function reports(Request $request)
@@ -77,7 +78,7 @@ class F1kdController extends Controller
                         $write([$key, $value]);
                     }
                 }
-                $write(['Municipality / Barangay', 'Total', 'Pregnant', 'Children 0–24 months', 'Compliant', 'For Verification', 'Service Unavailable']);
+                $write(['Municipality / Barangay', 'Total', 'Pregnant', 'Children 0–24 months', 'Compliant', 'For Verification', 'Non-Compliant']);
                 $write(['All selected areas', ...array_values($summary)]);
                 foreach ($breakdown as $area => $counts) {
                     $write([$area, ...array_values($counts)]);
@@ -99,32 +100,41 @@ class F1kdController extends Controller
     public function edit(Request $request, string $subject)
     {
         $filters = $this->compliance->filters($request);
-        $beneficiary = $this->compliance->rows(['month' => $filters['month']])->firstWhere('key', $subject);
+        $beneficiary = $this->compliance->beneficiary($subject, $filters['month']);
         abort_unless($beneficiary, 404);
         $this->authorizeStaff($request, $beneficiary->mother_id);
 
-        return view('dswd.f1kd.edit', compact('beneficiary') + ['conditions' => $this->compliance->conditions($beneficiary->classification)]);
+        $history = F1kdMonitoring::where('subject_key', $subject)->orderByDesc('reporting_month')->paginate(12)->withQueryString();
+        return view('dswd.f1kd.edit', compact('beneficiary', 'history'));
     }
 
     public function update(Request $request, string $subject)
     {
         $filters = $this->compliance->filters($request);
-        $beneficiary = $this->compliance->rows(['month' => $filters['month']])->firstWhere('key', $subject);
+        $beneficiary = $this->compliance->beneficiary($subject, $filters['month']);
         abort_unless($beneficiary, 404);
         $this->authorizeStaff($request, $beneficiary->mother_id);
-        $keys = array_keys($this->compliance->conditions($beneficiary->classification));
-        $rules = ['checklist' => ['required', 'array:'.implode(',', $keys)]];
-        foreach ($keys as $key) {
-            $rules['checklist.'.$key] = ['required', Rule::in(array_keys(F1kdCompliance::STATUSES))];
-        }
-        $data = $request->validate($rules);
-        F1kdMonitoring::updateOrCreate(['subject_key' => $subject, 'reporting_month' => $filters['month'].'-01'], [
-            'mother_id' => $beneficiary->mother_id, 'infant_id' => $beneficiary->infant_id,
-            'classification' => $beneficiary->classification, 'barangay' => $beneficiary->barangay,
-            'municipality_city' => $beneficiary->municipality_city, 'checklist' => $data['checklist'],
-            'status' => $this->compliance->status($data['checklist']), 'recorded_by_staff_id' => $request->session()->get('auth_id'),
+        $data = $request->validate([
+            'month' => ['required', 'date_format:Y-m', 'before_or_equal:'.now()->format('Y-m')],
+            'attendance_status' => ['required', Rule::in(array_keys(F1kdCompliance::ATTENDANCE))],
+            'remark_code' => ['nullable', Rule::in(array_keys(F1kdCompliance::REMARKS))],
         ]);
+        DB::transaction(function () use ($subject, $filters, $beneficiary, $data, $request) {
+            // Atomic upsert respects the existing unique subject/month index,
+            // even for simultaneous saves. Never update legacy checklist JSON.
+            F1kdMonitoring::upsert([[
+                'subject_key' => $subject, 'reporting_month' => (new F1kdMonitoring)->fromDateTime($filters['month'].'-01'),
+                'mother_id' => $beneficiary->mother_id, 'infant_id' => $beneficiary->infant_id,
+                'classification' => $beneficiary->classification, 'barangay' => $beneficiary->barangay,
+                'municipality_city' => $beneficiary->municipality_city, 'checklist' => '[]',
+                'attendance_status' => $data['attendance_status'], 'remark_code' => $data['remark_code'] ?? null,
+                'status' => F1kdCompliance::attendanceStatus($data['attendance_status']),
+                'recorded_by_staff_id' => $request->session()->get('auth_id'),
+            ]], ['subject_key', 'reporting_month'], [
+                'attendance_status', 'remark_code', 'status', 'recorded_by_staff_id',
+            ]);
+        });
 
-        return back()->with('status', 'Monthly F1KD monitoring saved.');
+        return redirect()->route('staff.f1kd.edit', ['subject' => $subject, 'month' => $filters['month']])->with('status', 'Monthly F1KD attendance saved.');
     }
 }

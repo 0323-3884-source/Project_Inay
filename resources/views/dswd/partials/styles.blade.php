@@ -44,6 +44,12 @@
 .dswd-shell .portal-main, .dswd-shell .portal-main * { box-sizing:border-box; }
 .f1kd-charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .f1kd-compliant { background:#e6f6ed; color:#17643b; }
+.f1kd-non_compliant { background:#fde9ec; color:#9d2638; }
+.f1kd-staff-page .admin-card { background:white; border:1px solid #eadfe4; border-radius:16px; padding:24px; margin-bottom:20px; }
+.f1kd-attendance-options { border:1px solid #eadfe4; border-radius:10px; padding:12px; display:grid; gap:10px; }
+.f1kd-attendance-options .f1kd-attendance-choice { display:flex; align-items:center; gap:10px; min-height:44px; cursor:pointer; }
+.f1kd-attendance-choice input[type=radio] { width:20px; min-height:20px; margin:0; accent-color:#bc1368; }
+.f1kd-staff-page .dswd-details dd { color:#10213f; }
 .f1kd-verification { background:#fff3d8; color:#765000; }
 .f1kd-unavailable { background:#fde9ec; color:#9d2638; }
 .f1kd-not_applicable { background:#edf0f5; color:#52627d; }

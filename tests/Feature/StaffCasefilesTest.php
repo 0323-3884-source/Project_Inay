@@ -515,6 +515,20 @@ class StaffCasefilesTest extends TestCase
         ])->get('/staff/mothers')->assertRedirect('/login');
     }
 
+    public function test_f1kd_summary_tab_is_only_shown_for_4ps_households(): void
+    {
+        $staff = $this->createStaff();
+        $mother = $this->createMother('Ana', null, 'Cruz', 'summary@example.test', '09170002222', 'San Jose');
+        $this->withStaffSession($staff)->get('/staff/mothers/'.$mother->id)->assertOk()
+            ->assertDontSee('data-casefile-tab="f1kd"', false)->assertDontSee('F1KD 4Ps Beneficiary Summary');
+        $mother->update(['is_4ps_beneficiary'=>true]);
+        $this->withStaffSession($staff)->get('/staff/mothers/'.$mother->id)->assertOk()
+            ->assertSee('data-casefile-tab="f1kd"', false)
+            ->assertSee('data-casefile-panel="f1kd" hidden', false)
+            ->assertSee('F1KD 4Ps Beneficiary Summary')
+            ->assertViewHas('f1kdBeneficiaries', fn ($rows)=>$rows->count()===1 && $rows->first()->mother_id===$mother->id);
+    }
+
     private function createStaff(): ProgramStaff
     {
         return ProgramStaff::create([

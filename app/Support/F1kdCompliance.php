@@ -12,7 +12,26 @@ use Illuminate\Validation\Rule;
 
 class F1kdCompliance
 {
-    public const STATUSES = ['compliant' => 'Compliant', 'verification' => 'For Verification', 'not_applicable' => 'Not Applicable', 'unavailable' => 'Service Unavailable'];
+    public const STATUSES = ['compliant' => 'Compliant', 'non_compliant' => 'Non-Compliant', 'verification' => 'For Verification / Not Yet Recorded'];
+    public const ATTENDANCE = ['attended' => 'Attended', 'did_not_attend' => 'Did Not Attend'];
+    // Reuse the existing checklist outcome keys; these are application labels,
+    // not a claim to implement official external DSWD numeric remark codes.
+    public const REMARKS = [
+        'service_unavailable' => 'Required service not available',
+        'miscarriage' => 'Miscarriage',
+        'delivered' => 'Delivered',
+        'death' => 'Maternal / neonatal death',
+        'other_verification' => 'Other / needs verification',
+    ];
+
+    public static function attendanceStatus(?string $attendance): string
+    {
+        return match ($attendance) {
+            'attended' => 'compliant',
+            'did_not_attend' => 'non_compliant',
+            default => 'verification',
+        };
+    }
     public const CLASSES = ['pregnant' => 'Pregnant Woman', 'child' => 'Child 0–24 Months'];
     public const MATERNAL = [
         'immunization' => 'Maternal immunization / tetanus and diphtheria toxoid',
@@ -60,7 +79,7 @@ class F1kdCompliance
             'municipality_city' => ['nullable', 'string', 'max:255'],
             'classification' => ['nullable', Rule::in(array_keys(self::CLASSES))],
             'status' => ['nullable', Rule::in(array_keys(self::STATUSES))],
-            'month' => ['nullable', 'date_format:Y-m', 'before_or_equal:'.now()->format('Y-m')],
+            'month' => ['nullable', 'date_format:Y-m'],
         ]);
         $filters['month'] = $filters['month'] ?? now()->format('Y-m');
         return $filters;
@@ -71,6 +90,7 @@ class F1kdCompliance
         $month = CarbonImmutable::parse(($filters['month'] ?? now()->format('Y-m')).'-01');
         $records = F1kdMonitoring::whereDate('reporting_month', $month)->get()->keyBy('subject_key');
         $mothers = Mother::where('is_4ps_beneficiary', true)
+            ->when(isset($filters['mother_id']), fn ($query) => $query->where('id', $filters['mother_id']))
             ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status'])->keyBy('id');
         $children = Infant::whereIn('mother_id', $mothers->keys())
             ->get(['id', 'mother_id', 'full_name', 'sex', 'birth_date'])->keyBy('id');
@@ -86,10 +106,12 @@ class F1kdCompliance
                 'household' => 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'beneficiary_id' => $child ? 'CHILD-'.$child->id : 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'name' => $child?->full_name ?? $mother->full_name, 'sex' => $child?->sex ?? 'Female',
+                'mother_name' => $mother->full_name,
                 'barangay' => $record ? ($record->barangay ?: 'Not recorded') : ($mother->barangay ?: 'Not recorded'),
                 'municipality_city' => $record ? ($record->municipality_city ?: 'Not recorded') : ($mother->municipality_city ?: 'Not recorded'),
                 'classification' => $classification, 'month' => $month->format('Y-m'),
-                'checklist' => $checklist, 'status' => $this->status($checklist),
+                'checklist' => $checklist, 'status' => self::attendanceStatus($record?->attendance_status),
+                'attendance_status' => $record?->attendance_status, 'remark_code' => $record?->remark_code,
                 'verification' => array_intersect_key($this->conditions($classification), array_filter($checklist, fn ($s) => $s === 'verification')),
                 'updated_at' => $record?->updated_at,
             ]);
@@ -112,7 +134,7 @@ class F1kdCompliance
                 if (! empty($filters[$field]) && $row->$field !== $filters[$field]) return false;
             }
             $q = trim($filters['q'] ?? '');
-            return $q === '' || str_contains(mb_strtolower($row->name.' '.$row->household.' '.$row->beneficiary_id), mb_strtolower($q));
+            return $q === '' || str_contains(mb_strtolower($row->name.' '.$row->mother_name.' '.$row->household.' '.$row->beneficiary_id), mb_strtolower($q));
         })->sortBy('name')->values();
     }
 
@@ -122,8 +144,29 @@ class F1kdCompliance
             'total' => $rows->count(), 'pregnant' => $rows->where('classification', 'pregnant')->count(),
             'children' => $rows->where('classification', 'child')->count(),
             'compliant' => $rows->where('status', 'compliant')->count(),
-            'verification' => $rows->filter(fn ($r) => count($r->verification) > 0)->count(),
-            'unavailable' => $rows->filter(fn ($r) => in_array('unavailable', $r->checklist, true))->count(),
+            'verification' => $rows->where('status', 'verification')->count(),
+            'non_compliant' => $rows->where('status', 'non_compliant')->count(),
         ];
+    }
+
+    public function beneficiary(string $subject, string $month): ?object
+    {
+        $row = $this->rows(['month' => $month])->firstWhere('key', $subject);
+        if ($row) return $row;
+
+        // Keep aggregate history limited to saved records. A detail page can
+        // still show an empty period for an eligible beneficiary or a subject
+        // with a saved history (including children who have since aged out).
+        $row = $this->rows()->firstWhere('key', $subject);
+        if (! $row) {
+            $previous = F1kdMonitoring::where('subject_key', $subject)->latest('reporting_month')->first();
+            if ($previous) $row = $this->rows(['month' => $previous->reporting_month->format('Y-m')])->firstWhere('key', $subject);
+        }
+        if (! $row) return null;
+
+        $row->month = $month;
+        $row->attendance_status = $row->remark_code = $row->updated_at = null;
+        $row->status = 'verification';
+        return $row;
     }
 }
