@@ -3,6 +3,15 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$databaseUrl = env('DB_URL') ?: env('DATABASE_URL') ?: env('MYSQL_URL');
+$databaseScheme = $databaseUrl ? strtolower((string) parse_url($databaseUrl, PHP_URL_SCHEME)) : null;
+$detectedConnection = match ($databaseScheme) {
+    'mysql', 'mariadb' => $databaseScheme,
+    'postgres', 'postgresql', 'pgsql' => 'pgsql',
+    'sqlite' => 'sqlite',
+    default => env('MYSQLHOST') ? 'mysql' : (env('PGHOST') ? 'pgsql' : 'sqlite'),
+};
+
 return [
 
     /*
@@ -17,7 +26,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', (env('MYSQLHOST') || env('MYSQL_URL')) ? 'mysql' : ((env('PGHOST') || env('DATABASE_URL')) ? 'pgsql' : 'sqlite')),
+    'default' => env('DB_CONNECTION', $detectedConnection),
 
     /*
     |--------------------------------------------------------------------------

@@ -32,12 +32,16 @@ Use `QUEUE_CONNECTION=database` only with a separate worker running `php artisan
 Use a managed database, not localhost or the local XAMPP database. Set either DB_URL or individual DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME and DB_PASSWORD variables; remove any stale DB_URL when using individual variables.
 
 - Railway MySQL: set `DB_CONNECTION=mysql` and reference the MySQL service's connection variables in the web service. Internal service addresses work within the same Railway project/network.
+
+  For a database service named `MySQL`, set `DB_URL=${{MySQL.MYSQL_URL}}` on the **web service**. Replace `MySQL` with the actual database service name. Adding a database service alone does not configure the web service's variables. Remove conflicting old `DB_URL` or `DATABASE_URL` values. URL-based driver detection supports MySQL and PostgreSQL when `DB_CONNECTION` is unset; an explicit `DB_CONNECTION` takes precedence.
 - Render PostgreSQL: set `DB_CONNECTION=pgsql` and `DB_URL` to the database's internal connection URL. Set `DB_SSLMODE=require` when required by the database provider. PostgreSQL support is installed in the image; validate your existing data migration separately before switching database engines.
 - Render can also use an externally hosted MySQL database with `DB_CONNECTION=mysql` and the provider's externally reachable connection settings.
 
 For MySQL requiring a CA, set `MYSQL_ATTR_SSL_CA=/var/www/html/storage/certificates/ca.pem` if that file is the correct CA for your provider. A Windows path will not work in Linux. Keep TLS verification enabled. Do not put client private keys in the image.
 
 Migrations run automatically on container startup (`RUN_MIGRATIONS` defaults to `true`). If you want to disable automatic startup migrations, set `RUN_MIGRATIONS=false`. Back up an existing database before migration. Never use `migrate:fresh`, `db:wipe`, or test seeders against hosted records. New installations need migrations before database sessions/cache can work.
+
+Startup stops after five failed migration attempts so Railway cannot mark a deployment ready while its database is unavailable or its schema is incomplete. Inspect the first migration error in deployment logs.
 
 ## Persistent uploads
 

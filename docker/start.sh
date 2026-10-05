@@ -42,6 +42,10 @@ if [ "${RUN_MIGRATIONS:-true}" = 'true' ]; then
         echo "Database migration failed or not ready yet. Retrying in 2 seconds (attempt $n/5)..."
         sleep 2
     done
+    if [ "$n" -ge 5 ]; then
+        echo 'Database migrations failed after 5 attempts. Check database service references, credentials, and connectivity.' >&2
+        exit 1
+    fi
 fi
 
 exec docker-php-entrypoint "$@"
