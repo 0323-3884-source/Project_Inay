@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Call;
 use App\Models\Conversation;
+use App\Models\DswdStaff;
 use App\Models\MaternalMonitoringRecord;
 use App\Models\Message;
 use App\Models\Mother;
@@ -20,6 +21,7 @@ trait AuthorizesConsultations
     {
         return match ($request->session()->get('auth_role')) {
             Message::ROLE_MOTHER => Message::ROLE_MOTHER,
+            Message::ROLE_DSWD_STAFF => Message::ROLE_DSWD_STAFF,
             'staff', Message::ROLE_PROGRAM_STAFF => Message::ROLE_PROGRAM_STAFF,
             default => null,
         };
@@ -34,9 +36,11 @@ trait AuthorizesConsultations
             return null;
         }
 
-        $exists = $role === Message::ROLE_MOTHER
-            ? Mother::whereKey($id)->exists()
-            : ProgramStaff::whereKey($id)->exists();
+        $exists = match ($role) {
+            Message::ROLE_MOTHER => Mother::whereKey($id)->exists(),
+            Message::ROLE_DSWD_STAFF => DswdStaff::whereKey($id)->where('is_active', true)->exists(),
+            default => ProgramStaff::whereKey($id)->exists(),
+        };
 
         if (! $exists) {
             return null;
@@ -123,7 +127,24 @@ trait AuthorizesConsultations
             return false;
         }
 
-        $conversation->loadMissing(['mother', 'programStaff']);
+        $conversation->loadMissing(['mother', 'programStaff', 'dswdStaff']);
+
+        if ($conversation->dswd_staff_id) {
+            if (! $conversation->dswdStaff?->is_active) return false;
+            if ($conversation->mother_id && ! $conversation->program_staff_id) {
+                if (! $conversation->mother?->is_4ps_beneficiary) return false;
+                $peerRole = Message::ROLE_MOTHER;
+                $peerId = $conversation->mother_id;
+            } elseif ($conversation->program_staff_id && ! $conversation->mother_id && $conversation->programStaff) {
+                $peerRole = Message::ROLE_PROGRAM_STAFF;
+                $peerId = $conversation->program_staff_id;
+            } else {
+                return false;
+            }
+            return ($participant['role'] === Message::ROLE_DSWD_STAFF && $participant['id'] === $conversation->dswd_staff_id)
+                || ($participant['role'] === $peerRole && $participant['id'] === $peerId);
+        }
+        if ($participant['role'] === Message::ROLE_DSWD_STAFF) return false;
 
         if (! $conversation->mother || ! $conversation->programStaff) {
             return false;
@@ -144,6 +165,14 @@ trait AuthorizesConsultations
 
     protected function receiverForConversation(Conversation $conversation, string $senderRole): array
     {
+        if ($conversation->dswd_staff_id) {
+            if ($senderRole !== Message::ROLE_DSWD_STAFF) {
+                return ['id' => $conversation->dswd_staff_id, 'role' => Message::ROLE_DSWD_STAFF];
+            }
+            return $conversation->mother_id
+                ? ['id' => $conversation->mother_id, 'role' => Message::ROLE_MOTHER]
+                : ['id' => $conversation->program_staff_id, 'role' => Message::ROLE_PROGRAM_STAFF];
+        }
         if ($senderRole === Message::ROLE_MOTHER) {
             return ['id' => $conversation->program_staff_id, 'role' => Message::ROLE_PROGRAM_STAFF];
         }
@@ -155,20 +184,19 @@ trait AuthorizesConsultations
     {
         $participant = $this->currentConsultationParticipant($request);
         $conversation->loadMissing([
-            'mother.maternalMonitoringRecords' => fn ($query) => $query
-                ->orderByDesc('recorded_at')
-                ->orderByDesc('created_at'),
+            'mother',
             'programStaff',
+            'dswdStaff',
             'lastMessage',
         ]);
 
         $viewerRole = $participant['role'] ?? Message::ROLE_MOTHER;
-        $otherRole = $viewerRole === Message::ROLE_MOTHER
-            ? Message::ROLE_PROGRAM_STAFF
-            : Message::ROLE_MOTHER;
-        $otherModel = $otherRole === Message::ROLE_MOTHER
-            ? $conversation->mother
-            : $conversation->programStaff;
+        $otherRole = $this->receiverForConversation($conversation, $viewerRole)['role'];
+        $otherModel = match ($otherRole) {
+            Message::ROLE_MOTHER => $conversation->mother,
+            Message::ROLE_DSWD_STAFF => $conversation->dswdStaff,
+            default => $conversation->programStaff,
+        };
         $lastMessage = $conversation->lastMessage;
 
         return [
@@ -176,7 +204,7 @@ trait AuthorizesConsultations
             'participant' => $this->profilePayload($otherModel, $otherRole),
             'mother' => $this->profilePayload($conversation->mother, Message::ROLE_MOTHER),
             'program_staff' => $this->profilePayload($conversation->programStaff, Message::ROLE_PROGRAM_STAFF),
-            'risk' => $this->riskPayload($conversation->mother),
+            'risk' => $conversation->dswd_staff_id ? null : $this->riskPayload($conversation->mother),
             'latest_message' => $lastMessage ? $this->messagePreview($lastMessage) : 'No messages yet',
             'latest_message_time' => $lastMessage?->created_at?->format('g:i A') ?? '',
             'latest_message_iso' => $lastMessage?->created_at?->toIso8601String(),
@@ -214,7 +242,7 @@ trait AuthorizesConsultations
             'attachment_duration' => $message->is_unsent ? null : $message->attachment_duration,
             'attachment_url' => $message->is_unsent || ! $message->attachment_path
                 ? null
-                : route('consultation.messages.attachment', $message),
+                : route(($participant['role'] === Message::ROLE_DSWD_STAFF ? 'dswd.messaging.' : 'consultation.').'messages.attachment', $message),
             'is_read' => $message->is_read,
             'read_at' => $message->read_at?->toIso8601String(),
             'is_unsent' => $message->is_unsent,
@@ -289,7 +317,7 @@ trait AuthorizesConsultations
 
     protected function profilePayload(?object $model, string $role): array
     {
-        $name = $model?->full_name ?: $this->roleLabel($role);
+        $name = ($role === Message::ROLE_DSWD_STAFF ? $model?->name : $model?->full_name) ?: $this->roleLabel($role);
         $contactNumber = trim((string) ($model?->contact_number ?? ''));
         $smsUrl = $this->smsUrlForContact($contactNumber);
 
@@ -365,6 +393,9 @@ trait AuthorizesConsultations
 
     protected function participantName(Conversation $conversation, int $id, string $role): string
     {
+        if ($role === Message::ROLE_DSWD_STAFF && $conversation->dswd_staff_id === $id) {
+            return $conversation->dswdStaff?->name ?: '4Ps Staff';
+        }
         if ($role === Message::ROLE_MOTHER && $conversation->mother_id === $id) {
             return $conversation->mother?->full_name ?: 'Mother';
         }
@@ -378,7 +409,11 @@ trait AuthorizesConsultations
 
     protected function roleLabel(string $role): string
     {
-        return $role === Message::ROLE_PROGRAM_STAFF ? 'Program Staff' : 'Mother';
+        return match ($role) {
+            Message::ROLE_PROGRAM_STAFF => 'Program Staff',
+            Message::ROLE_DSWD_STAFF => '4Ps Staff',
+            default => 'Mother',
+        };
     }
 
     protected function initials(string $name): string

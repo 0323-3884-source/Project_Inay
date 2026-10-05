@@ -27,7 +27,7 @@ class ChatPresence
             }
         } elseif (isset($model->id)) {
             $class = class_basename($model);
-            $roleKey = strtolower($class);
+            $roleKey = $model instanceof \App\Models\DswdStaff ? 'dswd_staff' : strtolower($class);
             if (Cache::has("user-presence:{$roleKey}:{$model->id}")) {
                 return true;
             }

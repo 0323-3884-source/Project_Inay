@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Consultation - Project INAY')
-@section('portal_title', 'Consultation')
+@section('title', isset($dswdMessaging) ? 'Messaging - Project INAY' : 'Consultation - Project INAY')
+@section('portal_title', $contactTitle ?? (isset($dswdMessaging) ? 'Messaging' : 'Consultation'))
 @section('body_class', 'consultation-body')
 
 @push('styles')
@@ -13,6 +13,7 @@
 @endpush
 
 @php
+    $messagingPrefix = isset($dswdMessaging) ? 'dswd.messaging.' : 'consultation.';
     $iconSearch = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
     $iconPhone = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.6 1.9Z"/></svg>';
     $iconSms = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 8h8"/><path d="M8 12h5"/></svg>';
@@ -27,25 +28,26 @@
     <section
         class="consultation-page consultation-page-mother"
         data-consultation-root
-        data-current-role="mother"
+        data-contact-role="{{ $contactRole ?? '' }}"
+        data-current-role="{{ isset($dswdMessaging) ? 'dswd_staff' : 'mother' }}"
         data-staff-tools="false"
         data-initial-conversation-id="{{ (int) request('conversation') }}"
-        data-conversations-url="{{ route('consultation.conversations.index') }}"
-        data-messages-url-template="{{ route('consultation.conversations.messages.index', ['conversation' => '__CONVERSATION__']) }}"
-        data-send-url-template="{{ route('consultation.conversations.messages.store', ['conversation' => '__CONVERSATION__']) }}"
-        data-read-url-template="{{ route('consultation.conversations.read', ['conversation' => '__CONVERSATION__']) }}"
-        data-unsend-url-template="{{ route('consultation.messages.unsend', ['message' => '__MESSAGE__']) }}"
+        data-conversations-url="{{ route($messagingPrefix.'conversations.index') }}"
+        data-messages-url-template="{{ route($messagingPrefix.'conversations.messages.index', ['conversation' => '__CONVERSATION__']) }}"
+        data-send-url-template="{{ route($messagingPrefix.'conversations.messages.store', ['conversation' => '__CONVERSATION__']) }}"
+        data-read-url-template="{{ route($messagingPrefix.'conversations.read', ['conversation' => '__CONVERSATION__']) }}"
+        data-unsend-url-template="{{ route($messagingPrefix.'messages.unsend', ['message' => '__MESSAGE__']) }}"
         data-csrf="{{ csrf_token() }}"
     >
         <header class="consultation-page-heading consultation-page-heading--compact">
-            <p>MOTHER PORTAL</p>
-            <span>Chat securely with your assigned Program Staff.</span>
+            <p>{{ isset($dswdMessaging) ? 'DSWD / 4Ps STAFF PORTAL' : 'MOTHER PORTAL' }}</p>
+            <span>{{ isset($dswdMessaging) ? 'Message 4Ps beneficiaries and Program Staff.' : 'Chat securely with your assigned Program Staff.' }}</span>
         </header>
 
         <div class="consultation-workspace">
-            <aside class="consultation-sidebar" aria-label="Program Staff conversations">
+            <aside class="consultation-sidebar" aria-label="Messaging contacts">
                 <div class="consultation-sidebar-head">
-                    <strong>PROGRAM STAFF</strong>
+                    <strong>{{ $contactTitle ?? 'CONVERSATIONS' }}</strong>
                     <span data-total-unread>0</span>
                 </div>
                 <label class="consultation-search">
@@ -62,8 +64,8 @@
                     <button class="consultation-mobile-back" type="button" data-mobile-back aria-label="Back to conversations">{!! $iconBack !!}</button>
                     <span class="consultation-avatar" data-selected-initials>IN</span>
                     <div class="consultation-selected-copy">
-                        <h2 data-selected-name>Select Program Staff</h2>
-                        <p><span data-selected-role>Program Staff</span> <b>&middot;</b> <span data-selected-status>Offline</span></p>
+                        <h2 data-selected-name>Select a contact</h2>
+                        <p><span data-selected-role></span> <b>&middot;</b> <span data-selected-status>Offline</span></p>
                     </div>
                     <div class="consultation-call-actions">
                         <button type="button" data-phone-button aria-label="Call contact" title="Call contact" disabled>{!! $iconPhone !!}</button>
@@ -74,8 +76,8 @@
 
                 <div class="consultation-messages" data-message-list>
                     <div class="consultation-empty">
-                        <strong>Select Program Staff to start consultation.</strong>
-                        <span>Your assigned staff conversations will appear here.</span>
+                        <strong>Select a contact to start messaging.</strong>
+                        <span>Your available conversations will appear here.</span>
                     </div>
                 </div>
 

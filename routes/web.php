@@ -197,6 +197,16 @@ Route::prefix('admin-staff-messages')->name('admin-staff-messages.')->group(func
 });
 
 
+Route::prefix('dswd/messaging')->name('dswd.messaging')->middleware('dswd.auth')->group(function () {
+    Route::get('/', [ConsultationController::class, 'dswd']);
+    Route::get('/conversations', [ConsultationController::class, 'conversations'])->name('.conversations.index');
+    Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index'])->name('.conversations.messages.index');
+    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->name('.conversations.messages.store');
+    Route::post('/conversations/{conversation}/read', [MessageController::class, 'markRead'])->name('.conversations.read');
+    Route::post('/messages/{message}/unsend', [MessageController::class, 'unsend'])->name('.messages.unsend');
+    Route::get('/messages/{message}/attachment', [MessageController::class, 'attachment'])->name('.messages.attachment');
+});
+
 Route::prefix('dswd')->name('dswd.')->middleware('dswd.auth')->controller(\App\Http\Controllers\DswdController::class)->group(function () {
     Route::get('/', fn () => redirect()->route('dswd.dashboard'))->name('home');
     Route::get('/dashboard', [\App\Http\Controllers\F1kdController::class, 'dashboard'])->name('dashboard');

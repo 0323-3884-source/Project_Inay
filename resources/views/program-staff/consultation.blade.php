@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Program Staff Consultation - Project INAY')
-@section('portal_title', 'Program Staff Consultation')
+@section('portal_title', $contactTitle ?? 'Program Staff Consultation')
 @section('body_class', 'consultation-body')
 
 @push('styles')
@@ -27,6 +27,7 @@
     <section
         class="consultation-page consultation-page-staff"
         data-consultation-root
+        data-contact-role="{{ $contactRole ?? '' }}"
         data-current-role="program_staff"
         data-staff-tools="true"
         data-initial-conversation-id="{{ (int) request('conversation') }}"
@@ -43,9 +44,9 @@
         </header>
 
         <div class="consultation-workspace">
-            <aside class="consultation-sidebar" aria-label="Mother conversations">
+            <aside class="consultation-sidebar" aria-label="Mother and 4Ps Staff conversations">
                 <div class="consultation-sidebar-head">
-                    <strong>MOTHERS</strong>
+                    <strong>{{ $contactTitle ?? 'CONVERSATIONS' }}</strong>
                     <span data-total-unread>0</span>
                 </div>
                 <label class="consultation-search">

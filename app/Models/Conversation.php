@@ -11,6 +11,7 @@ class Conversation extends Model
     protected $fillable = [
         'mother_id',
         'program_staff_id',
+        'dswd_staff_id',
         'last_message_id',
         'last_message_at',
     ];
@@ -35,6 +36,11 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    public function dswdStaff(): BelongsTo
+    {
+        return $this->belongsTo(DswdStaff::class, 'dswd_staff_id');
     }
 
     public function lastMessage(): BelongsTo

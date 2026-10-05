@@ -7016,7 +7016,10 @@
             'icon' => 'message',
             'active' => request()->routeIs('mother.consultation'),
             'children' => [
-                ['label' => 'Consultation', 'icon' => 'message', 'href' => route('mother.consultation'), 'active' => request()->routeIs('mother.consultation')],
+                ['label' => 'Health Worker', 'icon' => 'users', 'href' => route('mother.consultation', ['contacts' => 'program_staff']), 'active' => request()->routeIs('mother.consultation') && request('contacts') === 'program_staff'],
+                ...($motherRecord?->is_4ps_beneficiary ? [
+                    ['label' => 'DSWD Staff', 'icon' => 'users', 'href' => route('mother.consultation', ['contacts' => 'dswd_staff']), 'active' => request()->routeIs('mother.consultation') && request('contacts') === 'dswd_staff'],
+                ] : []),
             ],
         ],
     ];
@@ -7030,8 +7033,9 @@
             'icon' => 'message',
             'active' => request()->routeIs('staff.consultation') || request()->routeIs('staff.coordination') || request()->routeIs('staff.admin-messages'),
             'children' => [
-                ['label' => 'Consultation', 'icon' => 'message', 'href' => route('staff.consultation'), 'active' => request()->routeIs('staff.consultation')],
+                ['label' => 'Consultation', 'icon' => 'message', 'href' => route('staff.consultation'), 'active' => request()->routeIs('staff.consultation') && ! request('contacts')],
                 ['label' => 'Staff Coordination', 'icon' => 'users', 'href' => route('staff.coordination'), 'active' => request()->routeIs('staff.coordination')],
+                ['label' => 'DSWD Staff', 'icon' => 'users', 'href' => route('staff.consultation', ['contacts' => 'dswd_staff']), 'active' => request()->routeIs('staff.consultation') && request('contacts') === 'dswd_staff'],
                 ['label' => 'Admin Messages', 'icon' => 'message', 'href' => route('staff.admin-messages'), 'active' => request()->routeIs('staff.admin-messages')],
             ],
         ],
@@ -7039,13 +7043,23 @@
     ];
     $portalNavItems = $isStaffPortal ? $staffNavItems : $motherNavItems;
     if ($isDswdPortal) {
-        $pageTitle = html_entity_decode(trim($__env->yieldContent('heading')), ENT_QUOTES, 'UTF-8') ?: 'Dashboard Overview';
+        $pageTitle = html_entity_decode(trim($__env->yieldContent('heading')), ENT_QUOTES, 'UTF-8') ?: ($__env->yieldContent('portal_title') ?: 'Dashboard Overview');
         $portalKicker = 'DSWD / 4Ps Staff Portal';
         $portalBrandTitle = 'Project INAY';
         $portalBrandSubtitle = 'DSWD / 4Ps Staff';
         $portalRoleLabel = 'DSWD / 4Ps Staff';
         $portalNavItems = [];
-        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['f1kd.index', 'F1KD Monitoring', 'users'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['f1kd.reports', 'Monthly F1KD Reports', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+        foreach ([['dashboard', 'Dashboard', 'dashboard'], ['messaging', 'Messaging', 'message'], ['f1kd.index', 'F1KD Monitoring', 'users'], ['beneficiaries', '4Ps Beneficiaries', 'users'], ['statistics', '4Ps Statistics', 'report'], ['f1kd.reports', 'Monthly F1KD Reports', 'report'], ['reports', 'Reports', 'report'], ['evaluation', 'System Evaluation', 'shield'], ['profile', 'Profile', 'user']] as [$route, $label, $icon]) {
+            if ($route === 'messaging') {
+                $portalNavItems[] = [
+                    'label' => 'Messages', 'icon' => 'message', 'active' => request()->routeIs('dswd.messaging*'),
+                    'children' => [
+                        ['label' => '4Ps Beneficiaries', 'icon' => 'users', 'href' => route('dswd.messaging', ['contacts' => 'mother']), 'active' => request()->routeIs('dswd.messaging') && request('contacts') === 'mother'],
+                        ['label' => 'Program Staff', 'icon' => 'users', 'href' => route('dswd.messaging', ['contacts' => 'program_staff']), 'active' => request()->routeIs('dswd.messaging') && request('contacts') === 'program_staff'],
+                    ],
+                ];
+                continue;
+            }
             $portalNavItems[] = ['label' => $label, 'icon' => $icon, 'href' => route('dswd.'.$route), 'active' => request()->routeIs('dswd.'.$route, 'dswd.'.$route.'.*') || ($route === 'f1kd.index' && request()->routeIs('dswd.f1kd.show'))];
         }
     }

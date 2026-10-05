@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesConsultations;
 use App\Models\Conversation;
+use App\Models\DswdStaff;
+use App\Models\Mother;
+use App\Models\ProgramStaff;
 use App\Models\Message;
 use App\Models\StaffMotherCasefile;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +18,47 @@ class ConsultationController extends Controller
 {
     use AuthorizesConsultations;
 
+    public function dswd(Request $request): View
+    {
+        return view('mother.consultation', ['dswdMessaging' => true] + $this->contactSection($request));
+    }
+
+    private function contactSection(Request $request): array
+    {
+        $data = $request->validate(['contacts' => ['nullable', 'in:mother,program_staff,dswd_staff']]);
+        $contactRole = $data['contacts'] ?? '';
+        $contactTitle = match ($contactRole) {
+            'mother' => '4Ps Beneficiaries',
+            'program_staff' => 'Program Staff',
+            'dswd_staff' => 'DSWD Staff',
+            default => null,
+        };
+        return compact('contactRole', 'contactTitle');
+    }
+
+    private function ensureDswdConversations(array $participant): void
+    {
+        if ($participant['role'] === Message::ROLE_DSWD_STAFF) {
+            foreach (Mother::where('is_4ps_beneficiary', true)->pluck('id') as $id) {
+                Conversation::firstOrCreate(['dswd_staff_id' => $participant['id'], 'mother_id' => $id, 'program_staff_id' => null]);
+            }
+            foreach (ProgramStaff::pluck('id') as $id) {
+                Conversation::firstOrCreate(['dswd_staff_id' => $participant['id'], 'program_staff_id' => $id, 'mother_id' => null]);
+            }
+            return;
+        }
+        if ($participant['role'] === Message::ROLE_MOTHER && ! Mother::find($participant['id'])?->is_4ps_beneficiary) {
+            return;
+        }
+        foreach (DswdStaff::where('is_active', true)->pluck('id') as $id) {
+            Conversation::firstOrCreate([
+                'dswd_staff_id' => $id,
+                'mother_id' => $participant['role'] === Message::ROLE_MOTHER ? $participant['id'] : null,
+                'program_staff_id' => $participant['role'] === Message::ROLE_PROGRAM_STAFF ? $participant['id'] : null,
+            ]);
+        }
+    }
+
     public function staff(Request $request): View|RedirectResponse
     {
         $staff = $this->currentProgramStaff($request);
@@ -25,7 +69,7 @@ class ConsultationController extends Controller
 
         $this->ensureConversationsForStaff($staff);
 
-        return view('program-staff.consultation', compact('staff'));
+        return view('program-staff.consultation', compact('staff') + $this->contactSection($request));
     }
 
     public function mother(Request $request): View|RedirectResponse
@@ -35,6 +79,8 @@ class ConsultationController extends Controller
         if (! $mother) {
             return redirect()->route('login')->with('status', 'Please login as Mother first.');
         }
+
+        abort_if($request->query('contacts') === 'dswd_staff' && ! $mother->is_4ps_beneficiary, 403);
 
         $this->ensureConversationsForMother($mother);
 
@@ -49,7 +95,7 @@ class ConsultationController extends Controller
             return redirect()->route('mother.consultation', ['conversation' => $conversation->id]);
         }
 
-        return view('mother.consultation', compact('mother'));
+        return view('mother.consultation', compact('mother') + $this->contactSection($request));
     }
 
     public function conversations(Request $request): JsonResponse
@@ -75,7 +121,7 @@ class ConsultationController extends Controller
                 ->where('program_staff_id', $staff->id)
                 ->whereIn('mother_id', $motherIds)
                 ->get();
-        } else {
+        } elseif ($participant['role'] === Message::ROLE_MOTHER) {
             $mother = $this->currentMother($request);
             $this->ensureConversationsForMother($mother);
             $staffIds = StaffMotherCasefile::where('mother_id', $mother->id)->pluck('staff_id');
@@ -90,11 +136,29 @@ class ConsultationController extends Controller
                 ->where('mother_id', $mother->id)
                 ->whereIn('program_staff_id', $staffIds)
                 ->get();
+        } else {
+            $conversations = collect();
         }
 
-        $conversations = $conversations
+        $this->ensureDswdConversations($participant);
+        $participantColumn = match ($participant['role']) {
+            Message::ROLE_DSWD_STAFF => 'dswd_staff_id',
+            Message::ROLE_MOTHER => 'mother_id',
+            default => 'program_staff_id',
+        };
+        $dswdConversations = Conversation::with(['mother', 'programStaff', 'dswdStaff', 'lastMessage'])
+            ->whereNotNull('dswd_staff_id')->where($participantColumn, $participant['id'])->get()
+            ->filter(fn (Conversation $conversation) => $this->authorizeConversation($request, $conversation));
+
+        $conversations = $conversations->concat($dswdConversations)
             ->sortByDesc(fn (Conversation $conversation): int => ($conversation->last_message_at ?? $conversation->updated_at)?->timestamp ?? 0)
             ->values();
+        $contactRole = $this->contactSection($request)['contactRole'];
+        if ($contactRole !== '') {
+            $conversations = $conversations->filter(fn (Conversation $conversation) =>
+                $this->receiverForConversation($conversation, $participant['role'])['role'] === $contactRole
+            )->values();
+        }
         $selectedId = (int) $request->query('selected', 0);
         $selectedConversation = $selectedId > 0
             ? $conversations->firstWhere('id', $selectedId)

@@ -8,9 +8,15 @@
     const role = config.dataset.role;
     const authenticated = ['mother', 'staff'].includes(role);
     const status = document.createElement('div');
+    status.className = 'pwa-status';
     status.setAttribute('role', 'status');
     status.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;z-index:10000;margin:auto;width:fit-content;max-width:calc(100% - 24px);padding:10px 16px;border-radius:8px;background:#10213f;color:white;font:13px/1.5 system-ui;box-shadow:0 3px 14px #0002';
-    document.body.append(status);
+    const consultation = document.querySelector('[data-consultation-root]');
+    if (consultation) {
+        consultation.prepend(status);
+    } else {
+        document.body.append(status);
+    }
     let onlineStatus = '';
     function showStatus() {
         status.textContent = navigator.onLine ? onlineStatus : 'Offline — showing saved information. Changes, messages and online videos need internet.';

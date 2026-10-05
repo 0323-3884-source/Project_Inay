@@ -142,9 +142,11 @@ class MessageController extends Controller
                 $senderName.': '.AppNotificationService::preview($body, $fallback),
                 [
                     'conversation_id' => $conversation->id,
-                    'url' => $receiver['role'] === Message::ROLE_MOTHER
-                        ? route('mother.consultation', ['conversation' => $conversation->id])
-                        : route('staff.consultation', ['conversation' => $conversation->id]),
+                    'url' => route(match ($receiver['role']) {
+                        Message::ROLE_MOTHER => 'mother.consultation',
+                        Message::ROLE_DSWD_STAFF => 'dswd.messaging',
+                        default => 'staff.consultation',
+                    }, ['conversation' => $conversation->id]),
                 ]
             );
         } catch (\Throwable $exception) {

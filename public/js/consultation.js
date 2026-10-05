@@ -58,6 +58,32 @@
     const smsButton = root.querySelector('[data-sms-button]');
     const mobileBack = root.querySelector('[data-mobile-back]');
 
+    // The visual viewport also shrinks when the on-screen keyboard opens.
+    const mobileViewport = window.matchMedia('(max-width: 760px)');
+    const portalHeader = document.querySelector('.portal-header');
+    let viewportFrame = 0;
+    const syncViewport = () => {
+        window.cancelAnimationFrame(viewportFrame);
+        viewportFrame = window.requestAnimationFrame(() => {
+            const viewport = window.visualViewport;
+            if (viewport && viewport.scale !== 1) return;
+            document.body.style.setProperty('--consultation-viewport-height', `${viewport?.height || window.innerHeight}px`);
+            if (portalHeader) {
+                document.body.style.setProperty('--consultation-header-height', `${portalHeader.getBoundingClientRect().height}px`);
+            }
+        });
+    };
+    window.addEventListener('resize', syncViewport, { passive: true });
+    window.visualViewport?.addEventListener('resize', syncViewport, { passive: true });
+    if (portalHeader && 'ResizeObserver' in window) {
+        new ResizeObserver(syncViewport).observe(portalHeader);
+    }
+    if (mobileViewport.matches && quickActions && quickActionsToggle) {
+        quickActions.hidden = true;
+        quickActionsToggle.setAttribute('aria-expanded', 'false');
+    }
+    syncViewport();
+
     const recorderLimitMs = 120000;
 
     const templateUrl = (template, value) => template.replace(/__CONVERSATION__|__MESSAGE__|__CALL__/g, value);
@@ -163,8 +189,8 @@
 
         if (state.conversations.length === 0) {
             const empty = makeEl('div', 'consultation-empty');
-            const strong = makeEl('strong', null, hasStaffTools ? 'No assigned mothers yet.' : 'No assigned Program Staff yet.');
-            const span = makeEl('span', null, hasStaffTools ? 'Add mothers to your casefiles to begin consultation.' : 'Your assigned staff will appear here.');
+            const strong = makeEl('strong', null, 'No contacts available yet.');
+            const span = makeEl('span', null, 'Your available conversations will appear here.');
             empty.append(strong, span);
             list.append(empty);
             totalUnread.textContent = '0';
@@ -177,9 +203,20 @@
         const unreadTotal = state.conversations.reduce((sum, conversation) => sum + Number(conversation.unread_count || 0), 0);
         totalUnread.textContent = String(unreadTotal);
 
-        state.conversations.forEach((conversation) => {
+        const roleOrder = currentRole === 'mother' ? ['program_staff', 'dswd_staff'] : ['mother', 'program_staff', 'dswd_staff'];
+        const grouped = roleOrder.flatMap((role) => state.conversations.filter((conversation) => conversation.participant?.role === role));
+        let previousRole = null;
+        grouped.forEach((conversation) => {
             const participant = conversation.participant || {};
+            if (participant.role !== previousRole) {
+                const labels = { mother: currentRole === 'dswd_staff' ? '4Ps Beneficiaries' : 'Mothers', program_staff: 'Program Staff', dswd_staff: '4Ps Staff' };
+                const heading = makeEl('h3', 'consultation-group-heading', labels[participant.role]);
+                heading.dataset.contactGroup = participant.role;
+                list.append(heading);
+                previousRole = participant.role;
+            }
             const button = makeEl('button', 'consultation-thread');
+            button.dataset.contactRole = participant.role;
             button.type = 'button';
             button.dataset.conversationId = conversation.id;
             button.dataset.searchText = [
@@ -202,7 +239,7 @@
             top.append(makeEl('span', 'consultation-thread-name', participant.name || 'Consultation'));
 
             const meta = makeEl('span', 'consultation-thread-meta');
-            if (currentRole === 'program_staff') {
+            if (currentRole === 'program_staff' && conversation.risk) {
                 meta.append(makeEl('span', `consultation-risk is-${conversation.risk?.level || 'pending'}`, conversation.risk?.label || 'Pending'));
             }
             meta.append(
@@ -237,8 +274,8 @@
             presence.setAttribute('aria-hidden', 'true');
             selectedInitials.append(presence);
         }
-        selectedName.textContent = participant.name || (hasStaffTools ? 'Select a mother' : 'Select Program Staff');
-        selectedRole.textContent = participant.role_label || (hasStaffTools ? 'Mother' : 'Program Staff');
+        selectedName.textContent = participant.name || 'Select a contact';
+        selectedRole.textContent = participant.role_label || '';
         selectedStatus.textContent = participant.status_text || 'Offline';
 
         if (phoneButton) {
@@ -265,7 +302,7 @@
         if (!conversation) {
             const empty = makeEl('div', 'consultation-empty');
             empty.append(
-                makeEl('strong', null, hasStaffTools ? 'Select a mother to start consultation.' : 'Select Program Staff to start consultation.'),
+                makeEl('strong', null, 'Select a contact to start messaging.'),
                 makeEl('span', null, 'Messages will appear here.')
             );
             messageList.append(empty);
@@ -355,6 +392,9 @@
         list.querySelectorAll('[data-conversation-id]').forEach((button) => {
             button.hidden = term !== '' && !button.dataset.searchText.includes(term);
         });
+        list.querySelectorAll('[data-contact-group]').forEach((heading) => {
+            heading.hidden = !Array.from(list.querySelectorAll('[data-contact-role]')).some((button) => !button.hidden && button.dataset.contactRole === heading.dataset.contactGroup);
+        });
     };
 
     const updateConversationInState = (conversation) => {
@@ -384,9 +424,9 @@
     };
 
     const loadConversations = async () => {
-        const url = state.selectedId
-            ? `${root.dataset.conversationsUrl}?selected=${encodeURIComponent(state.selectedId)}`
-            : root.dataset.conversationsUrl;
+        const url = new URL(root.dataset.conversationsUrl, window.location.href);
+        if (state.selectedId) url.searchParams.set('selected', state.selectedId);
+        if (root.dataset.contactRole) url.searchParams.set('contacts', root.dataset.contactRole);
         const data = await fetchJson(url);
         const seen = new Set();
         state.conversations = (data.conversations || []).filter((conversation) => {

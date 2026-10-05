@@ -9,6 +9,7 @@ class Message extends Model
 {
     public const ROLE_MOTHER = 'mother';
     public const ROLE_PROGRAM_STAFF = 'program_staff';
+    public const ROLE_DSWD_STAFF = 'dswd_staff';
 
     public const TYPE_TEXT = 'text';
     public const TYPE_IMAGE = 'image';

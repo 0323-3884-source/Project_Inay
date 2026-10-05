@@ -17,6 +17,122 @@ class ConsultationModuleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_message_sidebar_sections_filter_contacts_and_hide_dswd_from_non_beneficiaries(): void
+    {
+        [$mother, $staff] = $this->makeAssignedPair();
+        \App\Models\DswdStaff::create(['name' => '4Ps Officer', 'email' => 'sections@example.test', 'password' => 'password123', 'is_active' => true]);
+        $dswdLink = route('mother.consultation', ['contacts' => 'dswd_staff']);
+        $this->withSession($this->motherSession($mother))->get('/mother/consultation')
+            ->assertOk()->assertSee(route('mother.consultation', ['contacts' => 'program_staff']), false)->assertDontSee($dswdLink, false);
+        $this->get($dswdLink)->assertForbidden();
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $this->get($dswdLink)->assertOk()->assertSee('data-contact-role="dswd_staff"', false)->assertSee($dswdLink, false);
+        $this->getJson('/consultation/conversations?contacts=dswd_staff')
+            ->assertOk()->assertJsonCount(1, 'conversations')->assertJsonPath('conversations.0.participant.role', 'dswd_staff');
+        $this->getJson('/consultation/conversations?contacts=program_staff')
+            ->assertOk()->assertJsonCount(1, 'conversations')->assertJsonPath('conversations.0.participant.role', 'program_staff');
+        $this->withSession($this->staffSession($staff))->get('/staff/consultation?contacts=dswd_staff')
+            ->assertOk()->assertSee(route('staff.coordination'), false)->assertSee('data-contact-role="dswd_staff"', false);
+        $this->getJson('/consultation/conversations?contacts=dswd_staff')
+            ->assertOk()->assertJsonCount(1, 'conversations')->assertJsonPath('conversations.0.participant.role', 'dswd_staff');
+        $dswd = \App\Models\DswdStaff::firstOrFail();
+        $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $dswd->id]);
+        foreach (['mother', 'program_staff'] as $role) {
+            $this->get('/dswd/messaging?contacts='.$role)->assertOk()->assertSee('data-contact-role="'.$role.'"', false);
+            $this->getJson('/dswd/messaging/conversations?contacts='.$role)
+                ->assertOk()->assertJsonCount(1, 'conversations')->assertJsonPath('conversations.0.participant.role', $role);
+        }
+    }
+
+    public function test_four_ps_contacts_are_only_available_to_beneficiaries_and_program_staff(): void
+    {
+        [$mother, $staff] = $this->makeAssignedPair();
+        $dswd = \App\Models\DswdStaff::create(['name' => '4Ps Officer', 'email' => 'dswd@example.test', 'password' => 'password123', 'is_active' => true]);
+        $this->withSession($this->motherSession($mother))->getJson('/consultation/conversations')
+            ->assertOk()->assertJsonCount(1, 'conversations')->assertJsonMissing(['role' => 'dswd_staff']);
+
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $response = $this->getJson('/consultation/conversations')->assertOk()->assertJsonCount(2, 'conversations');
+        $contact = collect($response->json('conversations'))->firstWhere('participant.role', 'dswd_staff');
+        $this->assertSame('4Ps Officer', $contact['participant']['name']);
+        $this->assertNull($contact['risk']);
+        $this->getJson('/consultation/conversations')->assertJsonCount(2, 'conversations');
+        $this->assertDatabaseCount('conversations', 2);
+
+        $this->withSession($this->staffSession($staff))->getJson('/consultation/conversations')
+            ->assertOk()->assertJsonCount(2, 'conversations')->assertJsonFragment(['role' => 'dswd_staff']);
+
+        $mother->update(['is_4ps_beneficiary' => false]);
+        $this->withSession($this->motherSession($mother))->getJson('/consultation/conversations')
+            ->assertJsonMissing(['role' => 'dswd_staff']);
+        $this->getJson('/consultation/conversations/'.$contact['id'].'/messages')->assertForbidden();
+        $this->postJson('/consultation/conversations/'.$contact['id'].'/messages', ['message' => 'Blocked'])->assertForbidden();
+        $this->postJson('/consultation/conversations/'.$contact['id'].'/read')->assertForbidden();
+
+        $dswd->update(['is_active' => false]);
+        $this->withSession($this->staffSession($staff))->getJson('/consultation/conversations')
+            ->assertJsonMissing(['role' => 'dswd_staff']);
+    }
+
+    public function test_dswd_can_message_beneficiaries_and_program_staff_without_access_to_clinical_chats(): void
+    {
+        [$mother, $staff] = $this->makeAssignedPair();
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $otherMother = Mother::create($this->motherAttributes('Non', 'Beneficiary', 'non@example.test'));
+        $dswd = \App\Models\DswdStaff::create(['name' => '4Ps Officer', 'email' => 'dswd@example.test', 'password' => 'password123', 'is_active' => true]);
+        $this->withSession($this->motherSession($mother))->getJson('/consultation/conversations')->assertOk();
+        $clinical = Conversation::whereNull('dswd_staff_id')->firstOrFail();
+        $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $dswd->id, 'auth_name' => $dswd->name]);
+        $this->get('/dswd/messaging')->assertOk()->assertSee('Messaging')->assertSee('data-current-role="dswd_staff"', false);
+        $contacts = $this->getJson('/dswd/messaging/conversations')->assertOk()->assertJsonCount(2, 'conversations')->json('conversations');
+        $this->assertEqualsCanonicalizing(['mother', 'program_staff'], array_column(array_column($contacts, 'participant'), 'role'));
+        $this->getJson('/dswd/messaging/conversations/'.$clinical->id.'/messages')->assertForbidden();
+        $this->getJson('/consultation/conversations')->assertForbidden();
+
+        foreach ($contacts as $contact) {
+            $this->postJson('/dswd/messaging/conversations/'.$contact['id'].'/messages', ['message' => 'Hello from DSWD'])
+                ->assertCreated()->assertJsonPath('message.sender_role', 'dswd_staff')
+                ->assertJsonPath('message.receiver_role', $contact['participant']['role'])
+                ->assertJsonPath('message.sender_name', '4Ps Officer');
+            $session = $contact['participant']['role'] === 'mother' ? $this->motherSession($mother) : $this->staffSession($staff);
+            $this->withSession($session)->getJson('/consultation/conversations/'.$contact['id'].'/messages')
+                ->assertOk()->assertJsonPath('messages.0.is_own', false)->assertJsonPath('messages.0.is_read', true);
+            $reply = $this->postJson('/consultation/conversations/'.$contact['id'].'/messages', ['message' => 'Reply'])
+                ->assertCreated()->assertJsonPath('message.receiver_role', 'dswd_staff')->json('message.id');
+            $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $dswd->id]);
+            $this->getJson('/dswd/messaging/conversations/'.$contact['id'].'/messages')->assertOk()->assertJsonCount(2, 'messages');
+            $this->postJson('/dswd/messaging/messages/'.$reply.'/unsend')->assertForbidden();
+        }
+        $this->assertDatabaseMissing('conversations', ['mother_id' => $otherMother->id, 'dswd_staff_id' => $dswd->id]);
+        $secondDswd = \App\Models\DswdStaff::create(['name' => 'Other Officer', 'email' => 'other-dswd@example.test', 'password' => 'password123', 'is_active' => true]);
+        $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $secondDswd->id])
+            ->getJson('/dswd/messaging/conversations/'.$contacts[0]['id'].'/messages')->assertForbidden();
+    }
+
+    public function test_dswd_message_attachments_and_unsend_obey_beneficiary_access(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        [$mother] = $this->makeAssignedPair();
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $dswd = \App\Models\DswdStaff::create(['name' => '4Ps Officer', 'email' => 'dswd@example.test', 'password' => 'password123', 'is_active' => true]);
+        $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $dswd->id]);
+        $contacts = $this->getJson('/dswd/messaging/conversations')->assertOk()->json('conversations');
+        $contact = collect($contacts)->firstWhere('participant.role', 'mother');
+        $message = $this->postJson('/dswd/messaging/conversations/'.$contact['id'].'/messages', [
+            'attachment' => UploadedFile::fake()->create('information.pdf', 10, 'application/pdf'),
+        ])->assertCreated()->json('message');
+        $this->assertStringContainsString('/dswd/messaging/messages/', $message['attachment_url']);
+        $this->get($message['attachment_url'])->assertOk();
+        $this->withSession($this->motherSession($mother))->get('/consultation/messages/'.$message['id'].'/attachment')->assertOk();
+        $mother->update(['is_4ps_beneficiary' => false]);
+        $this->get('/consultation/messages/'.$message['id'].'/attachment')->assertNotFound();
+        $this->withSession(['auth_role' => 'dswd_staff', 'auth_id' => $dswd->id])
+            ->get($message['attachment_url'])->assertNotFound();
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $this->postJson('/dswd/messaging/messages/'.$message['id'].'/unsend')->assertOk()->assertJsonPath('message.is_unsent', true);
+        $this->get($message['attachment_url'])->assertNotFound();
+    }
+
     public function test_consultation_keeps_same_email_mother_and_staff_accounts_separate(): void
     {
         [$mother, $staff] = $this->makeAssignedPair('shared@example.test');
