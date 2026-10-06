@@ -4,6 +4,17 @@
     const dialog = document.getElementById('mother-information-dialog');
     if (!button || !form || !dialog) return;
 
+    const fourPs = form.querySelector('[name="is_4ps_beneficiary"]');
+    const householdField = form.querySelector('[data-household-id-field]');
+    const syncHousehold = () => {
+        if (!fourPs || !householdField) return;
+        householdField.hidden = fourPs.value !== '1';
+        householdField.querySelector('input').disabled = fourPs.value !== '1';
+    };
+    fourPs?.addEventListener('change', syncHousehold);
+    form.addEventListener('reset', () => setTimeout(syncHousehold, 0));
+    syncHousehold();
+
     const close = () => {
         dialog.close();
     };

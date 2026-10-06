@@ -812,7 +812,7 @@
                         <tbody>
                             @foreach($filteredMaternalRows as $row)
                                 <tr>
-                                    <td><strong>{{ $row['name'] }}</strong><span class="report-code">{{ $row['code'] }} / {{ $row['recorded_label'] }}</span></td>
+                                    <td><strong>{{ $row['name'] }}</strong><span class="report-code">{{ $row['code'] }} / {{ $row['recorded_label'] }}</span>@if($row['household_id'])<span class="report-code">Household ID: {{ $row['household_id'] }}</span>@endif</td>
                                     <td>{{ $row['age'] ? $row['age'].' y/o' : 'Not provided' }}</td>
                                     <td>{{ $row['blood_pressure'] }}</td>
                                     <td>{{ $row['blood_sugar'] }}</td>

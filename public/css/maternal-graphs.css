@@ -1,12 +1,14 @@
-/* Keep chart labels readable at narrow widths by scrolling the plot itself. */
+/* Scale the entire plot and its labels to the available card width. */
 .casefile-summary-page .casefile-chart-card,
 .maternal-chart-card { min-width: 0; }
 .casefile-summary-page .casefile-chart-canvas,
 .maternal-chart-area[data-mother-chart] {
     display: block;
     min-width: 0;
+    width: 100%;
+    max-width: 100%;
     height: auto;
-    overflow-x: auto;
+    overflow: hidden;
     background: #f8fafc;
     border-radius: 8px;
 }
@@ -14,10 +16,41 @@
 .maternal-chart-area[data-mother-chart] > svg {
     display: block;
     width: 100%;
-    min-width: 640px;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     height: auto;
     aspect-ratio: 640 / 360;
     padding: 8px;
+}
+
+.maternal-column,
+.maternal-chart-card,
+.casefile-summary-page .casefile-chart-card { min-width: 0; }
+
+.maternal-bp-monitoring,
+.casefile-summary-page .casefile-bp-status { flex-wrap: wrap; }
+
+.maternal-bp-copy,
+.casefile-summary-page .casefile-bp-copy {
+    min-width: 0;
+    flex-basis: 220px;
+    overflow-wrap: anywhere;
+}
+
+.maternal-bp-readings,
+.casefile-summary-page .casefile-bp-readings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.maternal-bp-readings span,
+.casefile-summary-page .casefile-bp-readings span { min-width: 0; }
+
+.maternal-history-link > span:not(.maternal-history-icon),
+.casefile-summary-page .monitoring-history-trigger > span:not(.monitoring-history-icon) {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .casefile-summary-page .casefile-chart-canvas svg text,
 .maternal-chart-area[data-mother-chart] svg text {

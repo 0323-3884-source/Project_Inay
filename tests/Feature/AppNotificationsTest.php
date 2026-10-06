@@ -181,6 +181,7 @@ class AppNotificationsTest extends TestCase
             'age' => 26,
             'pregnancy_status' => 'pregnant',
             'is_4ps_beneficiary' => 'yes',
+            'four_ps_household_number' => '012345678-1-01234567',
             'privacy_policy' => '1',
         ];
 

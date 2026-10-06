@@ -89,11 +89,11 @@ class F1kdCompliance
     public function rows(array $filters = []): Collection
     {
         $month = CarbonImmutable::parse(($filters['month'] ?? now()->format('Y-m')).'-01');
-        $records = F1kdMonitoring::whereDate('reporting_month', $month)->get()->keyBy('subject_key');
+        $records = F1kdMonitoring::with(['recordedByStaff', 'verifiedByDswdStaff'])->whereDate('reporting_month', $month)->get()->keyBy('subject_key');
         $mothers = Mother::where('is_4ps_beneficiary', true)
             ->with(['casefileStaff:id,first_name,middle_name,last_name'])
             ->when(isset($filters['mother_id']), fn ($query) => $query->where('id', $filters['mother_id']))
-            ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status'])->keyBy('id');
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status', 'four_ps_household_number'])->keyBy('id');
         $children = Infant::whereIn('mother_id', $mothers->keys())
             ->get(['id', 'mother_id', 'full_name', 'sex', 'birth_date'])->keyBy('id');
         $rows = collect();
@@ -103,9 +103,17 @@ class F1kdCompliance
             $key = $child ? 'child-'.$child->id : 'mother-'.$mother->id;
             $classification = $child ? 'child' : 'pregnant';
             $checklist = $record?->checklist ?? $this->defaults($classification);
+            $author = $record?->dswd_verified_at ? $record->verifiedByDswdStaff : $record?->recordedByStaff;
+            $attendanceAuthor = $author ? (object) [
+                'id' => $author->id,
+                'name' => $record->dswd_verified_at ? $author->name : $author->full_name,
+                'role' => $record->dswd_verified_at ? 'DSWD Staff' : ($author->role ?: 'Program Staff'),
+                'is_dswd' => (bool) $record->dswd_verified_at,
+            ] : null;
             $rows->put($key, (object) [
                 'key' => $key, 'mother_id' => $mother->id, 'infant_id' => $child?->id,
-                'household' => 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
+                'household_id' => $mother->four_ps_household_number,
+                'household' => $mother->four_ps_household_number ?: 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'beneficiary_id' => $child ? 'CHILD-'.$child->id : 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'name' => $child?->full_name ?? $mother->full_name, 'sex' => $child?->sex ?? 'Female',
                 'mother_name' => $mother->full_name,
@@ -113,6 +121,7 @@ class F1kdCompliance
                 'assigned_staff'=>$mother->casefileStaff->pluck('full_name')->implode(', ') ?: 'Not assigned',
                 'registered_children'=>$children->where('mother_id', $mother->id)->values()->map(fn ($infant)=>(object)['id'=>$infant->id, 'name'=>$infant->full_name, 'birth_date'=>$infant->birth_date]),
                 'dswd_verified_at'=>$record?->dswd_verified_at,
+                'attendance_author'=>$attendanceAuthor,
                 'barangay' => $record ? ($record->barangay ?: 'Not recorded') : ($mother->barangay ?: 'Not recorded'),
                 'municipality_city' => $record ? ($record->municipality_city ?: 'Not recorded') : ($mother->municipality_city ?: 'Not recorded'),
                 'classification' => $classification, 'month' => $month->format('Y-m'),
@@ -173,6 +182,7 @@ class F1kdCompliance
         $row->month = $month;
         $row->attendance_status = $row->remark_code = $row->updated_at = null;
         $row->dswd_verified_at = null;
+        $row->attendance_author = null;
         $row->status = 'verification';
         return $row;
     }

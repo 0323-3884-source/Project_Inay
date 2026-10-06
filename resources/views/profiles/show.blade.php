@@ -33,6 +33,9 @@
             <dl class="account-facts"><div><dt>Email</dt><dd>{{ $account->email }}</dd></div>
             @if ($isMother)
                 <div><dt>4Ps beneficiary</dt><dd>{{ $account->is_4ps_beneficiary ? 'Yes' : 'No' }}</dd></div>
+                @if($account->is_4ps_beneficiary)
+                    <div><dt>Household ID</dt><dd>{{ $account->four_ps_household_number ?: 'Not recorded' }}</dd></div>
+                @endif
                 <div><dt>Blood type</dt><dd>{{ $account->blood_type ?: 'Not recorded' }}</dd></div>
             @else
                 <div><dt>Healthcare Worker ID</dt><dd>{{ $account->staff_id }}</dd></div>
@@ -55,6 +58,12 @@
                     @endforeach
                     <label>Contact number<input type="tel" name="contact_number" value="{{ old('contact_number', $account->contact_number) }}" maxlength="25" autocomplete="tel" required></label>
                     @if ($isMother)<label>Barangay<input name="barangay" value="{{ old('barangay', $account->barangay) }}" maxlength="255" required></label>@endif
+                    @if($isMother && $account->is_4ps_beneficiary)
+                        <label for="profile-household-id">4Ps Household ID
+                            <input id="profile-household-id" type="text" name="four_ps_household_number" value="{{ old('four_ps_household_number', $account->four_ps_household_number) }}" maxlength="32" pattern="[0-9]+(\-[0-9]+)*" size="20" placeholder="e.g. 012345678-1-01234567" aria-describedby="profile-household-help" required>
+                            <small id="profile-household-help">Enter the full household ID, including leading zeros and hyphens (e.g. 012345678-1-01234567). The field fits 18 digits plus hyphens.</small>
+                        </label>
+                    @endif
                 </div>
                 <button class="account-button is-primary" type="submit">Save Changes</button>
             </form>

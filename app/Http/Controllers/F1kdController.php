@@ -57,10 +57,31 @@ class F1kdController extends Controller
         $filters = $this->compliance->filters($request);
         $beneficiary = $this->compliance->beneficiary($subject, $filters['month']);
         abort_unless($beneficiary, 404);
-        $history = F1kdMonitoring::where('subject_key', $subject)
+        $history = F1kdMonitoring::with(['recordedByStaff', 'verifiedByDswdStaff'])->where('subject_key', $subject)
             ->orderByDesc('reporting_month')->paginate(12)->withQueryString();
 
-        return view('dswd.f1kd.show', compact('beneficiary', 'history', 'filters'));
+        $childGrowth = null;
+        if ($beneficiary->classification === 'child') {
+            $child = \App\Models\Infant::where('mother_id', $beneficiary->mother_id)->findOrFail($beneficiary->infant_id);
+            $through = min(now()->toDateString(), $beneficiary->month.'-'.\Carbon\CarbonImmutable::parse($beneficiary->month.'-01')->daysInMonth);
+            $records = $child->growthRecords()->select(['id', 'infant_id', 'recorded_by_staff_id', 'measured_at', 'age_months', 'weight', 'height'])
+                ->whereDate('measured_at', '<=', $through)->with('recorder:id,first_name,middle_name,last_name')->get();
+            $growthHistory = $records->sortByDesc(fn ($record) => $record->measured_at->format('Y-m-d').'-'.str_pad((string) $record->id, 20, '0', STR_PAD_LEFT))->values()->map(fn ($record) => (object) [
+                'age' => \App\Support\ChildProfileDisplay::months($child->getRawOriginal('birth_date'), $record->getRawOriginal('measured_at')),
+                'weight' => $record->weight, 'height' => $record->height,
+                'date' => $record->measured_at, 'recorder' => $record->recorder?->full_name ?: 'Not recorded',
+            ]);
+            $growthPage = max(1, (int) $request->query('growth_page', 1));
+            $growthPage = min($growthPage, max(1, (int) ceil($growthHistory->count() / 5)));
+            $childGrowth = [
+                'weight' => \App\Support\ChildProfileDisplay::chart($records, 'weight', $child->getRawOriginal('birth_date')),
+                'height' => \App\Support\ChildProfileDisplay::chart($records, 'height', $child->getRawOriginal('birth_date')),
+                'history' => new LengthAwarePaginator($growthHistory->forPage($growthPage, 5)->values(), $growthHistory->count(), 5, $growthPage, [
+                    'path' => $request->url(), 'query' => $request->query(), 'pageName' => 'growth_page', 'fragment' => 'growth-history',
+                ]),
+            ];
+        }
+        return view('dswd.f1kd.show', compact('beneficiary', 'history', 'filters', 'childGrowth'));
     }
 
     public function reports(Request $request)
@@ -107,7 +128,7 @@ class F1kdController extends Controller
         abort_unless($beneficiary, 404);
         $this->authorizeStaff($request, $beneficiary->mother_id);
 
-        $history = F1kdMonitoring::where('subject_key', $subject)->orderByDesc('reporting_month')->paginate(12)->withQueryString();
+        $history = F1kdMonitoring::with(['recordedByStaff', 'verifiedByDswdStaff'])->where('subject_key', $subject)->orderByDesc('reporting_month')->paginate(12)->withQueryString();
         return view('dswd.f1kd.edit', compact('beneficiary', 'history'));
     }
 

@@ -53,6 +53,9 @@ class ProfileController extends Controller
         ];
         if ($account instanceof Mother) {
             $rules['barangay'] = ['required', 'string', 'max:255'];
+            if ($account->is_4ps_beneficiary) {
+                $rules['four_ps_household_number'] = ['sometimes', 'required', 'string', 'max:32', 'regex:/^[0-9]+(?:-[0-9]+)*$/'];
+            }
         }
         $account->update($request->validate($rules));
         $request->session()->put('auth_name', $account->full_name);

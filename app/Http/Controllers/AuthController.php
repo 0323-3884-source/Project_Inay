@@ -172,6 +172,7 @@ class AuthController extends Controller
             'location_accuracy' => ['nullable', 'integer', 'min:0'],
             'privacy_policy' => ['accepted'],
             'is_4ps_beneficiary' => ['required', Rule::in(['yes', 'no'])],
+            'four_ps_household_number' => ['exclude_unless:is_4ps_beneficiary,yes', 'required', 'string', 'max:32', 'regex:/^[0-9]+(?:-[0-9]+)*$/'],
         ]);
 
         $mother = Mother::create([
@@ -191,6 +192,7 @@ class AuthController extends Controller
             'location_longitude' => $validated['location_longitude'] ?? null,
             'location_accuracy' => $validated['location_accuracy'] ?? null,
             'is_4ps_beneficiary' => ($validated['is_4ps_beneficiary'] ?? 'no') === 'yes',
+            'four_ps_household_number' => $validated['four_ps_household_number'] ?? null,
         ]);
 
         $this->notifyProgramStaffOfNewMother($mother);
@@ -1148,6 +1150,7 @@ class AuthController extends Controller
             'blood_type' => ['nullable', Rule::in(self::BLOOD_TYPES)],
             'pregnancy_status' => ['nullable', Rule::in(self::PREGNANCY_STATUSES)],
             'is_4ps_beneficiary' => ['required', 'boolean'],
+            'four_ps_household_number' => ['nullable', 'string', 'max:32', 'regex:/^[0-9]+(?:-[0-9]+)*$/'],
         ]);
 
         $mother->update($validated);
@@ -1616,6 +1619,7 @@ class AuthController extends Controller
                 'mother' => $mother,
                 'code' => 'MAT-RH-'.str_pad((string) $mother->id, 3, '0', STR_PAD_LEFT),
                 'name' => $mother->full_name,
+                'household_id' => $mother->is_4ps_beneficiary ? ($mother->four_ps_household_number ?: 'Not recorded') : null,
                 'age' => $mother->age,
                 'barangay' => $mother->barangay ?: 'Not provided',
                 'pregnancy_status' => $mother->pregnancy_status ?: 'pending',

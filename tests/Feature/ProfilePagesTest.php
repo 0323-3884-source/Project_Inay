@@ -12,6 +12,29 @@ class ProfilePagesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_4ps_mother_can_edit_only_her_own_household_id_from_profile(): void
+    {
+        $base = ['first_name' => 'Ana', 'last_name' => 'Cruz', 'password' => bcrypt('password123'), 'contact_number' => '09171111111', 'barangay' => 'Concepcion'];
+        $mother = Mother::create($base + ['email' => 'household-profile@example.test', 'is_4ps_beneficiary' => true]);
+        $other = Mother::create($base + ['email' => 'other-household@example.test', 'is_4ps_beneficiary' => true, 'four_ps_household_number' => '000000000000000001']);
+        $this->withSession(['auth_role' => 'mother', 'auth_id' => $mother->id]);
+        $this->get('/mother/profile')->assertOk()->assertSee('name="four_ps_household_number"', false)->assertSee('Household ID');
+        $number = '012345678-1-01234567';
+        $payload = ['first_name' => 'Ana', 'last_name' => 'Cruz', 'contact_number' => '09171111111', 'barangay' => 'Concepcion', 'four_ps_household_number' => $number, 'id' => $other->id];
+        $this->patch('/mother/profile', $payload)->assertSessionHasNoErrors()->assertRedirect('/mother/profile');
+        $this->assertSame($number, $mother->fresh()->four_ps_household_number);
+        $this->assertSame('000000000000000001', $other->fresh()->four_ps_household_number);
+        $this->get('/mother/profile')->assertOk()->assertSee($number);
+        $payload['four_ps_household_number'] = 'invalid';
+        $this->patch('/mother/profile', $payload)->assertSessionHasErrors('four_ps_household_number');
+        $this->assertSame($number, $mother->fresh()->four_ps_household_number);
+        $mother->update(['is_4ps_beneficiary' => false]);
+        $this->get('/mother/profile')->assertOk()->assertDontSee('name="four_ps_household_number"', false);
+        $payload['four_ps_household_number'] = '123456789012345678';
+        $this->patch('/mother/profile', $payload)->assertSessionHasNoErrors();
+        $this->assertSame($number, $mother->fresh()->four_ps_household_number);
+    }
+
     public function test_profiles_are_role_scoped_and_only_update_allowed_fields(): void
     {
         $base = ['first_name' => 'Ana', 'last_name' => 'Cruz', 'email' => 'shared@example.test', 'password' => bcrypt('password123'), 'contact_number' => '09171111111'];

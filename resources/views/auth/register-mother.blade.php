@@ -174,6 +174,16 @@
                 @error('is_4ps_beneficiary')<span class="field-error">{{ $message }}</span>@enderror
             </div>
 
+            <div class="auth-field" id="fourPsHouseholdField" @if(old('is_4ps_beneficiary') !== 'yes') hidden @endif>
+                <label class="auth-label" for="four_ps_household_number">4Ps Household Number</label>
+                <input class="auth-input" id="four_ps_household_number" name="four_ps_household_number" type="text"
+                    value="{{ old('four_ps_household_number') }}" maxlength="32" pattern="[0-9]+(\-[0-9]+)*" size="20" placeholder="e.g. 012345678-1-01234567"
+                    aria-describedby="fourPsHouseholdHelp"
+                    @required(old('is_4ps_beneficiary') === 'yes') @disabled(old('is_4ps_beneficiary') !== 'yes')>
+                <p class="auth-help" id="fourPsHouseholdHelp">Copy the full number above the barangay on your 4Ps ID, including leading zeros and hyphens. The field fits 18 digits plus hyphens.</p>
+                @error('four_ps_household_number')<span class="field-error">{{ $message }}</span>@enderror
+            </div>
+
             <div class="location-box">
                 <div>
                     <p class="location-title">
@@ -225,6 +235,18 @@
     @include('auth.partials.privacy-policy')
 
     <script>
+        const fourPsSelect = document.getElementById('is_4ps_beneficiary');
+        const householdField = document.getElementById('fourPsHouseholdField');
+        const householdInput = document.getElementById('four_ps_household_number');
+        const syncHouseholdField = () => {
+            const isBeneficiary = fourPsSelect.value === 'yes';
+            householdField.hidden = !isBeneficiary;
+            householdInput.disabled = !isBeneficiary;
+            householdInput.required = isBeneficiary;
+        };
+        syncHouseholdField();
+        fourPsSelect.addEventListener('change', syncHouseholdField);
+
         const locationButton = document.getElementById('useLocation');
         const locationStatus = document.getElementById('locationStatus');
         const latitudeInput = document.getElementById('location_latitude');

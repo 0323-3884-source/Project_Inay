@@ -27,7 +27,7 @@ class DswdStatistics
     public function mothers(array $filters = []): Builder
     {
         // Never pass a full medical model to the DSWD views or exports.
-        $query = Mother::query()->select(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status', 'created_at'])
+        $query = Mother::query()->select(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status', 'created_at', 'four_ps_household_number'])
             ->where('is_4ps_beneficiary', true);
         foreach (['barangay', 'municipality_city'] as $column) {
             if ($value = ($filters[$column] ?? null)) {

@@ -28,6 +28,7 @@ class Mother extends Model
         'location_longitude',
         'location_accuracy',
         'is_4ps_beneficiary',
+        'four_ps_household_number',
     ];
 
     protected $hidden = [

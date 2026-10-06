@@ -16,6 +16,58 @@ class F1kdMonitoringTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dswd_growth_history_pages_show_five_newest_records_and_keep_the_reporting_month(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 6));
+        $mother = $this->mother();
+        $child = Infant::create(['mother_id'=>$mother->id, 'full_name'=>'Paged Child', 'birth_date'=>'2026-06-01']);
+        for ($day = 1; $day <= 7; $day++) {
+            \App\Models\InfantGrowthRecord::create(['infant_id'=>$child->id, 'measured_at'=>'2026-09-0'.$day, 'weight'=>$day, 'height'=>50+$day]);
+        }
+        $this->staff($mother);
+        $this->put('/staff/f1kd/child-'.$child->id, ['month'=>'2026-09', 'attendance_status'=>'attended'])->assertSessionHasNoErrors();
+        $this->dswd();
+        $url = '/dswd/f1kd/child-'.$child->id.'?month=2026-09';
+        $response = $this->get($url)->assertOk()->assertSee('Previous History')->assertDontSee('Recent History');
+        $growth = $response->viewData('childGrowth');
+        $this->assertSame(7, $growth['history']->total());
+        $this->assertCount(5, $growth['history']);
+        $this->assertSame('2026-09-07', $growth['history']->first()->date->format('Y-m-d'));
+        $this->assertStringContainsString('month=2026-09', $growth['history']->nextPageUrl());
+        $response = $this->get($url.'&growth_page=2')->assertOk()->assertSee('Recent History')->assertDontSee('Previous History');
+        $growth = $response->viewData('childGrowth');
+        $this->assertCount(2, $growth['history']);
+        $this->assertSame('2026-09-02', $growth['history']->first()->date->format('Y-m-d'));
+        $this->assertSame(7.0, $growth['weight']['latest']);
+        $this->travelBack();
+    }
+
+    public function test_dswd_child_detail_shows_only_requested_growth_measurements_through_reporting_month(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 6));
+        $mother = $this->mother();
+        $staff = $this->staff($mother);
+        $child = Infant::create(['mother_id'=>$mother->id, 'full_name'=>'Growth Child', 'birth_date'=>'2026-06-01']);
+        $other = Infant::create(['mother_id'=>$mother->id, 'full_name'=>'Other Child', 'birth_date'=>'2026-06-01']);
+        foreach ([['2026-09-05', 5.2, 60], ['2026-10-05', 5.8, 62]] as [$date,$weight,$height]) {
+            \App\Models\InfantGrowthRecord::create(['infant_id'=>$child->id, 'recorded_by_staff_id'=>$staff->id, 'measured_at'=>$date, 'weight'=>$weight, 'height'=>$height, 'remarks'=>'PRIVATE GROWTH NOTES', 'temperature'=>37]);
+        }
+        \App\Models\InfantGrowthRecord::create(['infant_id'=>$other->id, 'measured_at'=>'2026-09-05', 'weight'=>99, 'height'=>99]);
+        $subject = 'child-'.$child->id;
+        $this->put('/staff/f1kd/'.$subject, ['month'=>'2026-09', 'attendance_status'=>'attended'])->assertSessionHasNoErrors();
+        $this->dswd();
+        $this->get('/dswd/f1kd/'.$subject)->assertOk()->assertSee('Weight Progress')->assertSee('Height Progress')
+            ->assertSee('5.8 kg')->assertSee('62 cm')->assertSee($staff->full_name)->assertDontSee('PRIVATE GROWTH NOTES')
+            ->assertViewHas('childGrowth', fn ($growth)=>$growth['history']->count()===2 && $growth['weight']['latest']===5.8);
+        $this->get('/dswd/f1kd/'.$subject.'?month=2026-09')->assertOk()
+            ->assertViewHas('childGrowth', fn ($growth)=>$growth['history']->count()===1 && $growth['weight']['latest']===5.2);
+        $this->get('/dswd/f1kd/mother-'.$mother->id)->assertOk()->assertDontSee('Growth History');
+        $this->get('/dswd/f1kd/child-'.$other->id)->assertOk()->assertSee('99 kg');
+        $mother->update(['is_4ps_beneficiary'=>false]);
+        $this->get('/dswd/f1kd/'.$subject)->assertNotFound();
+        $this->travelBack();
+    }
+
     private function mother(array $attributes = []): Mother
     {
         return Mother::create($attributes + ['first_name'=>'Ana', 'last_name'=>'Cruz', 'email'=>uniqid().'@test.example', 'password'=>'password', 'contact_number'=>'09170000000', 'barangay'=>'Alpha', 'municipality_city'=>'Town', 'is_4ps_beneficiary'=>true, 'pregnancy_status'=>'pregnant', 'blood_type'=>'SECRET']);
@@ -33,6 +85,39 @@ class F1kdMonitoringTest extends TestCase
         StaffMotherCasefile::create(['staff_id'=>$staff->id, 'mother_id'=>$mother->id]);
         $this->withSession(['auth_role'=>'staff', 'auth_id'=>$staff->id]);
         return $staff;
+    }
+
+    public function test_history_author_links_open_the_correct_staff_or_dswd_chat(): void
+    {
+        $mother = $this->mother();
+        $staff = $this->staff($mother);
+        $staff->update(['role' => 'Barangay Health Worker']);
+        $subject = 'mother-'.$mother->id;
+        $payload = ['month' => now()->format('Y-m'), 'attendance_status' => 'did_not_attend', 'remark_code' => 'delivered'];
+        $this->put('/staff/f1kd/'.$subject, $payload)->assertSessionHasNoErrors();
+        $this->dswd();
+        $officer = DswdStaff::firstOrFail();
+        $link = route('dswd.messaging', ['staff' => $staff->id]);
+        $this->get('/dswd/f1kd/'.$subject)->assertOk()->assertSee('Recorded / remarked by')
+            ->assertSee($staff->full_name)->assertSee('Barangay Health Worker')->assertSee($link, false);
+        $this->get('/dswd/f1kd/reports')->assertOk()->assertSee('Recorded / verified by')
+            ->assertSee($staff->full_name)->assertSee('Barangay Health Worker')->assertSee($link, false)
+            ->assertDontSee('Not yet verified');
+        $this->get($link)->assertRedirect();
+        $conversation = \App\Models\Conversation::where('dswd_staff_id', $officer->id)
+            ->where('program_staff_id', $staff->id)->whereNull('mother_id')->firstOrFail();
+        $this->get($link)->assertRedirect(route('dswd.messaging', ['conversation' => $conversation->id, 'contacts' => 'program_staff']));
+        $this->assertDatabaseCount('conversations', 1);
+        $this->put('/dswd/f1kd/'.$subject, $payload)->assertSessionHasNoErrors();
+        $this->get('/dswd/f1kd/reports')->assertOk()->assertSee($officer->name)
+            ->assertViewHas('beneficiaries', fn ($rows) => $rows->first()->attendance_author->is_dswd
+                && $rows->first()->attendance_author->id === $officer->id);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id]);
+        $link = route('staff.consultation', ['dswd_staff' => $officer->id]);
+        $this->get('/staff/f1kd/'.$subject)->assertOk()->assertSee($officer->name)->assertSee($link, false);
+        $this->get($link)->assertRedirect(route('staff.consultation', ['conversation' => $conversation->id, 'contacts' => 'dswd_staff']));
+        $officer->update(['is_active' => false]);
+        $this->get($link)->assertNotFound();
     }
 
     public function test_roster_counts_individuals_and_defaults_to_verification_without_clinical_data(): void

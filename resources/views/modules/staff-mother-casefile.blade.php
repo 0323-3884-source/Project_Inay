@@ -1356,12 +1356,13 @@
         /* ===== CHART GRID ===== */
         .casefile-summary-page .casefile-chart-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
         }
 
         .casefile-summary-page .casefile-chart-card {
             display: flex;
+            min-width: 0;
             flex-direction: column;
             gap: 10px;
             padding: 16px 20px;
@@ -1386,9 +1387,19 @@
         }
 
         /* ===== CHART SVG ===== */
+        .casefile-summary-page .casefile-chart-canvas {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+        }
+
         .casefile-summary-page .casefile-chart-canvas > svg {
             display: block;
             width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
             height: 250px;
             padding: 8px;
             background: var(--inay-soft);
@@ -3437,6 +3448,7 @@
                         <h2>{{ $mother->full_name }}</h2>
                     </div>
                     <strong class="casefile-id">{{ $caseId }}</strong>
+                    @if($mother->is_4ps_beneficiary)<div class="casefile-id">Household ID: {{ $mother->four_ps_household_number ?: 'Not recorded' }}</div>@endif
 
                 </div>
             </div>
@@ -4474,7 +4486,7 @@
                 const target = document.querySelector('[data-chart="weight"]');
                 if (!target) return;
                 const chartHistory = chronologicalWeightHistory(history)
-                    .filter((item) => Number.isFinite(Number(item.weight)));
+                    .filter((item) => item.weight !== null && item.weight !== '' && Number.isFinite(Number(item.weight)) && Number(item.weight) > 0);
                 if (!chartHistory.length) {
                     target.innerHTML = renderChartEmpty('No weight record yet');
                     return;
@@ -4490,10 +4502,10 @@
                         <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
                         <text x="18" y="24" class="axis-label">Weight</text>
                         <text x="334" y="347" text-anchor="middle" class="axis-label">Date / Pregnancy Week</text>
-                        ${labels.map((label, index) => `<text x="24" y="${44 + index * 128}">${label} kg</text>`).join('')}
+                        ${labels.map((label, index) => `<text x="66" y="${44 + index * 128}" text-anchor="end">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${polyline}" class="weight-line"/>` : ''}
                         ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="weight-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
-                        ${points.map((point) => `<text x="${point.x - 18}" y="322">${escapeHtml(point.label)}</text>`).join('')}
+                        ${points.filter((point, index) => index === points.length - 1 || index % Math.max(1, Math.ceil(points.length / 4)) === 0).map((point) => `<text x="${point.x}" y="322" text-anchor="${point.x === points[0].x ? 'start' : (point.x === points[points.length - 1].x ? 'end' : 'middle')}">${escapeHtml(point.label)}</text>`).join('')}
                     </svg>
                 `;
             };

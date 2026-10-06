@@ -18,8 +18,17 @@ class ConsultationController extends Controller
 {
     use AuthorizesConsultations;
 
-    public function dswd(Request $request): View
+    public function dswd(Request $request): View|RedirectResponse
     {
+        if ($request->filled('staff')) {
+            $staff = ProgramStaff::findOrFail($request->integer('staff'));
+            $participant = $this->currentConsultationParticipant($request);
+            abort_unless($participant && $participant['role'] === Message::ROLE_DSWD_STAFF, 403);
+            $conversation = Conversation::firstOrCreate([
+                'dswd_staff_id' => $participant['id'], 'program_staff_id' => $staff->id, 'mother_id' => null,
+            ]);
+            return redirect()->route('dswd.messaging', ['conversation' => $conversation->id, 'contacts' => 'program_staff']);
+        }
         return view('mother.consultation', ['dswdMessaging' => true] + $this->contactSection($request));
     }
 
@@ -68,6 +77,14 @@ class ConsultationController extends Controller
         }
 
         $this->ensureConversationsForStaff($staff);
+
+        if ($request->filled('dswd_staff')) {
+            $officer = DswdStaff::where('is_active', true)->findOrFail($request->integer('dswd_staff'));
+            $conversation = Conversation::firstOrCreate([
+                'dswd_staff_id' => $officer->id, 'program_staff_id' => $staff->id, 'mother_id' => null,
+            ]);
+            return redirect()->route('staff.consultation', ['conversation' => $conversation->id, 'contacts' => 'dswd_staff']);
+        }
 
         return view('program-staff.consultation', compact('staff') + $this->contactSection($request));
     }

@@ -13,6 +13,25 @@ class SeparatedRoleAuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_household_number_is_required_only_for_4ps_registration_and_keeps_leading_zeros(): void
+    {
+        $payload = ['first_name' => 'Test', 'last_name' => 'Mother', 'email' => 'household@example.test',
+            'password' => 'password123', 'barangay' => 'San Francisco', 'contact_number' => '09170000000',
+            'privacy_policy' => '1', 'is_4ps_beneficiary' => 'yes'];
+        $this->post('/register/mother', $payload)->assertSessionHasErrors('four_ps_household_number');
+        $this->post('/register/mother', $payload + ['four_ps_household_number' => 'invalid'])->assertSessionHasErrors('four_ps_household_number');
+        $number = '012345678-1-01234567';
+        $this->post('/register/mother', $payload + ['four_ps_household_number' => $number])->assertSessionHasNoErrors()->assertRedirect('/login');
+        $mother = Mother::where('email', $payload['email'])->firstOrFail();
+        $this->assertSame($number, $mother->four_ps_household_number);
+        $row = app(\App\Support\F1kdCompliance::class)->rows(['mother_id' => $mother->id])->first();
+        $this->assertSame($number, $row->household);
+        $payload['email'] = 'nonbeneficiary@example.test';
+        $payload['is_4ps_beneficiary'] = 'no';
+        $this->post('/register/mother', $payload + ['four_ps_household_number' => $number])->assertSessionHasNoErrors();
+        $this->assertNull(Mother::where('email', $payload['email'])->firstOrFail()->four_ps_household_number);
+    }
+
     public function test_same_email_can_register_for_mother_and_program_staff(): void
     {
         $email = 'same-email@example.test';
@@ -27,6 +46,7 @@ class SeparatedRoleAuthTest extends TestCase
             'barangay' => 'San Pablo',
             'contact_number' => '09170000000',
             'is_4ps_beneficiary' => 'yes',
+            'four_ps_household_number' => '012345678-1-01234567',
             'privacy_policy' => '1',
         ])->assertRedirect('/login');
 
@@ -153,6 +173,7 @@ class SeparatedRoleAuthTest extends TestCase
             'blood_type' => 'O+',
             'pregnancy_status' => 'pregnant',
             'is_4ps_beneficiary' => 'yes',
+            'four_ps_household_number' => '012345678-1-01234567',
             'location_latitude' => '14.0683000',
             'location_longitude' => '121.3256000',
             'location_accuracy' => 12,

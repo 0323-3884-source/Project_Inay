@@ -49,6 +49,7 @@
             </select>
         </label>
     </div>
+    <label data-household-id-field><span>4Ps Household ID</span><input type="text" name="four_ps_household_number" value="{{ old('four_ps_household_number', $mother->four_ps_household_number) }}" maxlength="32" pattern="[0-9]+(\-[0-9]+)*" size="20" placeholder="e.g. 012345678-1-01234567"><small>Enter the full household ID, including leading zeros and hyphens (e.g. 012345678-1-01234567). The field fits 18 digits plus hyphens.</small></label>
     <div class="casefile-profile-actions">
         <button type="button" data-mother-edit-cancel>Cancel</button>
         <button type="submit" class="is-dark">Save Changes</button>

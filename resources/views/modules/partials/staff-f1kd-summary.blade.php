@@ -1,5 +1,5 @@
 <h2>F1KD 4Ps Beneficiary Summary</h2>
-<p class="casefile-panel-note">{{ $mother->full_name }} · Household reference: INAY-{{ str_pad($mother->id, 5, '0', STR_PAD_LEFT) }} · {{ \Carbon\CarbonImmutable::parse($f1kdPeriod.'-01')->format('F Y') }}</p>
+<p class="casefile-panel-note">{{ $mother->full_name }} · Household ID: {{ $mother->four_ps_household_number ?: 'Not recorded' }} · {{ \Carbon\CarbonImmutable::parse($f1kdPeriod.'-01')->format('F Y') }}</p>
 <form method="get" action="{{ route('staff.mothers.show', $mother) }}">
     <label for="casefile-f1kd-month">Reporting period</label>
     <input id="casefile-f1kd-month" type="month" name="f1kd_month" value="{{ $f1kdPeriod }}" required>
@@ -12,12 +12,13 @@
 @endif
 <div style="overflow-x:auto">
     <table class="f1kd-casefile-table">
-        <thead><tr><th scope="col">Beneficiary</th><th scope="col">Beneficiary ID</th><th scope="col">Classification</th><th scope="col">Attendance</th><th scope="col">Remarks</th><th scope="col">Action</th></tr></thead>
+        <thead><tr><th scope="col">Beneficiary</th><th scope="col">Beneficiary ID</th><th scope="col">Household ID</th><th scope="col">Classification</th><th scope="col">Attendance</th><th scope="col">Remarks</th><th scope="col">Action</th></tr></thead>
         <tbody>
         @forelse($f1kdBeneficiaries as $beneficiary)
             <tr>
                 <td>{{ $beneficiary->name }}@if($beneficiary->classification === 'child')<br><small>Mother: {{ $beneficiary->mother_name }}</small>@endif</td>
                 <td>{{ $beneficiary->beneficiary_id }}</td>
+                <td>{{ $beneficiary->household_id ?: 'Not recorded' }}</td>
                 <td>{{ \App\Support\F1kdCompliance::CLASSES[$beneficiary->classification] }}</td>
                 <td><span class="f1kd-casefile-attendance is-{{ $beneficiary->status }}">
                     @if($beneficiary->attendance_status === 'attended')<span aria-hidden="true">○</span> Attended
@@ -29,7 +30,7 @@
                 <td>@if($staff->approval_status === 'approved')<a class="account-button" href="{{ route('staff.f1kd.edit', ['subject'=>$beneficiary->key, 'month'=>$beneficiary->month]) }}">View / Record Attendance</a>@else Approved Program Staff record attendance.@endif</td>
             </tr>
         @empty
-            <tr><td colspan="6">No eligible pregnant beneficiary or child, and no saved F1KD record, for this reporting month.</td></tr>
+            <tr><td colspan="7">No eligible pregnant beneficiary or child, and no saved F1KD record, for this reporting month.</td></tr>
         @endforelse
         </tbody>
     </table>

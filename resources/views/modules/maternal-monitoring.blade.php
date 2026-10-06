@@ -684,6 +684,7 @@
                 <div>
                     <h2>Maternal Vital Signs</h2>
                     <p>{{ $mother->full_name }}'s pregnancy threshold indicators</p>
+                    @if($mother->is_4ps_beneficiary)<p>Household ID: {{ $mother->four_ps_household_number ?: 'Not recorded' }}</p>@endif
                 </div>
                 <span class="maternal-risk-badge {{ $screeningStatusClass }}">{{ strtoupper($screeningStatus) }}</span>
             </div>
@@ -1084,10 +1085,10 @@
                     <svg viewBox="0 0 640 360" role="img" aria-label="Weight progression chart">
                         <path d="M76 40v256h516" class="axis"/>
                         <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
-                        ${labels.map((label, index) => `<text x="24" y="${44 + index * 128}">${label} kg</text>`).join('')}
+                        ${labels.map((label, index) => `<text x="66" y="${44 + index * 128}" text-anchor="end">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${points.map((item) => `${item.x},${item.y}`).join(' ')}" class="weight-line"/>` : ''}
                         ${points.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="weight-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
-                        ${points.map((item) => `<text x="${item.x - 18}" y="322">${escapeHtml(item.label)}</text>`).join('')}
+                        ${points.filter((item, index) => index === points.length - 1 || index % Math.max(1, Math.ceil(points.length / 4)) === 0).map((item) => `<text x="${item.x}" y="322" text-anchor="${item.x === points[0].x ? 'start' : (item.x === points[points.length - 1].x ? 'end' : 'middle')}">${escapeHtml(item.label)}</text>`).join('')}
                     </svg>
                 `;
             };
@@ -1113,7 +1114,7 @@
                         ${diastolic.length > 1 ? `<polyline points="${diastolic.map((item) => `${item.x},${item.y}`).join(' ')}" class="diastolic-line"/>` : ''}
                         ${systolic.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="systolic-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
                         ${diastolic.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="diastolic-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
-                        ${systolic.map((item) => `<text x="${item.x - 18}" y="322">${escapeHtml(item.label)}</text>`).join('')}
+                        ${systolic.filter((item, index) => index === systolic.length - 1 || index % Math.max(1, Math.ceil(systolic.length / 4)) === 0).map((item) => `<text x="${item.x}" y="322" text-anchor="${item.x === systolic[0].x ? 'start' : (item.x === systolic[systolic.length - 1].x ? 'end' : 'middle')}">${escapeHtml(item.label)}</text>`).join('')}
                     </svg>
                 `;
             };
