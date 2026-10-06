@@ -3,49 +3,96 @@ set -eu
 
 cd /var/www/html
 
-: "${APP_KEY:?Set a permanent APP_KEY in your hosting environment before starting the service.}"
+echo "Starting Project INAY..."
+
+# Make sure APP_KEY exists
+: "${APP_KEY:?APP_KEY is required. Set APP_KEY in Railway Variables.}"
+
+# Railway port
 PORT="${PORT:-8080}"
+
 case "$PORT" in
-    ''|*[!0-9]*) echo 'PORT must be a number.' >&2; exit 1 ;;
+    ''|*[!0-9]*)
+        echo "PORT must be a number." >&2
+        exit 1
+        ;;
 esac
+
 if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
-    echo 'PORT must be between 1 and 65535.' >&2
+    echo "PORT must be between 1 and 65535." >&2
     exit 1
 fi
 
-sed -i "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
-sed -i "s/<VirtualHost \*:.*>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
+echo "Using PORT: ${PORT}"
 
-# Mount persistent storage/app, leaving framework caches inside the container.
-mkdir -p storage/app/public storage/app/private storage/framework/cache/data \
-    storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+# ==============================
+# Force correct Apache MPM
+# ==============================
+a2dismod mpm_event >/dev/null 2>&1 || true
+a2dismod mpm_worker >/dev/null 2>&1 || true
+a2enmod mpm_prefork >/dev/null 2>&1 || true
+a2enmod rewrite >/dev/null 2>&1 || true
+
+
+# ==============================
+# Railway Apache port
+# ==============================
+sed -i "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
+
+sed -i \
+    "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${PORT}>/" \
+    /etc/apache2/sites-available/000-default.conf
+
+
+# ==============================
+# Laravel directories
+# ==============================
+mkdir -p \
+    storage/app/public \
+    storage/app/private \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
+
+
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R ug+rwX storage bootstrap/cache
 
-# Build configuration from this deployment's environment, never a local .env.
+
+# ==============================
+# Laravel caches
+# ==============================
+php artisan optimize:clear
 php artisan config:cache
 php artisan view:cache
-php artisan storage:link
-chown -R www-data:www-data storage/framework bootstrap/cache
 
-# Run database migrations on deployment by default (can be disabled with RUN_MIGRATIONS=false)
-if [ "${RUN_MIGRATIONS:-true}" = 'true' ]; then
-    echo "Running database migrations..."
-    n=0
-    until [ "$n" -ge 5 ]
-    do
-        if php artisan migrate --force; then
-            echo "Database migrations completed successfully."
-            break
-        fi
-        n=$((n+1))
-        echo "Database migration failed or not ready yet. Retrying in 2 seconds (attempt $n/5)..."
-        sleep 2
-    done
-    if [ "$n" -ge 5 ]; then
-        echo 'Database migrations failed after 5 attempts. Check database service references, credentials, and connectivity.' >&2
-        exit 1
-    fi
+
+# ==============================
+# Storage symlink
+# ==============================
+if [ ! -e public/storage ]; then
+    php artisan storage:link
+else
+    echo "public/storage already exists - skipping storage:link."
 fi
 
+
+chown -R www-data:www-data storage bootstrap/cache
+
+
+# ==============================
+# Verify Apache configuration
+# ==============================
+echo "Checking Apache configuration..."
+
+apache2ctl configtest
+
+echo "Apache configuration OK."
+echo "Starting Apache on port ${PORT}..."
+
+
+# Start official PHP Apache entrypoint
 exec docker-php-entrypoint "$@"
