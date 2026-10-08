@@ -1,3 +1,4 @@
+@include('auth.partials.password-visibility')
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6891,6 +6892,7 @@
         }
     </style>
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/site-responsive.css') }}?v={{ filemtime(public_path('css/site-responsive.css')) }}">
     <style>
         @media (max-width: 760px) {
             .portal-main .card {

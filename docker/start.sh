@@ -65,7 +65,36 @@ chmod -R ug+rwX storage bootstrap/cache
 # ==============================
 # Laravel caches
 # ==============================
-php artisan optimize:clear
+# Clear only local compiled files. optimize:clear also touches the database
+# cache, which does not exist yet on a new installation.
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan event:clear
+
+# Bring the schema up to date before database sessions/cache are used.
+case "${RUN_MIGRATIONS:-true}" in
+    true|1)
+        migration_attempt=1
+        until php artisan migrate --force --no-interaction; do
+            if [ "$migration_attempt" -ge 5 ]; then
+                echo "Database migrations failed after 5 attempts; refusing to start." >&2
+                exit 1
+            fi
+            migration_attempt=$((migration_attempt + 1))
+            echo "Retrying migrations (attempt ${migration_attempt}/5)..." >&2
+            sleep 2
+        done
+        ;;
+    false|0)
+        echo "Startup migrations disabled; database schema must already be current."
+        ;;
+    *)
+        echo "RUN_MIGRATIONS must be true, false, 1, or 0." >&2
+        exit 1
+        ;;
+esac
+
 php artisan config:cache
 php artisan view:cache
 
@@ -73,8 +102,8 @@ php artisan view:cache
 # ==============================
 # Storage symlink
 # ==============================
-if [ ! -e public/storage ]; then
-    php artisan storage:link
+if [ ! -e public/storage ] || [ -L public/storage ]; then
+    php artisan storage:link --force
 else
     echo "public/storage already exists - skipping storage:link."
 fi

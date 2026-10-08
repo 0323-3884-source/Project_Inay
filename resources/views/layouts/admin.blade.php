@@ -26,6 +26,7 @@
         'lock' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     ];
 @endphp
+@include('auth.partials.password-visibility')
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,6 +36,7 @@
     <title>@yield('title', 'Admin - Project INAY')</title>
     @include('layouts.partials.management-styles')
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/site-responsive.css') }}?v={{ filemtime(public_path('css/site-responsive.css')) }}">
 </head>
 <body class="{{ $isAdminAuthScreen ? 'admin-auth-body' : 'admin-shell' }}">
     @if ($isAdminAuthScreen)

@@ -113,6 +113,7 @@ RUN sed -i 's/\r$//' /usr/local/bin/inay-start \
 
 # Default port
 ENV PORT=8080
+ENV APP_ENV=production APP_DEBUG=false LOG_CHANNEL=stderr
 
 EXPOSE 8080
 

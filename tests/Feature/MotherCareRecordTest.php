@@ -102,10 +102,10 @@ class MotherCareRecordTest extends TestCase
         $this->assertStringNotContainsString('Oldest monitoring entry', $documents[6]);
         $this->assertStringNotContainsString('MONITORING HISTORY', $documents[6]);
         foreach ($documents as $html) {
-            foreach (['PROJECT INAY', 'San Jose', 'fo4a@dswd.gov.ph', 'data:image/jpeg;base64,'] as $expected) {
+            foreach (['PROJECT INAY', 'San Jose'] as $expected) {
                 $this->assertStringContainsString($expected, $html);
             }
-            foreach (['Child Alpha', 'Child Beta', 'Saved neonatal notes', 'VACCINATION RECORDS', 'PRIVATE OTHER MOTHER', 'PRIVATE OTHER CHILD', 'Stale session name', '<script>', 'Edit Information', 'portal-sidebar'] as $forbidden) {
+            foreach (['fo4a@dswd.gov.ph', 'data:image/jpeg;base64,', 'DSWD Field Office', 'Child Alpha', 'Child Beta', 'Saved neonatal notes', 'VACCINATION RECORDS', 'PRIVATE OTHER MOTHER', 'PRIVATE OTHER CHILD', 'Stale session name', '<script>', 'Edit Information', 'portal-sidebar'] as $forbidden) {
                 $this->assertStringNotContainsString($forbidden, $html);
             }
         }
@@ -142,7 +142,7 @@ class MotherCareRecordTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $pdf);
         $this->assertMatchesRegularExpression('/\/MediaBox\s*\[0\.000 0\.000 595\.\d+ 841\.\d+\]/', $pdf);
         $this->assertGreaterThan(2, preg_match_all('/\/Type\s*\/Page\b/', $pdf));
-        $this->assertStringContainsString('/Subtype /Image', $pdf);
+        $this->assertStringNotContainsString('/Subtype /Image', $pdf);
         // Optional local artifacts for visual review; all content is synthetic test data.
         if (getenv('INAY_RECORD_REVIEW') === '1') {
             $directory = storage_path('framework/testing/mother-record-review');

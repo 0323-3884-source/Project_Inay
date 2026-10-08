@@ -1,0 +1,23 @@
+/* Shared responsive controls, independent of Tailwind. */
+.site-pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; font-size:13px; }
+.site-pagination p { margin:0; color:#52627d; }
+.site-pagination-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.site-pagination-link { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 14px; border:1px solid #dbe5f1; border-radius:10px; background:white; color:#a20e59; text-decoration:none; font-weight:700; }
+.site-pagination-link:hover { background:#fff0f7; }
+.site-pagination-link:focus-visible { outline:3px solid #ec0a78; outline-offset:2px; }
+.site-pagination-link.is-disabled { color:#64748b; background:#f8fafc; }
+:where(.portal-main,.admin-main,.auth-card,.admin-auth-card) { min-width:0; }
+:where(.portal-main,.admin-main) :where(fieldset,form,label) { min-width:0; }
+:where(.portal-main,.admin-main,.auth-card,.admin-auth-card) :where(input,select,textarea) { max-width:100%; box-sizing:border-box; }
+:where(.portal-main,.admin-main) :where(img,video,iframe) { max-width:100%; }
+:where(.portal-main,.admin-main) :where(.table-responsive,.table-wrap,.admin-table-wrap,.dswd-table-wrap,.history-table-scroll) { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+:where(.portal-main,.admin-main) :where(h1,h2,h3,.admin-summary-card,.account-panel) { overflow-wrap:anywhere; }
+@media(max-width:640px) {
+    .site-pagination { align-items:flex-start; }
+    .site-pagination-controls { width:100%; justify-content:space-between; }
+    .site-pagination-link { padding:10px; }
+    :where(.portal-main,.admin-main) fieldset { margin-left:0; margin-right:0; }
+    .admin-main .admin-card { min-width:0; }
+    .admin-main .admin-card-head { flex-wrap:wrap; gap:12px; }
+}
+@media print { .site-pagination { display:none; } }

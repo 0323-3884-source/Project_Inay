@@ -1102,10 +1102,6 @@ class AuthController extends Controller
         if (! $f1kdHousehold && $mother->is_4ps_beneficiary) {
             $f1kdHousehold = app(\App\Support\F1kdCompliance::class)->rows(['mother_id'=>$mother->id])->first();
         }
-        $f1kdHousehold = $f1kdBeneficiaries->first();
-        if (! $f1kdHousehold && $mother->is_4ps_beneficiary) {
-            $f1kdHousehold = app(\App\Support\F1kdCompliance::class)->rows(['mother_id'=>$mother->id])->first();
-        }
 
         return view('modules.staff-mother-casefile', compact(
             'staff',
@@ -1536,17 +1532,7 @@ class AuthController extends Controller
             }
         }
 
-        $childF1kdUrl = null;
-        if ($selectedInfant && $selectedMother?->is_4ps_beneficiary) {
-            $month = now()->format('Y-m');
-            $subject = 'child-'.$selectedInfant->id;
-            if (app(\App\Support\F1kdCompliance::class)->beneficiary($subject, $month)) {
-                $childF1kdUrl = route('staff.f1kd.edit', ['subject' => $subject, 'month' => $month]);
-            }
-        }
-
         return view('modules.staff-neonatal-vaccines', compact(
-            'childF1kdUrl',
             'childF1kdUrl',
             'staff',
             'mothers',

@@ -83,17 +83,21 @@ try {
     await send('Network.setBypassServiceWorker', { bypass: true });
     await send('Network.setCacheDisabled', { cacheDisabled: true });
     await send('Fetch.enable', { patterns: [{ urlPattern: '*' }] });
-    for (page of ['dashboard', 'consultation', 'clinic-schedule']) {
-        for (const width of [1440, 375]) {
+    for (page of ['dashboard', 'consultation', 'clinic-schedule', 'dswd-dashboard', 'dswd-reports']) {
+        for (const width of [1440, 768, 375, 320]) {
             await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
             const snapshots = [];
             for (scheme of ['http', 'https']) {
                 await send('Page.navigate', { url: `${scheme}://portal.example.test/mother/${page}?width=${width}` });
                 for (let i = 0; i < 80; i++) {
-                    if (await evaluate('document.readyState === "complete" && !!document.querySelector(".portal-main")')) break;
+                    if (await evaluate(`location.href === '${scheme}://portal.example.test/mother/${page}?width=${width}' && document.readyState === "complete" && !!document.querySelector(".portal-main")`)) break;
                     await sleep(75);
                 }
                 await sleep(200);
+                assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), `${page} has no horizontal page overflow at ${width}px`);
+                // Offline capability differs by scheme in the intercepted browser.
+                // Compare the page layout with the optional status banner removed.
+                await evaluate(`document.querySelectorAll('.pwa-status').forEach(el => el.remove())`);
                 snapshots.push(await evaluate(`Array.from(document.querySelectorAll('.portal-main, .account-metrics, .account-panel, .consultation-workspace, .consultation-search svg, .consultation-emoji svg, .appointment-search-field svg, .photo-crop-modal, .filter-modal, .booking-modal')).map(el => {
                     const css = getComputedStyle(el), rect = el.getBoundingClientRect();
                     return {class: el.getAttribute('class'), width: rect.width, height: rect.height, display: css.display, fill: css.fill, gap: css.gap, padding: css.padding, columns: css.gridTemplateColumns};
@@ -101,7 +105,7 @@ try {
                 assert.equal(await evaluate('getComputedStyle(document.querySelector(".photo-crop-modal")).display'), 'none');
                 if (page === 'dashboard') {
                     assert.equal(await evaluate('getComputedStyle(document.querySelector(".account-metrics")).display'), 'grid');
-                } else {
+                } else if (page === 'consultation' || page === 'clinic-schedule') {
                     const selector = page === 'consultation' ? '.consultation-search svg' : '.appointment-search-field svg';
                     assert.deepEqual(await evaluate(`(() => {const s = getComputedStyle(document.querySelector('${selector}')); return [s.width, s.height, s.fill]})()`), ['18px', '18px', 'none']);
                     if (width === 1440 && scheme === 'https') {
@@ -113,6 +117,12 @@ try {
                         assert.equal(unstyled.fill, 'rgb(0, 0, 0)');
                         assert.ok(parseFloat(unstyled.width) > 18);
                         console.log('Reproduced missing CSS circle:', selector, unstyled);
+                    }
+                } else {
+                    assert.equal(await evaluate('document.querySelectorAll(".f1kd-summary .admin-summary-card").length'), 6);
+                    if (page === 'dswd-reports') {
+                        assert.ok(await evaluate('document.querySelector(".site-pagination").getBoundingClientRect().height < 180'));
+                        assert.equal(await evaluate('document.querySelectorAll(".site-pagination svg").length'), 0);
                     }
                 }
             }

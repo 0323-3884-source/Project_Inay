@@ -53,6 +53,10 @@ Do not mount all of `/var/www/html` or `storage`: this hides application files o
 
 Deploy the repository using the root Dockerfile; `railway.json` supplies build and health-check settings. Add your database and volume, configure the environment above, and generate a public domain. Set APP_URL to that HTTPS domain. Clear any old custom start command or port override that conflicts with the Docker startup.
 
+If the domain shows Railway's "Not Found / The train has not arrived" page while the deployment is Active, inspect **Project_Inay > Settings > Networking**. Confirm that this exact domain belongs to the web service in the active environment and that its target port matches the startup log's `Using PORT` value (8080 by default). A successful `/up` health check does not verify the public domain mapping. Do not point the web domain at the MySQL service. Save any corrected networking settings and test both `/up` and `/login` on the displayed domain.
+
+Startup clears local compiled files before migrations, then builds configuration and view caches. It deliberately does not run `optimize:clear`, which would try to clear the database cache before the cache table exists on a new installation.
+
 ## Render
 
 Create a Docker web service from this repository with Dockerfile path `./Dockerfile`, health check `/up`, the environment above, and a persistent disk at the upload path above. Use a plan that supports persistent disks for uploaded records. The server binds to all interfaces using Render's PORT. Set APP_URL to the final HTTPS service domain. Configure the migration command before using the app.

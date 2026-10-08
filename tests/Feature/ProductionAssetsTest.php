@@ -11,6 +11,25 @@ class ProductionAssetsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dswd_responsive_report_assets_and_pagination(): void
+    {
+        $staff = \App\Models\DswdStaff::create(['name'=>'Sample Reviewer', 'email'=>'responsive@example.test', 'password'=>'sample-password', 'is_active'=>true]);
+        foreach (range(1, 20) as $i) {
+            Mother::create(['first_name'=>'Sample '.$i, 'last_name'=>'Dela Cruz', 'email'=>"responsive.$i@example.test", 'password'=>'unused', 'barangay'=>'San Jose', 'municipality_city'=>'San Pablo City', 'contact_number'=>'09170000000', 'pregnancy_status'=>'pregnant', 'is_4ps_beneficiary'=>true]);
+        }
+        foreach (['dashboard', 'reports'] as $page) {
+            foreach (['http', 'https'] as $scheme) {
+                $path = $page === 'dashboard' ? '/dswd/dashboard' : '/dswd/f1kd/reports';
+                $html = $this->withSession(['auth_role'=>'dswd_staff', 'auth_id'=>$staff->id])
+                    ->withServerVariables(['REMOTE_ADDR'=>'10.0.0.10', 'HTTP_X_FORWARDED_PROTO'=>$scheme])
+                    ->get('http://portal.example.test'.$path)->assertOk()->getContent();
+                $this->assertStringContainsString('/css/site-responsive.css', $html);
+                if ($page === 'reports') $this->assertStringContainsString('site-pagination-controls', $html);
+                if ($directory = getenv('INAY_ASSET_FIXTURES')) file_put_contents($directory.'/dswd-'.$page.'-'.$scheme.'.html', $html);
+            }
+        }
+    }
+
     public static function portalPages(): array
     {
         $cases = [];
