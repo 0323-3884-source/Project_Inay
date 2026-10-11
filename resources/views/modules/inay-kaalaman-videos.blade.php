@@ -2,6 +2,11 @@
 
 @section('title', $monthData['title'].' Videos - Project INAY')
 @section('portal_title', 'INAY Kaalaman')
+@section('body_class', 'kaalaman-page')
+
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/inay-kaalaman.css') }}?v={{ filemtime(public_path('css/inay-kaalaman.css')) }}">
+@endpush
 
 @php
     $iconArrow = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>';

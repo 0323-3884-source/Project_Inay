@@ -1,0 +1,20 @@
+/* Match the My Appointments card typography throughout the learning module. */
+body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) {
+    font-family: var(--inay-font-sans);
+    font-weight: 400;
+    font-style: normal;
+    letter-spacing: normal;
+}
+
+body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) :where(*) {
+    font-weight: inherit;
+    letter-spacing: normal;
+}
+
+body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) :is(h1, h2, h3, h4, h5, h6, button, summary, .kaalaman-button, .kaalaman-library-back, .inay-infographic-view-button) {
+    font-weight: 600;
+}
+
+body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) :is(strong, b, label, .kaalaman-eyebrow, .kaalaman-stage-kicker, .kaalaman-pill, .kaalaman-library-kicker, .inay-infographic-category, .inay-infographic-badge) {
+    font-weight: 700;
+}

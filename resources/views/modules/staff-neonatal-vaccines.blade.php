@@ -1036,6 +1036,7 @@
                                 @if($childF1kdUrl)
                                     <a class="neo-button is-light" href="{{ $childF1kdUrl }}">4Ps Beneficiary / F1KD Monitoring</a>
                                 @endif
+                                <button class="neo-button" type="button" data-neo-open="add-child">{!! $iconPlus !!} Add Child</button>
                                 <button class="neo-button is-light" type="button" data-neo-open="edit-child">{!! $iconEdit !!} Edit Child</button>
                                 <button class="neo-button is-green" type="button" data-neo-open="growth">{!! $iconTrend !!} Update Growth</button>
                                 <button class="neo-button is-light" type="button" data-casefile-record="print" data-record-kind="child" data-record-url="{{ route('staff.neonatal.print', $selectedInfant) }}">Print Record</button>
@@ -1159,7 +1160,7 @@
                     <section class="neo-card neo-section">
                         <div class="neo-empty">
                             @if($selectedMother)
-                                No child profile is linked to {{ $selectedMother->full_name }} yet. Once a child profile is registered, neonatal and vaccine monitoring will appear here.
+                                <div><p>No child profile is linked to {{ $selectedMother->full_name }} yet. Add child information to begin neonatal and vaccine monitoring.</p><button class="neo-button" type="button" data-neo-open="add-child">{!! $iconPlus !!} Add Child Information</button></div>
                             @else
                                 No assigned mother record yet. Add mothers to your casefiles before creating child profiles.
                             @endif
@@ -1168,6 +1169,30 @@
                 @endif
             </div>
         </div>
+
+        @if($selectedMother)
+            <div class="neo-modal" data-neo-modal="add-child" hidden>
+                <div class="neo-backdrop" data-neo-close></div>
+                <form class="neo-dialog" method="POST" enctype="multipart/form-data" action="{{ route('staff.neonatal.infants.store') }}">
+                    @csrf
+                    <input type="hidden" name="child_form" value="create">
+                    <header><h2>Add Child Information</h2><button type="button" class="neo-close" data-neo-close aria-label="Close add child form">{!! $iconClose !!}</button></header>
+                    <div class="neo-form">
+                        <label class="is-wide">Mother<select name="mother_id" required>@foreach($mothers as $mother)<option value="{{ $mother->id }}" @selected((string) old('mother_id', $selectedMother->id) === (string) $mother->id)>{{ $mother->full_name }}</option>@endforeach</select></label>
+                        <label class="is-wide">Child's Full Name<input name="full_name" required maxlength="255" value="{{ old('full_name') }}"></label>
+                        <label>Birth Date<input type="date" name="birth_date" required max="{{ now()->toDateString() }}" value="{{ old('birth_date') }}"></label>
+                        <label>Sex<select name="sex" required><option value="">Select sex</option>@foreach(['female' => 'Female', 'male' => 'Male', 'other' => 'Other'] as $value => $label)<option value="{{ $value }}" @selected(old('sex') === $value)>{{ $label }}</option>@endforeach</select></label>
+                        <label>Birth Weight (kg, optional)<input type="number" name="birth_weight" min="0.5" max="12" step="0.01" value="{{ old('birth_weight') }}"></label>
+                        <label>Birth Height (cm, optional)<input type="number" name="birth_height" min="20" max="80" step="0.01" value="{{ old('birth_height') }}"></label>
+                        <label>Blood Type<select name="blood_type">@foreach($bloodTypeOptions as $type)<option value="{{ $type }}" @selected(old('blood_type', 'Unknown') === $type)>{{ $type }}</option>@endforeach</select></label>
+                        <label>Birth Facility (optional)<input name="facility" maxlength="255" value="{{ old('facility') }}"></label>
+                        <label class="is-wide">Child Photo (optional)<input type="file" name="child_photo" accept="image/jpeg,image/png,image/webp"></label>
+                        <label class="is-wide">Notes (optional)<textarea name="notes" maxlength="2000">{{ old('notes') }}</textarea></label>
+                    </div>
+                    <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Child Information</button></footer>
+                </form>
+            </div>
+        @endif
 
         @if($selectedInfant)
             <div class="neo-modal" data-neo-modal="edit-child" hidden>
@@ -1288,6 +1313,9 @@
             }));
             document.querySelectorAll('[data-neo-close]').forEach((el) => el.addEventListener('click', close));
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+            @if($errors->any() && old('child_form') === 'create')
+                open('add-child');
+            @endif
 
             const search = document.querySelector('[data-neo-search]');
             const rows = Array.from(document.querySelectorAll('[data-neo-list] [data-search-text]'));

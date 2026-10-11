@@ -166,10 +166,11 @@
 
         .casefiles-table-card {
             overflow: hidden;
+            padding: 24px;
             background: #ffffff;
             border: 1px solid #dbe5f0;
-            border-radius: 8px;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+            border-radius: 20px;
+            box-shadow: none;
         }
 
         .casefiles-loading-state {
@@ -206,18 +207,21 @@
 
         .casefiles-table th,
         .casefiles-table td {
-            padding: 12px 13px;
-            border-bottom: 1px solid #edf2f7;
+            padding: 18px 10px;
+            border-bottom: 1px solid #e2e8f0;
             text-align: left;
             vertical-align: middle;
         }
 
         .casefiles-table th {
-            background: #fbfcfe;
-            color: #71819a;
-            font-size: 10px;
-            letter-spacing: 0.02em;
-            white-space: nowrap;
+            background: #f8f6f8;
+            color: #536580;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .casefiles-table th:nth-child(1),
@@ -253,7 +257,7 @@
         }
 
         .casefiles-table thead th:last-child {
-            background: #fbfcfe;
+            background: #f8f6f8;
         }
 
         .casefiles-table tbody tr:hover {
@@ -265,10 +269,11 @@
         }
 
         .casefiles-patient-code {
-            color: #0f172a;
+            color: #183454;
             font-size: 13px;
-            font-weight: 900;
-            white-space: nowrap;
+            font-weight: 400;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .casefiles-patient-cell {
@@ -281,6 +286,7 @@
         .casefiles-table .casefile-avatar {
             width: 38px;
             height: 38px;
+            flex-shrink: 0;
             font-size: 12px;
         }
 
@@ -291,37 +297,45 @@
         }
 
         .casefiles-patient-name strong {
-            color: #061125;
+            color: #183454;
             font-size: 13px;
-            font-weight: 900;
-            line-height: 1.25;
+            font-weight: 400;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
         }
 
         .casefiles-patient-name span,
         .casefiles-muted {
             color: #64748b;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 400;
+            line-height: 1.5;
             overflow-wrap: anywhere;
         }
 
         .casefiles-table td {
-            color: #172033;
-            font-size: 12px;
-            font-weight: 800;
+            color: #183454;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
             overflow-wrap: anywhere;
         }
 
         .casefiles-badge {
             display: inline-flex;
             min-height: 28px;
+            max-width: 100%;
+            box-sizing: border-box;
             align-items: center;
             justify-content: center;
-            padding: 0 8px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 900;
-            white-space: nowrap;
+            padding: 5px 8px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .casefiles-badge.is-4ps,
@@ -377,14 +391,30 @@
             border: 1px solid #cbd5e1;
         }
 
+        .casefiles-table .casefiles-badge {
+            display: inline;
+            min-height: 0;
+            padding: 0;
+            color: inherit;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            font-size: inherit;
+            font-weight: 400;
+            line-height: inherit;
+            text-align: left;
+        }
+
         .casefiles-view-button {
             display: inline-flex;
             width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             min-height: 36px;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 0 9px;
+            gap: 5px;
+            padding: 8px 6px;
             color: #ffffff;
             background: #ec0a78;
             border: 1px solid #ec0a78;
@@ -392,7 +422,16 @@
             font-size: 11px;
             font-weight: 900;
             text-decoration: none;
-            white-space: nowrap;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        .casefiles-view-button svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
         }
 
         .casefiles-view-button:hover {
@@ -490,31 +529,33 @@
         }
 
         @media (max-width: 1100px) {
-            .casefiles-table {
-                min-width: 1080px;
+            .casefiles-table th,
+            .casefiles-table td {
+                padding: 10px 6px;
             }
 
-            .casefiles-table th:last-child,
-            .casefiles-table td:last-child {
-                width: 148px;
-                position: sticky;
-                right: 0;
-                z-index: 2;
-                background: #ffffff;
-                box-shadow: -8px 0 12px rgba(15, 23, 42, 0.06);
+            .casefiles-table th {
+                white-space: normal;
+                overflow-wrap: anywhere;
             }
 
-            .casefiles-table thead th:last-child {
-                z-index: 3;
-                background: #fbfcfe;
+            .casefiles-patient-cell {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
             }
 
-            .casefiles-table tbody tr:hover td:last-child {
-                background: #fff8fc;
+            .casefiles-patient-code {
+                white-space: normal;
+                overflow-wrap: anywhere;
             }
         }
 
         @media (max-width: 680px) {
+            .casefiles-table-card {
+                padding: 12px;
+            }
+
             .casefiles-table-page .casefiles-heading {
                 align-items: flex-start;
                 flex-direction: column;
@@ -607,7 +648,6 @@
                                 <td><span class="casefiles-patient-code">{{ $patientNumber($mother) }}</span></td>
                                 <td>
                                     <div class="casefiles-patient-cell">
-                                        <span class="casefile-avatar">{{ $initials($mother) }}</span>
                                         <span class="casefiles-patient-name">
                                             <strong>{{ $mother->full_name }}</strong>
                                             <span>{{ $mother->email }}</span>

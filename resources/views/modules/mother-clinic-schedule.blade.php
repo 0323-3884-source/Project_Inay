@@ -6,10 +6,12 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/mother-appointments.css') }}?v={{ filemtime(public_path('css/mother-appointments.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/appointment-chat.css') }}?v={{ filemtime(public_path('css/appointment-chat.css')) }}">
 @endpush
 
 @push('scripts')
     <script src="{{ asset('js/mother-appointments.js') }}?v={{ filemtime(public_path('js/mother-appointments.js')) }}" defer></script>
+    <script src="{{ asset('js/appointment-chat.js') }}?v={{ filemtime(public_path('js/appointment-chat.js')) }}" defer></script>
 @endpush
 
 @php
@@ -33,6 +35,8 @@
         data-calendar-url="{{ route('mother.clinic-schedule.calendar') }}"
         data-today="{{ today()->toDateString() }}"
         data-csrf="{{ csrf_token() }}"
+        data-chat-conversations-url="{{ route('consultation.conversations.index') }}"
+        data-chat-messages-url="{{ route('consultation.conversations.messages.index', '__CONVERSATION__') }}"
     >
         <script type="application/json" data-doctor-json>{!! $doctorJson !!}</script>
         <script type="application/json" data-active-appointment-json>{!! $activeAppointmentJson !!}</script>
@@ -267,7 +271,7 @@
                             {{ $bookButtonLabel }}
                         </button>
                         <button class="doctor-detail" type="button" data-open-detail="{{ $doctor['id'] }}">Details</button>
-                        <a class="doctor-message" href="{{ $doctor['message_url'] }}" aria-label="Message {{ $doctor['name'] }}">
+                        <a class="doctor-message" href="{{ $doctor['message_url'] }}" data-open-chat="{{ $doctor['id'] }}" aria-haspopup="dialog" aria-label="Message {{ $doctor['name'] }}">
                             {!! $iconMessage !!}
                         </a>
                     </div>
@@ -319,7 +323,7 @@
 
                 <footer class="detail-footer">
                     <button class="detail-book" type="button" data-detail-book @if($activeAppointmentNotice) disabled @endif>{{ $activeAppointmentNotice ? 'Active Appointment' : 'Book Now' }}</button>
-                    <a class="detail-chat" href="{{ route('mother.consultation') }}" data-detail-chat>Chat</a>
+                    <a class="detail-chat" href="{{ route('mother.consultation') }}" data-detail-chat aria-haspopup="dialog">Chat</a>
                 </footer>
             </section>
         </div>
@@ -387,5 +391,18 @@
                 </form>
             </section>
         </div>
+        <dialog class="appointment-chat" data-appointment-chat aria-labelledby="appointment-chat-name">
+            <header class="appointment-chat-header">
+                <div><h2 id="appointment-chat-name" data-chat-name>Healthcare worker</h2><p data-chat-role></p></div>
+                <button type="button" data-chat-close aria-label="Close chat">&times;</button>
+            </header>
+            <div class="appointment-chat-messages" data-chat-messages role="log" aria-label="Messages" aria-live="polite"></div>
+            <p class="appointment-chat-status" data-chat-status role="status"></p>
+            <form class="appointment-chat-composer" data-chat-form>
+                <label class="sr-only" for="appointment-chat-message">Message</label>
+                <textarea id="appointment-chat-message" name="message" rows="2" maxlength="1000" placeholder="Type a message…" required disabled></textarea>
+                <button type="submit" disabled>Send</button>
+            </form>
+        </dialog>
     </section>
 @endsection

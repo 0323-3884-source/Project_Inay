@@ -614,6 +614,7 @@
     });
 
     document.addEventListener('keydown', (event) => {
+        if (root.querySelector('[data-appointment-chat]')?.open) return;
         const dialog = [modal, filterModal, detailModal].find(item => item && !item.hidden);
         if (event.key === 'Tab' && dialog) {
             const focusable = [...dialog.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')]

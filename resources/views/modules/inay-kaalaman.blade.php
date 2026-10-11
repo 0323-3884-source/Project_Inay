@@ -399,6 +399,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/inay-infographics.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/inay-kaalaman.css') }}?v={{ filemtime(public_path('css/inay-kaalaman.css')) }}">
 @endpush
 
 @section('content')
