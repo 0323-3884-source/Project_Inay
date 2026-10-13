@@ -23,12 +23,14 @@ class Mother extends Model
         'parity',
         'blood_type',
         'pregnancy_status',
+        'last_menstrual_period',
         'profile_photo_path',
         'location_latitude',
         'location_longitude',
         'location_accuracy',
         'is_4ps_beneficiary',
         'four_ps_household_number',
+        'dswd_entry_number',
     ];
 
     protected $hidden = [
@@ -39,6 +41,7 @@ class Mother extends Model
     {
         return [
             'age' => 'integer',
+            'last_menstrual_period' => 'date',
             'gravidity' => 'integer',
             'parity' => 'integer',
             'location_latitude' => 'decimal:7',

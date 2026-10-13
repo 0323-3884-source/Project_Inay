@@ -3,6 +3,15 @@
     const main = document.querySelector('.portal-main');
     const desktopQuery = window.matchMedia('(min-width: 1025px)');
     let resizeFrame = 0;
+    const header = document.querySelector('.portal-header');
+    const syncHeaderHeight = () => {
+        if (!header) return;
+        const height = Math.ceil(header.getBoundingClientRect().height);
+        if (height > 0) document.documentElement.style.setProperty('--portal-header-height', `${height}px`);
+    };
+    if (header && 'ResizeObserver' in window) new ResizeObserver(syncHeaderHeight).observe(header);
+    window.addEventListener('resize', syncHeaderHeight, { passive: true });
+    syncHeaderHeight();
 
     const setDrawerOpen = (open) => {
         if (!drawer) return;

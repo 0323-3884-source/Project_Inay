@@ -1,0 +1,13 @@
+.inay-language-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid #ffd8e9; border-radius: 10px; background: #fff; flex-shrink: 0; }
+.inay-language-switch button { min-height: 36px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #52627d; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.inay-language-switch button[aria-pressed="true"] { background: #ec0a78; color: #fff; }
+.inay-language-switch button:focus-visible { outline: 3px solid #f58fc9; outline-offset: 2px; }
+.auth-header .inay-language-switch { margin-bottom: 20px; }
+.portal-dropdown .portal-language-mobile { display: none; }
+@media (max-width: 768px) {
+    .portal-header-right > .inay-language-switch { display: none; }
+    .portal-dropdown .portal-language-mobile { display: grid; gap: 8px; padding: 8px 12px 12px; }
+    .portal-language-label { color: #52627d; font-size: 12px; font-weight: 600; }
+    .portal-language-mobile .inay-language-switch { display: flex; width: 100%; }
+    .portal-language-mobile .inay-language-switch button { flex: 1; min-height: 44px; padding: 0 8px; font-size: 14px; }
+}

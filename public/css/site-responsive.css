@@ -20,4 +20,22 @@
     .admin-main .admin-card { min-width:0; }
     .admin-main .admin-card-head { flex-wrap:wrap; gap:12px; }
 }
+@media screen and (max-width: 1024px) {
+    html:has(body.portal-shell), body.portal-shell { overflow-x: clip; }
+    body.portal-shell .portal-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    body.portal-shell .portal-main {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+        padding-top: calc(var(--portal-header-height, 76px) + 16px);
+    }
+}
 @media print { .site-pagination { display:none; } }

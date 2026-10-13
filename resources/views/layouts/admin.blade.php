@@ -1,6 +1,8 @@
 @php
     $isAdminAuthScreen = trim($__env->yieldContent('admin_auth_screen')) !== '';
     $adminUsername = $adminUsername ?? session('admin_username', 'admin');
+    $departmentRole = session('admin_role', 'admin');
+    $departmentConsole = match ($departmentRole) { 'admin_dswd' => 'DSWD ADMIN CONSOLE', 'admin_cho' => 'CHO ADMIN CONSOLE', default => 'Admin Console' };
     $adminNotificationUserId = (int) session('admin_id');
     $adminNotificationCount = ! $isAdminAuthScreen && session('admin_authenticated') === true && $adminNotificationUserId > 0
         ? \App\Models\AppNotification::where('recipient_id', $adminNotificationUserId)
@@ -35,6 +37,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin - Project INAY')</title>
     @include('layouts.partials.management-styles')
+    <link rel="stylesheet" href="{{ asset('css/department-admin.css') }}?v={{ filemtime(public_path('css/department-admin.css')) }}">
     @stack('styles')
     <link rel="stylesheet" href="{{ asset('css/site-responsive.css') }}?v={{ filemtime(public_path('css/site-responsive.css')) }}">
 </head>
@@ -47,11 +50,15 @@
                 <span class="admin-brand-mark">{!! $adminIcons['mark'] !!}</span>
                 <span>
                     <span class="admin-brand-title">Project INAY</span>
-                    <span class="admin-brand-subtitle">Admin Console</span>
+                    <span class="admin-brand-subtitle">{{ $departmentConsole }}</span>
                 </span>
+                <button class="admin-mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation" data-admin-menu-toggle>Menu</button>
             </div>
-            <nav class="admin-nav">
+            <nav class="admin-nav" id="admin-navigation">
                 <p class="admin-nav-label">System</p>
+                @if (in_array($departmentRole, ['admin_dswd', 'admin_cho'], true))
+                    @include('admin.departments.navigation')
+                @else
                 <a class="admin-nav-link {{ request()->routeIs('admin.dswd-staff.*') ? 'is-active' : '' }}" href="{{ route('admin.dswd-staff.index') }}">{!! $adminIcons['id-card'] !!} DSWD / 4Ps Staff</a>
                 <a class="admin-nav-link {{ request()->routeIs('admin.statistics') ? 'is-active' : '' }}" href="{{ route('admin.statistics') }}">
                     {!! $adminIcons['stats'] !!}
@@ -73,7 +80,9 @@
                     {!! $adminIcons['message'] !!}
                     Admin Messages
                 </a>
+                @endif
             </nav>
+            @if ($departmentRole === 'admin')
             <div
                 class="admin-notification-wrap"
                 data-notification-root
@@ -102,6 +111,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             <div class="admin-sidebar-bottom">
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
@@ -117,6 +127,7 @@
         </main>
     @endif
     @if (! $isAdminAuthScreen)
+        <script src="{{ asset('js/department-admin.js') }}?v={{ filemtime(public_path('js/department-admin.js')) }}" defer></script>
         <script src="{{ asset('js/app-notifications.js') }}?v={{ filemtime(public_path('js/app-notifications.js')) }}" defer></script>
     @endif
     @stack('scripts')

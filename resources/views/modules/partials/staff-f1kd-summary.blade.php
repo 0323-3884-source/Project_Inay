@@ -12,13 +12,13 @@
 @endif
 <div style="overflow-x:auto">
     <table class="f1kd-casefile-table">
-        <thead><tr><th scope="col">Beneficiary</th><th scope="col">Beneficiary ID</th><th scope="col">Household ID</th><th scope="col">Classification</th><th scope="col">Attendance</th><th scope="col">Remarks</th><th scope="col">Action</th></tr></thead>
+        <thead><tr><th scope="col">Beneficiary</th><th scope="col">Project INAY ID</th><th scope="col">Entry ID</th><th scope="col">Classification</th><th scope="col">Attendance</th><th scope="col">Remarks</th><th scope="col">Action</th></tr></thead>
         <tbody>
         @forelse($f1kdBeneficiaries as $beneficiary)
             <tr>
                 <td>{{ $beneficiary->name }}@if($beneficiary->classification === 'child')<br><small>Mother: {{ $beneficiary->mother_name }}</small>@endif</td>
-                <td>{{ $beneficiary->beneficiary_id }}</td>
-                <td>{{ $beneficiary->household_id ?: 'Not recorded' }}</td>
+                <td>{{ $beneficiary->beneficiary_id }}@include('dswd.f1kd.profile-summary')</td>
+                <td>{{ $beneficiary->dswd_entry_number ?: 'Not recorded' }}</td>
                 <td>{{ \App\Support\F1kdCompliance::CLASSES[$beneficiary->classification] }}</td>
                 <td><span class="f1kd-casefile-attendance is-{{ $beneficiary->status }}">
                     @if($beneficiary->attendance_status === 'attended')<span aria-hidden="true">○</span> Attended

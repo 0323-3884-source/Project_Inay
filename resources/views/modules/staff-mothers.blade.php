@@ -56,7 +56,15 @@
             'class' => 'is-'.str_replace('_', '-', $mother->pregnancy_status ?: 'pending'),
         ];
     };
-    $isFiltered = $search !== '' || $fourPs !== 'all';
+    $pregnancyFilterLabels = [
+        'all' => 'All Pregnancy Statuses',
+        'pregnant' => 'Pregnant',
+        'not_pregnant' => 'Not Pregnant',
+        'postpartum' => 'Postpartum',
+        'planning' => 'Planning',
+        'pending' => 'Status Pending',
+    ];
+    $isFiltered = $search !== '' || $fourPs !== 'all' || $pregnancyFilter !== 'all';
 @endphp
 
 @push('styles')
@@ -107,7 +115,7 @@
 
         .casefiles-toolbar {
             display: grid;
-            grid-template-columns: minmax(260px, 1fr) minmax(210px, 260px) auto;
+            grid-template-columns: minmax(260px, 1fr) repeat(2, minmax(210px, 260px)) auto;
             gap: 12px;
             align-items: center;
         }
@@ -162,6 +170,15 @@
             background: #fff3fa;
             border-color: #ffd4e7;
             text-decoration: none;
+        }
+
+        .casefiles-toolbar .casefiles-export-button {
+            grid-column: 1 / -1;
+            justify-self: end;
+            cursor: pointer;
+            color: #ffffff;
+            background: #ec0a78;
+            border-color: #ec0a78;
         }
 
         .casefiles-table-card {
@@ -612,9 +629,18 @@
                     @endforeach
                 </select>
             </label>
+            <label class="casefiles-filter-control">
+                {!! $iconFilter !!}
+                <select name="pregnancy" aria-label="Filter by pregnancy status" data-casefiles-auto-submit>
+                    @foreach ($pregnancyFilterLabels as $value => $label)
+                        <option value="{{ $value }}" @selected($pregnancyFilter === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
             @if ($isFiltered)
                 <a class="casefiles-clear-link" href="{{ route('staff.mothers') }}">Clear</a>
             @endif
+            <button type="submit" name="export" value="csv" class="casefiles-clear-link casefiles-export-button">Generate CSV (Excel)</button>
         </form>
 
         <div class="casefiles-loading-state" data-casefiles-loading hidden>Loading mother records...</div>
@@ -748,8 +774,10 @@
             const form = document.querySelector('[data-casefiles-filter-form]');
             const loading = document.querySelector('[data-casefiles-loading]');
 
-            form?.addEventListener('submit', () => {
-                loading?.removeAttribute('hidden');
+            form?.addEventListener('submit', (event) => {
+                if (event.submitter?.name !== 'export') {
+                    loading?.removeAttribute('hidden');
+                }
             });
 
             document.querySelectorAll('[data-casefiles-auto-submit]').forEach((select) => {

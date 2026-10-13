@@ -30,10 +30,21 @@ Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('adm
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.store');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 Route::middleware('admin.auth')->group(function () {
+    foreach (['dswd', 'cho'] as $department) {
+        Route::prefix('admin/'.$department)->name('admin.'.$department.'.')->group(function () use ($department) {
+            Route::get('/dashboard', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'dashboard'])->name('dashboard');
+            Route::get('/reports', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'reports'])->name('reports');
+            Route::get('/{module}', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'module'])
+                ->whereIn('module', $department === 'dswd' ? ['beneficiaries', 'f1kd', 'attendance', 'notifications'] : ['mothers', 'pregnancy', 'consultations', 'vaccinations', 'notifications'])->name('module');
+        });
+    }
+    Route::patch('/admin/dswd/beneficiaries/{mother}', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'updateBeneficiary'])->name('admin.dswd.beneficiaries.update');
+    Route::get('/admin/cho/mothers/{mother}', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'clinicalRecord'])->name('admin.cho.mothers.show');
     Route::get('/admin/dswd-staff', [\App\Http\Controllers\Admin\DswdStaffController::class, 'index'])->name('admin.dswd-staff.index');
     Route::post('/admin/dswd-staff', [\App\Http\Controllers\Admin\DswdStaffController::class, 'store'])->name('admin.dswd-staff.store');
     Route::patch('/admin/dswd-staff/{dswdStaff}', [\App\Http\Controllers\Admin\DswdStaffController::class, 'update'])->name('admin.dswd-staff.update');
-    Route::get('/admin', fn () => redirect()->route('admin.statistics'))->name('admin.dashboard');
+    Route::delete('/admin/dswd-staff/{dswdStaff}', [\App\Http\Controllers\Admin\DswdStaffController::class, 'destroy'])->name('admin.dswd-staff.destroy');
+    Route::get('/admin', fn () => redirect()->route(\App\Models\AdminUser::findOrFail(session('admin_id'))->dashboardRoute()))->name('admin.dashboard');
     Route::get('/admin/statistics', AdminStatisticsController::class)->name('admin.statistics');
     Route::get('/admin/educational-content', [EducationalContentController::class, 'index'])->name('admin.educational-content.index');
     Route::post('/admin/educational-content', [EducationalContentController::class, 'store'])->name('admin.educational-content.store');
@@ -228,6 +239,7 @@ Route::prefix('dswd/f1kd')->name('dswd.f1kd.')->middleware('dswd.auth')->control
     Route::get('/reports/download', 'reports')->name('reports.download');
     Route::get('/{subject}', 'show')->where('subject', '(mother|child)-[0-9]+')->name('show');
     Route::put('/{subject}', 'updateDswd')->where('subject', '(mother|child)-[0-9]+')->name('update');
+    Route::patch('/{subject}/entry', 'updateEntryDswd')->where('subject', '(mother|child)-[0-9]+')->name('entry.update');
 });
 Route::get('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'edit'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.edit');
 Route::put('/staff/f1kd/{subject}', [\App\Http\Controllers\F1kdController::class, 'update'])->where('subject', '(mother|child)-[0-9]+')->name('staff.f1kd.update');

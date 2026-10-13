@@ -20,6 +20,7 @@
 
 @section('content')
     <header class="auth-header">
+        @include('partials.language-switch')
         <span class="auth-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24">
                 <path d="M12 21s-7.5-4.8-9.6-9.1C.7 8.4 2.8 4.5 6.7 4.5c2 0 3.6 1 4.5 2.5.9-1.5 2.5-2.5 4.5-2.5 3.9 0 6 3.9 4.3 7.4C19.5 16.2 12 21 12 21z" />
@@ -31,8 +32,8 @@
     </header>
 
     <section class="auth-card">
-        <h2 class="auth-card-title">Mag-login sa platform</h2>
-        <p class="auth-card-subtitle">Pumili ng tungkulin (Role-based Portal)</p>
+        <h2 class="auth-card-title">Log in to the platform</h2>
+        <p class="auth-card-subtitle">Choose your account role</p>
 
         @if ($errors->any())
             <div class="alert error auth-error">Please check your login details.</div>
@@ -115,7 +116,7 @@
         </form>
 
         <div class="auth-footer-link">
-            <a id="registerLink" @if($selectedRole === 'dswd_staff') hidden @endif href="{{ $selectedRole === 'staff' ? route('staff.register') : route('mother.register') }}">Wala pang account? Mag-register</a>
+            <a id="registerLink" @if($selectedRole === 'dswd_staff') hidden @endif href="{{ $selectedRole === 'staff' ? route('staff.register') : route('mother.register') }}">No account yet? Register</a>
             <span id="dswdAccountHelp" @if($selectedRole !== 'dswd_staff') hidden @endif>Contact your administrator for a DSWD / 4Ps Staff account.</span>
         </div>
     </section>
@@ -130,7 +131,7 @@
         const refreshSubmitLabel = () => {
             const activeRole = document.querySelector('[data-role].is-active');
 
-            if (roleInput.value !== 'dswd_staff' && loginIdentifier.value.trim().toLowerCase() === 'admin') {
+            if (['admin', 'admindswd', 'admincho'].includes(loginIdentifier.value.trim().toLowerCase())) {
                 loginSubmitLabel.textContent = 'Login as Admin';
                 return;
             }

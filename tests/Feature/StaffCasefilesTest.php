@@ -83,6 +83,74 @@ class StaffCasefilesTest extends TestCase
         $this->assertStringNotContainsString(route('staff.mothers.show', $beneficiary), $nonBeneficiaryResponse->getContent());
     }
 
+    public function test_staff_can_filter_mothers_by_pregnancy_category(): void
+    {
+        $staff = $this->createStaff();
+        $patients = [];
+        foreach (['pregnant', 'not_pregnant', 'postpartum', 'planning', null] as $index => $status) {
+            $mother = $this->createMother('Patient'.$index, null, 'Santos', "pregnancy.$index@example.test", '09170001114', 'Concepcion');
+            $mother->forceFill(['pregnancy_status' => $status])->save();
+            $patients[] = $mother;
+        }
+
+        foreach (['all' => [0, 1, 2, 3, 4], 'pregnant' => [0], 'not_pregnant' => [1], 'postpartum' => [2], 'planning' => [3], 'pending' => [4], 'invalid' => [0, 1, 2, 3, 4]] as $filter => $expected) {
+            $response = $this->withStaffSession($staff)->get('/staff/mothers?pregnancy='.$filter)->assertOk();
+            foreach ($patients as $index => $mother) {
+                if (in_array($index, $expected, true)) {
+                    $response->assertSee($mother->email);
+                } else {
+                    $response->assertDontSee($mother->email);
+                }
+            }
+        }
+
+        $patients[1]->forceFill(['is_4ps_beneficiary' => true])->save();
+        $this->withStaffSession($staff)
+            ->get('/staff/mothers?pregnancy=not_pregnant&four_ps=beneficiary&q=Patient1')
+            ->assertOk()
+            ->assertSee($patients[1]->email)
+            ->assertDontSee($patients[2]->email)
+            ->assertSee('Clear');
+    }
+
+    public function test_staff_can_export_all_filtered_mothers_to_excel_compatible_csv(): void
+    {
+        $staff = $this->createStaff();
+        $expected = [];
+        for ($index = 0; $index < 12; $index++) {
+            $mother = $this->createMother('Export'.$index, null, 'Santos', "export.$index@example.test", '09170001114', 'Concepcion');
+            $mother->forceFill(['pregnancy_status' => 'postpartum', 'is_4ps_beneficiary' => true])->save();
+            $expected[] = $mother->email;
+        }
+        $excluded = $this->createMother('Excluded', null, 'Santos', 'excluded@example.test', '09170001115', 'Concepcion');
+        $excluded->forceFill(['first_name' => '=HYPERLINK("example")'])->save();
+
+        $response = $this->withStaffSession($staff)
+            ->get('/staff/mothers?export=csv&pregnancy=postpartum&four_ps=beneficiary&q=Export&page=2')
+            ->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $csv = $response->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $lines = preg_split('/\r?\n/', trim(substr($csv, 3)));
+        $this->assertCount(13, $lines);
+        $this->assertCount(11, str_getcsv($lines[0], ',', '"', ''));
+        foreach ($expected as $email) {
+            $this->assertStringContainsString($email, $csv);
+        }
+        $this->assertStringNotContainsString($excluded->email, $csv);
+        $this->assertStringContainsString("'09170001114", $csv);
+        $this->assertStringContainsString('Postpartum', $csv);
+
+        $allCsv = $this->withStaffSession($staff)->get('/staff/mothers?export=csv')->assertOk()->streamedContent();
+        $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), preg_split('/\r?\n/', trim(substr($allCsv, 3))));
+        $exported = collect($rows)->first(fn ($row) => ($row[2] ?? '') === $excluded->email);
+        $this->assertSame("'".$excluded->full_name, $exported[1]);
+    }
+
+    public function test_guests_cannot_export_mother_casefiles(): void
+    {
+        $this->get('/staff/mothers?export=csv')->assertRedirect(route('login'));
+    }
+
     public function test_staff_dashboard_shows_registered_mothers_count(): void
     {
         $staff = $this->createStaff();

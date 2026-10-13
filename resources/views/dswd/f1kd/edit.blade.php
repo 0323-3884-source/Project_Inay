@@ -22,6 +22,7 @@
         <form method="post" action="{{ route('staff.f1kd.update', ['subject'=>$beneficiary->key]) }}" class="dswd-form">
             @csrf @method('PUT')
             <input type="hidden" name="month" value="{{ $beneficiary->month }}">
+            @include('dswd.f1kd.profile-fields')
             <fieldset class="f1kd-attendance-options">
                 <legend>Attendance Status</legend>
                 @foreach(\App\Support\F1kdCompliance::ATTENDANCE as $value=>$label)

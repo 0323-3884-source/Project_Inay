@@ -3,7 +3,7 @@
 @section('content')
 <header class="account-heading"><div><p class="account-kicker">DSWD / 4Ps</p><h1>F1KD Monitoring</h1><p>Shared monthly monitoring for registered 4Ps mothers and children aged 0-24 months.</p></div></header>
 <section class="admin-card">@include('dswd.f1kd.filters')
-<p class="dswd-note">Program Staff and DSWD use the same monthly attendance records. Open a beneficiary to update or verify attendance. Historical rosters show saved records only. Household IDs show the number registered from the 4Ps card.</p>
+<p class="dswd-note">Program Staff and DSWD use the same monthly attendance records. Open a beneficiary to update their Entry ID or verify attendance. Mothers and children each have their own Entry ID, separate from their Household No. Historical rosters show saved records only.</p>
 </section>
 @foreach($sections as $section)
 @if(empty($filters['classification']) || $filters['classification'] === $section['classification'])

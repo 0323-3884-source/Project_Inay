@@ -1,3 +1,27 @@
+/* Keep the upload controls on a shared baseline, including the custom file label. */
+.kaalaman-upload-row .kaalaman-upload-field { min-width: 0; }
+.kaalaman-upload-row .kaalaman-upload-field select,
+.kaalaman-upload-row .kaalaman-upload-field .kaalaman-file-picker,
+.kaalaman-upload-row .kaalaman-upload-actions .kaalaman-button { height: 46px; min-height: 46px; }
+.kaalaman-upload-row .kaalaman-upload-field .kaalaman-file-picker {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+.kaalaman-upload-row .kaalaman-file-picker span { height: 100%; }
+.kaalaman-upload-row .kaalaman-upload-actions { min-width: 0; }
+.kaalaman-upload-row .kaalaman-upload-button { min-width: 0; white-space: normal; }
+.kaalaman-months { scroll-margin-top: calc(var(--portal-header-height, 76px) + 20px); }
+@media (max-width: 1100px) {
+    .kaalaman-upload-panel .kaalaman-upload-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kaalaman-upload-row .kaalaman-upload-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+    .kaalaman-upload-panel .kaalaman-upload-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Match the My Appointments card typography throughout the learning module. */
 body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) {
     font-family: var(--inay-font-sans);

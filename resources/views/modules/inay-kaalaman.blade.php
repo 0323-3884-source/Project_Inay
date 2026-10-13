@@ -726,12 +726,13 @@
 
     @include('modules.partials.infographic-viewer')
 
-    <script src="{{ asset('js/inay-infographics.js') }}"></script>
+    <script src="{{ asset('js/infographic-language.js') }}?v={{ filemtime(public_path('js/infographic-language.js')) }}"></script>
+    <script src="{{ asset('js/inay-infographics.js') }}?v={{ filemtime(public_path('js/inay-infographics.js')) }}"></script>
 
     <script>
         const kaalamanProgressUrl = @json(route('inay-kaalaman.progress'));
         const kaalamanCsrfToken = @json(csrf_token());
-        const kaalamanLanguageStorageKey = 'project-inay-kaalaman-language';
+        const kaalamanLanguageStorageKey = 'project-inay-language';
         let kaalamanCurrentLanguage = 'en';
         const kaalamanStatusLabels = {
             en: {
@@ -1093,7 +1094,7 @@
             });
         };
 
-        const selectLearningStage = (button, shouldSlide = true, closeMonths = false) => {
+        const selectLearningStage = (button, shouldSlide = true, closeMonths = false, shouldScrollToContent = false) => {
             if (!button) return;
 
             const stage = button.dataset.stageButton;
@@ -1130,23 +1131,39 @@
                 stageIgnoreScrollUntil = Date.now() + 1000;
                 scrollStageIntoPlace(button);
             }
+            if (shouldScrollToContent) {
+                // Reveal the selected stage before measuring and scrolling to its content.
+                const firstMonth = Array.from(stageDetails).find((panel) =>
+                    panel.dataset.stageDetail === stage && panel.tagName.toLowerCase() === 'details');
+                if (firstMonth) firstMonth.open = true;
+                requestAnimationFrame(() => {
+                    const content = document.querySelector('.kaalaman-months');
+                    if (!content) return;
+                    const headerHeight = document.querySelector('.portal-header')?.getBoundingClientRect().height || 76;
+                    window.scrollTo({
+                        top: Math.max(0, window.scrollY + content.getBoundingClientRect().top - headerHeight - 20),
+                        left: 0,
+                        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+                    });
+                });
+            }
         };
 
         stageButtons.forEach((button) => {
-            button.addEventListener('click', () => selectLearningStage(button, true, true));
+            button.addEventListener('click', () => selectLearningStage(button, true, true, true));
         });
 
         stageDots.forEach((dot) => {
             dot.addEventListener('click', () => {
                 const button = stageButtons.find((item) => item.dataset.stageButton === dot.dataset.stageDot);
-                selectLearningStage(button, true, true);
+                selectLearningStage(button, true, true, true);
             });
         });
 
         stageArrowButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 const nextIndex = selectedStageIndex() + (button.dataset.stageArrow === 'next' ? 1 : -1);
-                selectLearningStage(stageButtons[Math.min(Math.max(nextIndex, 0), stageButtons.length - 1)], true, true);
+                selectLearningStage(stageButtons[Math.min(Math.max(nextIndex, 0), stageButtons.length - 1)], true, true, true);
             });
         });
 
@@ -1412,8 +1429,12 @@
         });
 
         document.querySelectorAll('[data-language-choice]').forEach((button) => {
-            button.addEventListener('click', () => applyKaalamanLanguage(button.dataset.languageChoice || 'en'));
+            button.addEventListener('click', () => {
+                applyKaalamanLanguage(button.dataset.languageChoice || 'en');
+                window.InayLanguage?.set(button.dataset.languageChoice || 'en');
+            });
         });
+        window.addEventListener('inay:language-change', (event) => applyKaalamanLanguage(event.detail.language, false));
 
         let storedKaalamanLanguage = 'en';
         try {

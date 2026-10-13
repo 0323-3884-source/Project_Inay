@@ -104,6 +104,7 @@
                 title.textContent = card.dataset.title;
                 reader.replaceChildren(card.querySelector('template').content.cloneNode(true));
                 syncViewport();
+                window.InayInfographicLanguage?.refresh();
                 dialog.showModal();
                 document.documentElement.classList.add('inay-infographic-opened');
                 reader.scrollTop = 0;

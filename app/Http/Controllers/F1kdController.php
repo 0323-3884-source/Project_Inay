@@ -142,6 +142,7 @@ class F1kdController extends Controller
             'month' => ['required', 'date_format:Y-m', 'before_or_equal:'.now()->format('Y-m')],
             'attendance_status' => ['required', Rule::in(array_keys(F1kdCompliance::ATTENDANCE))],
             'remark_code' => ['nullable', Rule::in(array_keys(F1kdCompliance::REMARKS))],
+            ...$this->profileRules($beneficiary),
         ]);
         $this->compliance->saveAttendance($beneficiary, $data, 'staff', (int) $request->session()->get('auth_id'));
 
@@ -150,16 +151,29 @@ class F1kdController extends Controller
 
     public function updateDswd(Request $request, string $subject)
     {
-        // dswd.auth checks role, account existence and active status.
+        abort(403, 'Only BHW / Program Staff can edit monthly attendance and remarks.');
+    }
+
+    private function profileRules(object $beneficiary): array
+    {
+        return $beneficiary->classification === 'child'
+            ? ['dswd_entry_number' => ['sometimes', 'nullable', 'string', 'max:30', 'regex:/^[0-9]+$/', Rule::unique('infants', 'dswd_entry_number')->ignore($beneficiary->infant_id)]]
+            : ['last_menstrual_period' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+                'dswd_entry_number' => ['sometimes', 'nullable', 'string', 'max:30', 'regex:/^[0-9]+$/', Rule::unique('mothers', 'dswd_entry_number')->ignore($beneficiary->mother_id)]];
+    }
+
+    public function updateEntryDswd(Request $request, string $subject)
+    {
         abort_unless($request->attributes->get('dswd_staff'), 403);
-        $data = $request->validate([
-            'month'=>['required','date_format:Y-m','before_or_equal:'.now()->format('Y-m')],
-            'attendance_status'=>['required',Rule::in(array_keys(F1kdCompliance::ATTENDANCE))],
-            'remark_code'=>['nullable',Rule::in(array_keys(F1kdCompliance::REMARKS))],
-        ]);
-        $beneficiary = $this->compliance->beneficiary($subject, $data['month']);
+        $filters = $this->compliance->filters($request);
+        $beneficiary = $this->compliance->beneficiary($subject, $filters['month']);
         abort_unless($beneficiary, 404);
-        $this->compliance->saveAttendance($beneficiary, $data, 'dswd_staff', $request->attributes->get('dswd_staff')->id);
-        return redirect()->route('dswd.f1kd.show', ['subject'=>$subject, 'month'=>$data['month']])->with('status', 'Shared attendance updated and verified.');
+        $rules = $this->profileRules($beneficiary);
+        $data = $request->validate(['dswd_entry_number' => ['present', ...$rules['dswd_entry_number']]]);
+        $model = $beneficiary->classification === 'child'
+            ? \App\Models\Infant::where('mother_id', $beneficiary->mother_id)->findOrFail($beneficiary->infant_id)
+            : \App\Models\Mother::findOrFail($beneficiary->mother_id);
+        $model->update($data);
+        return redirect()->route('dswd.f1kd.show', ['subject' => $subject, 'month' => $filters['month']])->with('status', 'Entry ID updated.');
     }
 }

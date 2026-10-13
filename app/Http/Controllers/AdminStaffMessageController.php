@@ -79,6 +79,7 @@ class AdminStaffMessageController extends Controller
 
             $threads = AdminStaffThread::with(['adminUser', 'programStaff', 'lastMessage'])
                 ->where('program_staff_id', $staff->id)
+                ->whereHas('adminUser', fn ($query) => $query->whereIn('role', ['admin', 'admin_cho']))
                 ->get();
         }
 
@@ -254,6 +255,7 @@ class AdminStaffMessageController extends Controller
     private function ensureThreadsForStaff(ProgramStaff $staff): void
     {
         AdminUser::query()
+            ->whereIn('role', ['admin', 'admin_cho'])
             ->orderBy('username')
             ->get(['id'])
             ->each(fn (AdminUser $admin): AdminStaffThread => $this->ensureThreadForPair($admin, $staff));
@@ -269,6 +271,7 @@ class AdminStaffMessageController extends Controller
 
     private function authorizesThread(array $viewer, AdminStaffThread $thread): bool
     {
+        if (! in_array($thread->adminUser?->role, ['admin', 'admin_cho'], true)) return false;
         return $viewer['role'] === AdminStaffMessage::ROLE_ADMIN
             ? $thread->admin_user_id === $viewer['model']->id
             : $thread->program_staff_id === $viewer['model']->id;

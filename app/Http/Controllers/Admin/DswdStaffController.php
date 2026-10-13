@@ -60,4 +60,11 @@ class DswdStaffController extends Controller
         $dswdStaff->update($request->validate(['is_active' => ['required', 'boolean']]));
         return back()->with('status', 'DSWD account access updated.');
     }
+
+    public function destroy(DswdStaff $dswdStaff)
+    {
+        $dswdStaff->delete();
+
+        return redirect()->route('admin.dswd-staff.index')->with('status', 'DSWD / 4Ps Staff account removed.');
+    }
 }

@@ -93,9 +93,9 @@ class F1kdCompliance
         $mothers = Mother::where('is_4ps_beneficiary', true)
             ->with(['casefileStaff:id,first_name,middle_name,last_name'])
             ->when(isset($filters['mother_id']), fn ($query) => $query->where('id', $filters['mother_id']))
-            ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status', 'four_ps_household_number'])->keyBy('id');
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'barangay', 'municipality_city', 'pregnancy_status', 'four_ps_household_number', 'last_menstrual_period', 'dswd_entry_number', 'profile_photo_path'])->keyBy('id');
         $children = Infant::whereIn('mother_id', $mothers->keys())
-            ->get(['id', 'mother_id', 'full_name', 'sex', 'birth_date'])->keyBy('id');
+            ->get(['id', 'mother_id', 'full_name', 'sex', 'birth_date', 'dswd_entry_number', 'photo_path'])->keyBy('id');
         $rows = collect();
         $current = $month->format('Y-m') === now()->format('Y-m');
         $asOf = $current ? CarbonImmutable::today() : $month->endOfMonth();
@@ -113,13 +113,17 @@ class F1kdCompliance
             $rows->put($key, (object) [
                 'key' => $key, 'mother_id' => $mother->id, 'infant_id' => $child?->id,
                 'household_id' => $mother->four_ps_household_number,
+                'dswd_entry_number' => $child ? $child->dswd_entry_number : $mother->dswd_entry_number,
+                'last_menstrual_period' => $child ? null : $mother->last_menstrual_period,
                 'household' => $mother->four_ps_household_number ?: 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'beneficiary_id' => $child ? 'CHILD-'.$child->id : 'INAY-'.str_pad($mother->id, 5, '0', STR_PAD_LEFT),
                 'name' => $child?->full_name ?? $mother->full_name, 'sex' => $child?->sex ?? 'Female',
                 'mother_name' => $mother->full_name,
+                'mother_photo_path' => $mother->profile_photo_path,
+                'photo_path' => $child ? $child->photo_path : $mother->profile_photo_path,
                 'four_ps_status'=>'Registered 4Ps beneficiary',
                 'assigned_staff'=>$mother->casefileStaff->pluck('full_name')->implode(', ') ?: 'Not assigned',
-                'registered_children'=>$children->where('mother_id', $mother->id)->values()->map(fn ($infant)=>(object)['id'=>$infant->id, 'name'=>$infant->full_name, 'birth_date'=>$infant->birth_date]),
+                'registered_children'=>$children->where('mother_id', $mother->id)->values()->map(fn ($infant)=>(object)['id'=>$infant->id, 'name'=>$infant->full_name, 'birth_date'=>$infant->birth_date, 'photo_path'=>$infant->photo_path]),
                 'dswd_verified_at'=>$record?->dswd_verified_at,
                 'attendance_author'=>$attendanceAuthor,
                 'barangay' => $record ? ($record->barangay ?: 'Not recorded') : ($mother->barangay ?: 'Not recorded'),
@@ -149,7 +153,7 @@ class F1kdCompliance
                 if (! empty($filters[$field]) && $row->$field !== $filters[$field]) return false;
             }
             $q = trim($filters['q'] ?? '');
-            return $q === '' || str_contains(mb_strtolower($row->name.' '.$row->mother_name.' '.$row->household.' '.$row->beneficiary_id), mb_strtolower($q));
+            return $q === '' || str_contains(mb_strtolower($row->name.' '.$row->mother_name.' '.$row->household.' '.$row->beneficiary_id.' '.$row->dswd_entry_number), mb_strtolower($q));
         })->sortBy('name')->values();
     }
 
@@ -204,6 +208,18 @@ class F1kdCompliance
         ];
         $updates = ['attendance_status', 'remark_code', 'status', 'verified_by_dswd_staff_id', 'dswd_verified_at'];
         if (! $dswd) $updates[] = 'recorded_by_staff_id';
-        DB::transaction(fn () => F1kdMonitoring::upsert([$values], ['subject_key','reporting_month'], $updates));
+        DB::transaction(function () use ($values, $updates, $beneficiary, $data) {
+            if ($beneficiary->classification === 'pregnant' && array_key_exists('dswd_entry_number', $data)) {
+                Mother::findOrFail($beneficiary->mother_id)->update(['dswd_entry_number' => $data['dswd_entry_number']]);
+            }
+            if ($beneficiary->classification === 'child' && array_key_exists('dswd_entry_number', $data)) {
+                Infant::where('mother_id', $beneficiary->mother_id)->findOrFail($beneficiary->infant_id)
+                    ->update(['dswd_entry_number' => $data['dswd_entry_number']]);
+            }
+            if ($beneficiary->classification === 'pregnant' && array_key_exists('last_menstrual_period', $data)) {
+                Mother::findOrFail($beneficiary->mother_id)->update(['last_menstrual_period' => $data['last_menstrual_period']]);
+            }
+            F1kdMonitoring::upsert([$values], ['subject_key','reporting_month'], $updates);
+        });
     }
 }

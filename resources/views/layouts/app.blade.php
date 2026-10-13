@@ -15,6 +15,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('pwa/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('pwa/icon-192.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('pwa/apple-touch-icon.png') }}">
+    <link rel="stylesheet" href="{{ asset('css/inay-language.css') }}?v={{ filemtime(public_path('css/inay-language.css')) }}">
     <style>
         :root {
             --inay-pink: #ec0a78;
@@ -7097,6 +7098,7 @@
 
                 <div class="portal-header-right">
                     @if ($isMotherPortal)
+                        @include('partials.language-switch')
                         <span class="portal-status-badge">
                             {!! $portalIconSvgs['shield'] !!}
                             {{ $monitoringStatus }}
@@ -7159,6 +7161,12 @@
                                 {!! $portalIconSvgs['user'] !!}
                                 My Profile
                             </a>
+                            @if ($isMotherPortal)
+                                <div class="portal-language-mobile">
+                                    <span class="portal-language-label">Language / Wika</span>
+                                    @include('partials.language-switch')
+                                </div>
+                            @endif
                             @if (! $isDswdPortal)
                             <a class="portal-dropdown-item" href="{{ route($isMotherPortal ? 'mother.settings' : 'staff.settings') }}">
                                 {!! $portalIconSvgs['settings'] !!}
@@ -7307,6 +7315,9 @@
             </svg>
             <span>Install App</span>
         </button>
+    @endif
+    @if ($isMotherPortal || request()->routeIs('login', 'mother.register', 'password.*'))
+        <script src="{{ asset('js/inay-language.js') }}?v={{ filemtime(public_path('js/inay-language.js')) }}" defer></script>
     @endif
     <script src="{{ asset('js/pwa.js') }}?v={{ filemtime(public_path('js/pwa.js')) }}" data-base="{{ asset('/') }}" data-role="{{ session('auth_role') }}" defer></script>
     @if ($hasPortalShell)

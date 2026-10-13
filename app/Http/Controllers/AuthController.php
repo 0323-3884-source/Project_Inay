@@ -272,10 +272,8 @@ class AuthController extends Controller
 
         $identifier = trim($validated['email']);
 
-        if ($validated['role'] !== 'dswd_staff') {
-            if ($adminRedirect = $this->attemptAdminLoginFromSharedForm($request, $identifier, $validated['password'])) {
-                return $adminRedirect;
-            }
+        if ($adminRedirect = $this->attemptAdminLoginFromSharedForm($request, $identifier, $validated['password'])) {
+            return $adminRedirect;
         }
 
         if (! filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
@@ -947,7 +945,7 @@ class AuthController extends Controller
         ));
     }
 
-    public function staffMothers(Request $request): View|RedirectResponse
+    public function staffMothers(Request $request): View|RedirectResponse|StreamedResponse
     {
         if ($request->session()->get('auth_role') !== 'staff') {
             return redirect()->route('login')->with('status', 'Please login as Program Staff first.');
@@ -965,6 +963,8 @@ class AuthController extends Controller
         $fourPs = (string) $request->query('four_ps', 'all');
         $allowedFourPsFilters = ['all', 'beneficiary', 'non_4ps'];
         $fourPs = in_array($fourPs, $allowedFourPsFilters, true) ? $fourPs : 'all';
+        $pregnancyFilter = $request->query('pregnancy', 'all');
+        $pregnancyFilter = in_array($pregnancyFilter, ['all', 'pregnant', 'not_pregnant', 'postpartum', 'planning', 'pending'], true) ? $pregnancyFilter : 'all';
 
         $mothersQuery = Mother::query()
             ->with(['maternalMonitoringRecords' => fn ($query) => $query
@@ -1000,9 +1000,45 @@ class AuthController extends Controller
             $mothersQuery->where('is_4ps_beneficiary', false);
         }
 
+        if ($pregnancyFilter === 'pending') {
+            $mothersQuery->where(fn ($query) => $query->whereNull('pregnancy_status')->orWhere('pregnancy_status', ''));
+        } elseif ($pregnancyFilter !== 'all') {
+            $mothersQuery->where('pregnancy_status', $pregnancyFilter);
+        }
+
+        $mothersQuery->orderBy('last_name')->orderBy('first_name')->orderBy('id');
+
+        if ($request->query('export') === 'csv') {
+            return response()->streamDownload(function () use ($mothersQuery) {
+                $output = fopen('php://output', 'w');
+                // UTF-8 BOM lets Excel recognize names containing accented characters.
+                fwrite($output, "\xEF\xBB\xBF");
+                fputcsv($output, ['Case No.', 'Full Name', 'Email', 'Age', 'Barangay', 'Contact', 'Pregnancy Status', 'Pregnancy Week', '4Ps Status', 'Screening', 'Registered'], ',', '"', '');
+                $labels = ['pregnant' => 'Pregnant', 'not_pregnant' => 'Not Pregnant', 'postpartum' => 'Postpartum', 'planning' => 'Planning'];
+                foreach ($mothersQuery->lazy(200) as $mother) {
+                    $latest = $mother->maternalMonitoringRecords->first();
+                    $row = [
+                        'INAY-'.str_pad((string) $mother->id, 5, '0', STR_PAD_LEFT),
+                        $mother->full_name, $mother->email, $mother->age, $mother->barangay,
+                        $mother->contact_number ? "'".$mother->contact_number : '',
+                        $labels[$mother->pregnancy_status] ?? 'Status Pending',
+                        $mother->pregnancy_status === 'pregnant' ? $latest?->pregnancy_week : '',
+                        $mother->is_4ps_beneficiary ? '4Ps' : 'Non-4Ps',
+                        MaternalVitalScreening::normalizeStatus($latest?->screening_summary_status ?? $latest?->risk_level),
+                        $mother->created_at?->format('Y-m-d'),
+                    ];
+                    // Keep user-entered values from being interpreted as spreadsheet formulas.
+                    $row = array_map(function ($value) {
+                        $value = (string) ($value ?? '');
+                        return preg_match('/^[\s]*[=+@-]|^[\t\r\n]/u', $value) ? "'".$value : $value;
+                    }, $row);
+                    fputcsv($output, $row, ',', '"', '');
+                }
+                fclose($output);
+            }, 'mother-casefiles-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store, private']);
+        }
+
         $mothers = $mothersQuery
-            ->orderBy('last_name')
-            ->orderBy('first_name')
             ->paginate(10)
             ->withQueryString();
 
@@ -1014,6 +1050,7 @@ class AuthController extends Controller
             'mothers',
             'search',
             'fourPs',
+            'pregnancyFilter',
             'totalMothers',
             'withMonitoring',
         ));
@@ -2206,6 +2243,7 @@ class AuthController extends Controller
             'admin_authenticated',
             'admin_id',
             'admin_username',
+            'admin_role',
         ]);
         $request->session()->put([
             'auth_role' => $role,
@@ -2232,6 +2270,7 @@ class AuthController extends Controller
             'admin_authenticated',
             'admin_id',
             'admin_username',
+            'admin_role',
         ]);
     }
 
@@ -2245,13 +2284,13 @@ class AuthController extends Controller
             return null;
         }
 
-        if (! Hash::check($password, $admin->password)) {
+        if (! $admin->canAuthenticate() || ! Hash::check($password, $admin->password)) {
             $this->throwLoginError();
         }
 
         $this->startAdminSession($request, $admin);
 
-        return redirect()->route('admin.statistics');
+        return redirect()->route($admin->dashboardRoute());
     }
 
     private function startAdminSession(Request $request, AdminUser $admin): void
@@ -2267,6 +2306,7 @@ class AuthController extends Controller
             'admin_authenticated' => true,
             'admin_id' => $admin->id,
             'admin_username' => $admin->username,
+            'admin_role' => $admin->role,
         ]);
 
         $admin->forceFill(['last_login_at' => now()])->save();
@@ -2858,7 +2898,8 @@ class AuthController extends Controller
     private function redirectForCurrentRole(Request $request): ?RedirectResponse
     {
         if ($request->session()->get('admin_authenticated') === true) {
-            return redirect()->route('admin.statistics');
+            $admin = AdminUser::find($request->session()->get('admin_id'));
+            if ($admin) return redirect()->route($admin->dashboardRoute());
         }
 
         return match ($request->session()->get('auth_role')) {

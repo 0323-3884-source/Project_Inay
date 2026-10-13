@@ -10,6 +10,7 @@ class Infant extends Model
 {
     protected $fillable = [
         'mother_id',
+        'dswd_entry_number',
         'full_name',
         'sex',
         'birth_date',

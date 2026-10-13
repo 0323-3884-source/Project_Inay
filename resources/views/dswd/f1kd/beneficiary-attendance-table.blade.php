@@ -1,7 +1,7 @@
-<div class="dswd-table-wrap"><table class="dswd-table"><thead><tr><th>Beneficiary / ID</th><th>Household ID</th><th>Classification</th><th>Attendance</th><th>Remarks</th><th>Recorded / verified by</th><th>Action</th></tr></thead><tbody>
+<div class="dswd-table-wrap"><table class="dswd-table"><thead><tr><th>Beneficiary / ID</th><th>Entry ID</th><th>Classification</th><th>Attendance</th><th>Remarks</th><th>Recorded / verified by</th><th>Action</th></tr></thead><tbody>
 @forelse($beneficiaries as $beneficiary)<tr>
-<td>{{ $beneficiary->name }}<br>{{ $beneficiary->beneficiary_id }}@if(($showMother ?? false) && $beneficiary->classification === 'child')<br><small>Mother: {{ $beneficiary->mother_name }}</small>@endif</td>
-<td>{{ $beneficiary->household_id ?: 'Not recorded' }}</td>
+<td>{{ $beneficiary->name }}<br>{{ $beneficiary->beneficiary_id }}@include('dswd.f1kd.profile-summary')@if(($showMother ?? false) && $beneficiary->classification === 'child')<br><small>Mother: {{ $beneficiary->mother_name }}</small>@endif</td>
+<td>{{ $beneficiary->dswd_entry_number ?: 'Not recorded' }}</td>
 <td>{{ \App\Support\F1kdCompliance::CLASSES[$beneficiary->classification] }}</td>
 <td>{{ $beneficiary->attendance_status === 'attended' ? '○ Attended' : ($beneficiary->attendance_status === 'did_not_attend' ? '● Did Not Attend' : 'Not Yet Recorded') }}</td>
 <td>{{ \App\Support\F1kdCompliance::REMARKS[$beneficiary->remark_code ?? ''] ?? '—' }}</td>
