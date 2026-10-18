@@ -1540,6 +1540,12 @@ class AuthController extends Controller
             }
         }
 
+        // Older/imported child profiles may predate automatic vaccine scheduling.
+        if ($selectedInfant?->birth_date && ! $selectedInfant->vaccine_schedule_initialized_at && $selectedInfant->vaccineRecords->isEmpty()) {
+            $this->createInfantVaccineSchedule($selectedInfant, $selectedInfant->birth_date, $staff);
+            $selectedInfant->load('vaccineRecords.recorder');
+        }
+
         $selectedMotherInfants = $selectedMother
             ? $children
                 ->where('mother_id', $selectedMother->id)
@@ -2160,6 +2166,23 @@ class AuthController extends Controller
         return redirect()
             ->route('staff.neonatal', ['child' => $infant->id])
             ->with('status', 'Vaccine surveillance updated.');
+    }
+
+    public function deleteStaffInfantVaccine(Request $request, InfantVaccineRecord $vaccine): RedirectResponse
+    {
+        $staff = $this->staffFromRequest($request);
+        $infant = $vaccine->infant;
+
+        if (! $staff || ! $infant || ! $this->staffCanAccessInfant($staff, $infant)) {
+            abort(403);
+        }
+
+        // Remember initialization even when staff removes the final dose.
+        $infant->forceFill(['vaccine_schedule_initialized_at' => $infant->vaccine_schedule_initialized_at ?? now()])->save();
+        $vaccine->delete();
+
+        return redirect()->route('staff.neonatal', ['child' => $infant->id])
+            ->with('status', 'Vaccine removed.');
     }
 
     public function cancelStaffInfantVaccine(Request $request, InfantVaccineRecord $vaccine): RedirectResponse
@@ -2807,6 +2830,7 @@ class AuthController extends Controller
 
     private function createInfantVaccineSchedule(Infant $infant, Carbon $birthDate, ?ProgramStaff $staff = null): void
     {
+        $infant->forceFill(['vaccine_schedule_initialized_at' => $infant->vaccine_schedule_initialized_at ?? now()])->save();
         foreach ($this->defaultInfantVaccineSchedule($birthDate) as $item) {
             InfantVaccineRecord::firstOrCreate(
                 [

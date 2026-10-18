@@ -1,3 +1,26 @@
+.child-health .ch-vaccine.is-complete,
+.neonatal-shell .neo-vaccine.is-complete {
+    background: #ecfdf5;
+    border-color: #86efac;
+}
+
+/* Keep the patient selector and action aligned with the page introduction. */
+.child-health .ch-top { align-items: center; gap: 24px; }
+.child-health .ch-top > div { min-width: 0; }
+.child-health .ch-actions { display: grid; grid-template-columns: minmax(240px, 350px) auto; align-items: end; gap: 12px; }
+.child-health .ch-actions label { min-width: 0; margin: 0; gap: 8px; }
+.child-health .ch-actions .ch-select { width: 100%; min-width: 0; height: 48px; margin: 0; }
+.child-health .ch-actions .ch-button { height: 48px; min-height: 48px; margin: 0; white-space: nowrap; align-self: end; }
+.child-health .ch-top .ch-kicker { margin-top: 0; }
+@media (max-width: 1100px) {
+    .child-health .ch-top { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .child-health .ch-actions { justify-content: start; }
+}
+@media (max-width: 540px) {
+    .child-health .ch-actions { grid-template-columns: minmax(0, 1fr); width: 100%; }
+    .child-health .ch-actions .ch-button { width: 100%; }
+}
+
 /* Compact information uses the vaccine cards' label/value treatment. */
 .neonatal-shell .neo-simple-date { min-width: 0; margin: 0; padding: 0; border: 0; }
 .neonatal-shell .neo-simple-date[hidden] { display: none; }

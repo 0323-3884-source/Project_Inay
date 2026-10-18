@@ -56,9 +56,9 @@
     $vaccineState = function ($record) use ($today) {
         if ($record->status === 'completed') return ['Completed', 'is-complete', 5];
         if ($record->status === 'cancelled') return ['Cancelled', 'is-cancelled', 4];
-        if (in_array($record->status, ['missed', 'overdue'], true)) return [ucfirst($record->status), 'is-overdue', 1];
+        if (in_array($record->status, ['missed', 'overdue'], true)) return [$record->status === 'missed' ? 'Missed' : 'Pending Scheduling', 'is-overdue', 1];
         if ($record->due_date && $record->due_date->isSameDay($today)) return ['Due Today', 'is-due', 2];
-        if ($record->due_date && $record->due_date->isBefore($today)) return ['Overdue', 'is-overdue', 1];
+        if ($record->due_date && $record->due_date->isBefore($today)) return ['Pending Scheduling', 'is-overdue', 1];
         return ['Upcoming', 'is-upcoming', 3];
     };
 
@@ -80,7 +80,7 @@
     } elseif ($selectedInfant) {
         $growthAlerts->push(['title' => 'Awaiting growth record', 'text' => 'No growth measurement has been recorded yet.']);
     }
-    if ($overdueVaccines > 0) $growthAlerts->push(['title' => 'Overdue vaccine follow-up', 'text' => $overdueVaccines.' vaccine'.($overdueVaccines === 1 ? '' : 's').' need status review.']);
+    if ($overdueVaccines > 0) $growthAlerts->push(['title' => 'Vaccine scheduling follow-up', 'text' => $overdueVaccines.' vaccine'.($overdueVaccines === 1 ? '' : 's').' pending scheduling review.']);
     foreach ($activeAlerts as $staffAlert) {
         $growthAlerts->push(['title' => $staffAlert->title, 'text' => $staffAlert->notes ?: 'Follow-up marked by program staff.', 'record' => $staffAlert]);
     }
@@ -892,6 +892,62 @@
                 padding: 0;
             }
         }
+        .neonatal-shell .neo-vaccine-grid {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+            align-items: stretch;
+        }
+
+        .neonatal-shell .neo-vaccine {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            min-width: 0;
+            padding: 16px;
+            text-align: left;
+            border-radius: 10px;
+        }
+
+        .neonatal-shell .neo-vaccine-top {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .neonatal-shell .neo-vaccine-top > span:first-child {
+            min-width: 0;
+        }
+
+        .neonatal-shell .neo-vaccine dl {
+            width: 100%;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin: 4px 0 0;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .neonatal-shell .neo-vaccine h3,
+        .neonatal-shell .neo-vaccine dd {
+            overflow-wrap: anywhere;
+        }
+
+        .neonatal-shell .neo-vaccine-filter {
+            display: grid;
+            gap: 8px;
+            max-width: 280px;
+            margin-bottom: 16px;
+        }
+        .neonatal-shell .neo-status.is-overdue {
+            background: #f1f5f9;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        .neonatal-shell .neo-vaccine.is-overdue {
+            background: #fff;
+            border-color: #cbd5e1;
+        }
     </style>
     <link rel="stylesheet" href="{{ asset('css/child-profile.css') }}?v={{ filemtime(public_path('css/child-profile.css')) }}">
     <script src="{{ asset('js/child-profile.js') }}?v={{ filemtime(public_path('js/child-profile.js')) }}" defer></script>
@@ -969,7 +1025,7 @@
                                 $childCountLabel,
                                 $childSummary,
                                 $motherChildren->isEmpty() ? 'No child profile yet' : null,
-                                $motherOverdue > 0 ? $motherOverdue.' overdue follow-up vaccine alert' : 'no overdue vaccine',
+                                $motherOverdue > 0 ? $motherOverdue.' vaccines pending scheduling' : 'no vaccines pending scheduling',
                                 $childSearchText,
                             ])->filter()->implode(' ');
                         @endphp
@@ -1131,7 +1187,7 @@
                     </section>
 
                     <section class="neo-card neo-section">
-                        <div class="neo-section-head"><div><h2>{!! $iconSyringe !!} Vaccine Surveillance</h2><p class="neo-muted">{{ $selectedInfant->full_name }} schedule and completion status</p></div><div class="neo-vaccine-summary"><span class="neo-status is-complete">{{ $completedVaccines }} completed</span><span class="neo-status is-upcoming">{{ $upcomingVaccines }} upcoming</span><span class="neo-status is-overdue">{{ $overdueVaccines }} overdue</span><button class="neo-button is-light" type="button" data-neo-open="add-vaccine">{!! $iconPlus !!} Add Dose</button></div></div>
+                        <div class="neo-section-head"><div><h2>{!! $iconSyringe !!} Vaccine Surveillance</h2><p class="neo-muted">{{ $selectedInfant->full_name }} schedule and completion status</p></div><div class="neo-vaccine-summary"><span class="neo-status is-complete">{{ $completedVaccines }} completed</span><span class="neo-status is-upcoming">{{ $upcomingVaccines }} upcoming</span><span class="neo-status is-overdue">{{ $overdueVaccines }} pending scheduling</span><button class="neo-button is-light" type="button" data-neo-open="add-vaccine">{!! $iconPlus !!} Add Dose</button></div></div>
                         @if($vaccineRows->isEmpty())
                             <div class="neo-empty">No vaccine records available yet.</div>
                         @else
@@ -1139,7 +1195,7 @@
                                 <label for="vaccine-status-filter">Status</label>
                                 <select id="vaccine-status-filter" data-vaccine-status-filter>
                                     <option value="">All statuses</option>
-                                    @foreach (['Completed', 'Overdue', 'Upcoming', 'Due Today', 'Missed', 'Cancelled'] as $filterStatus)
+                                    @foreach (['Completed', 'Pending Scheduling', 'Upcoming', 'Due Today', 'Missed', 'Cancelled'] as $filterStatus)
                                         <option value="{{ $filterStatus }}">{{ $filterStatus }}</option>
                                     @endforeach
                                 </select>
@@ -1251,7 +1307,7 @@
                         <label class="is-wide">Remarks<textarea name="remarks" data-vaccine-remarks></textarea></label>
                         </div></details>
                     </div>
-                    <footer><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Vaccine</button></footer>
+                    <footer><button class="neo-button is-light" type="submit" name="_method" value="DELETE" formnovalidate onclick="return confirm('Remove this vaccine and its recorded details?');" style="margin-right:auto;color:#be123c">Remove Vaccine</button><button class="neo-button is-light" type="button" data-neo-close>Cancel</button><button class="neo-button" type="submit">Save Vaccine</button></footer>
                 </form>
             </div>
 

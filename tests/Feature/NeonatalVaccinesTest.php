@@ -345,6 +345,55 @@ class NeonatalVaccinesTest extends TestCase
         $this->assertSame('5.45', $growth->fresh()->weight);
     }
 
+    public function test_opening_child_monitoring_populates_an_empty_vaccine_schedule_once(): void
+    {
+        $staff = ProgramStaff::create([
+            'first_name' => 'Test', 'last_name' => 'Staff', 'email' => 'auto-vaccines@example.test',
+            'password' => Hash::make('password123'), 'staff_id' => 'AUTO-VACCINES',
+            'position' => 'Program Staff', 'contact_number' => '09990001111',
+        ]);
+        $mother = Mother::create([
+            'first_name' => 'Test', 'last_name' => 'Mother', 'email' => 'auto-mother@example.test',
+            'password' => Hash::make('password123'), 'barangay' => 'Concepcion',
+            'contact_number' => '09990002222', 'age' => 25,
+        ]);
+        StaffMotherCasefile::create(['staff_id' => $staff->id, 'mother_id' => $mother->id]);
+        $child = Infant::create([
+            'mother_id' => $mother->id, 'full_name' => 'Baby Auto',
+            'sex' => 'female', 'birth_date' => '2026-06-01',
+        ]);
+        $url = route('staff.neonatal', ['child' => $child->id]);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id])
+            ->get($url)->assertOk()->assertSee('BCG')->assertSee('Hepatitis B');
+        $this->assertSame(16, $child->vaccineRecords()->count());
+        $dose = $child->vaccineRecords()->where('vaccine_name', 'BCG')->firstOrFail();
+        $this->assertSame('2026-06-01', $dose->due_date->toDateString());
+        $this->assertSame('upcoming', $dose->status);
+        $dose->update(['status' => 'completed', 'administered_at' => '2026-06-02']);
+        $this->get($url)->assertOk();
+        $this->assertSame(16, $child->vaccineRecords()->count());
+        $this->assertSame('completed', $dose->fresh()->status);
+
+        $this->get($url)->assertSee('Remove Vaccine');
+        $this->withSession(['auth_role' => 'mother', 'auth_id' => $mother->id])
+            ->delete(route('staff.neonatal.vaccines.delete', $dose))->assertForbidden();
+        $this->assertDatabaseHas('infant_vaccine_records', ['id' => $dose->id]);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id]);
+        foreach ($child->vaccineRecords()->get() as $record) {
+            $this->delete(route('staff.neonatal.vaccines.delete', $record))->assertRedirect($url);
+        }
+        $this->get($url)->assertOk()->assertSee('No vaccine records available yet.');
+        $this->assertSame(0, $child->vaccineRecords()->count());
+
+        StaffMotherCasefile::where('staff_id', $staff->id)->delete();
+        $unassignedChild = Infant::create([
+            'mother_id' => $mother->id, 'full_name' => 'Unassigned Child',
+            'sex' => 'male', 'birth_date' => '2026-06-01',
+        ]);
+        $this->get(route('staff.neonatal', ['child' => $unassignedChild->id]))->assertOk();
+        $this->assertSame(0, $unassignedChild->vaccineRecords()->count());
+    }
+
     private function fakePng(string $name): UploadedFile
     {
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=');

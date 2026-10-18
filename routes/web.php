@@ -158,6 +158,7 @@ Route::patch('/staff/neonatal-vaccines/growth/{growth}', [AuthController::class,
 Route::delete('/staff/neonatal-vaccines/growth/{growth}', [AuthController::class, 'deleteStaffInfantGrowth'])->name('staff.neonatal.growth.delete');
 Route::post('/staff/neonatal-vaccines/infants/{infant}/vaccines', [AuthController::class, 'storeStaffInfantVaccine'])->name('staff.neonatal.vaccines.store');
 Route::post('/staff/neonatal-vaccines/vaccines/{vaccine}', [AuthController::class, 'updateStaffInfantVaccine'])->name('staff.neonatal.vaccines.update');
+Route::delete('/staff/neonatal-vaccines/vaccines/{vaccine}', [AuthController::class, 'deleteStaffInfantVaccine'])->name('staff.neonatal.vaccines.delete');
 Route::patch('/staff/neonatal-vaccines/vaccines/{vaccine}/cancel', [AuthController::class, 'cancelStaffInfantVaccine'])->name('staff.neonatal.vaccines.cancel');
 Route::post('/staff/neonatal-vaccines/infants/{infant}/alerts', [AuthController::class, 'storeStaffChildAlert'])->name('staff.neonatal.alerts.store');
 Route::patch('/staff/neonatal-vaccines/alerts/{alert}/resolve', [AuthController::class, 'resolveStaffChildAlert'])->name('staff.neonatal.alerts.resolve');
