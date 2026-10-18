@@ -979,66 +979,12 @@
             <div class="neo-normal">{{ session('status') }}</div>
         @endif
 
-        <div class="neo-workspace">
-            <aside class="neo-card neo-sidebar">
-                <div class="neo-sidebar-head">
-                    <div><h2>Mother's Child</h2><p class="neo-muted">{{ $mothers->count() }} assigned mother{{ $mothers->count() === 1 ? '' : 's' }}</p></div>
-                </div>
-                <div class="neo-search-wrap" data-neo-search-wrap>
-                    <label class="neo-search">{!! $iconSearch !!}<input type="search" placeholder="Search mother or child" aria-label="Search mother and child information" aria-controls="neo-search-results" aria-expanded="false" autocomplete="off" data-neo-search></label>
-                    <div class="neo-search-results" id="neo-search-results" aria-label="Matching mothers" hidden data-neo-search-results></div>
-                    <span class="neo-search-status" role="status" data-neo-search-status></span>
-                </div>
-                <div class="neo-list" data-neo-list>
-                    @forelse($mothers as $mother)
-                        @php
-                            $motherChildren = $children->where('mother_id', $mother->id)->sortBy(fn ($child) => (\App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('Ymd') ?? '99999999').$child->full_name)->values();
-                            $motherOverdue = $motherChildren->flatMap->vaccineRecords->filter(function ($record) use ($today) {
-                                return in_array($record->status, ['missed', 'overdue'], true) || ($record->status !== 'completed' && $record->due_date && $record->due_date->isBefore($today));
-                            })->count();
-                            $childSummary = $motherChildren->isEmpty()
-                                ? 'No child profile yet'
-                                : $motherChildren->pluck('full_name')->take(2)->implode(', ').($motherChildren->count() > 2 ? ' +' . ($motherChildren->count() - 2) : '');
-                            $childSearchText = $motherChildren->map(function ($child) use ($formatNumber) {
-                                $childAge = \App\Support\ChildProfileDisplay::age($child->getRawOriginal('birth_date'));
-                                $latestChildGrowth = $child->growthRecords->last();
-                                return collect([
-                                    $child->full_name,
-                                    $child->sex,
-                                    \App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('M j, Y'),
-                                    \App\Support\ChildProfileDisplay::date($child->getRawOriginal('birth_date'))?->format('Y-m-d'),
-                                    $childAge,
-                                    $child->blood_type,
-                                    $child->facility,
-                                    $latestChildGrowth?->measured_at?->format('M j, Y'),
-                                    $latestChildGrowth?->weight !== null ? $formatNumber($latestChildGrowth->weight, ' kg') : null,
-                                    $latestChildGrowth?->height !== null ? $formatNumber($latestChildGrowth->height, ' cm') : null,
-                                    $child->vaccineRecords->pluck('vaccine_name')->implode(' '),
-                                    $child->vaccineRecords->pluck('dose_label')->implode(' '),
-                                    $child->vaccineRecords->pluck('status')->implode(' '),
-                                ])->filter()->implode(' ');
-                            })->implode(' ');
-                            $childCountLabel = $motherChildren->count().' child'.($motherChildren->count() === 1 ? '' : 'ren');
-                            $searchText = collect([
-                                $mother->full_name,
-                                $mother->barangay,
-                                $childCountLabel,
-                                $childSummary,
-                                $motherChildren->isEmpty() ? 'No child profile yet' : null,
-                                $motherOverdue > 0 ? $motherOverdue.' vaccines pending scheduling' : 'no vaccines pending scheduling',
-                                $childSearchText,
-                            ])->filter()->implode(' ');
-                        @endphp
-                        <a class="neo-child-link @if($selectedMother?->id === $mother->id) is-active @endif" href="{{ route('staff.neonatal', ['mother' => $mother->id]) }}" data-search-text="{{ $searchText }}">
-                            <span class="neo-avatar">{{ $initials($mother->full_name) }}</span>
-                            <span><span class="neo-link-name">{{ $mother->full_name }}</span><span class="neo-link-meta">{{ $motherChildren->count() }} child{{ $motherChildren->count() === 1 ? '' : 'ren' }} / {{ $childSummary }}</span></span>
-                            <span class="neo-badge {{ $motherOverdue > 0 ? 'is-danger' : ($motherChildren->isEmpty() ? 'is-blue' : 'is-good') }}">{{ $motherChildren->count() }}</span>
-                        </a>
-                    @empty
-                        <div class="neo-empty">No assigned mothers yet.</div>
-                    @endforelse
-                </div>
-            </aside>
+        @if($selectedInfant && session('child_record_origin.'.$selectedInfant->id) === 'mother')
+            <p><a class="neo-button is-light" href="{{ route('staff.mothers.show', $selectedInfant->mother_id) }}">Back to Mother Case File</a></p>
+        @else
+            <p><a class="neo-button is-light" href="{{ route('staff.neonatal') }}">Back to Child Case Files</a></p>
+        @endif
+        <div class="neo-workspace" style="grid-template-columns: minmax(0, 1fr)">
 
             <div class="neo-main">
                 @if($childAccessDenied)
@@ -1092,7 +1038,6 @@
                                 @if($childF1kdUrl)
                                     <a class="neo-button is-light" href="{{ $childF1kdUrl }}">4Ps Beneficiary / F1KD Monitoring</a>
                                 @endif
-                                <button class="neo-button" type="button" data-neo-open="add-child">{!! $iconPlus !!} Add Child</button>
                                 <button class="neo-button is-light" type="button" data-neo-open="edit-child">{!! $iconEdit !!} Edit Child</button>
                                 <button class="neo-button is-green" type="button" data-neo-open="growth">{!! $iconTrend !!} Update Growth</button>
                                 <button class="neo-button is-light" type="button" data-casefile-record="print" data-record-kind="child" data-record-url="{{ route('staff.neonatal.print', $selectedInfant) }}">Print Record</button>

@@ -5,7 +5,7 @@
             @if($person->photo_path)
                 <img src="{{ asset('storage/'.$person->photo_path) }}" alt="Photo of {{ $person->name }}" loading="lazy">
             @else
-                <div class="f1kd-photo-placeholder" role="img" aria-label="No photo for {{ $person->name }}">No photo</div>
+                <div class="f1kd-photo-placeholder" role="img" aria-label="Default profile for {{ $person->name }}"></div>
             @endif
             <figcaption><strong>{{ $person->name }}</strong><br>{{ $person->label }}</figcaption>
         </figure>

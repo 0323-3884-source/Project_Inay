@@ -640,7 +640,6 @@
             @if ($isFiltered)
                 <a class="casefiles-clear-link" href="{{ route('staff.mothers') }}">Clear</a>
             @endif
-            <button type="submit" name="export" value="csv" class="casefiles-clear-link casefiles-export-button">Generate CSV (Excel)</button>
         </form>
 
         <div class="casefiles-loading-state" data-casefiles-loading hidden>Loading mother records...</div>

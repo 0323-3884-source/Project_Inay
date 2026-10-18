@@ -3494,6 +3494,8 @@
             </dl>
 
             <div class="casefile-profile-actions">
+                <button type="button" onclick="document.getElementById('casefile-children-dialog').showModal()" aria-haspopup="dialog" aria-controls="casefile-children-dialog">{!! $iconUser !!} View Children ({{ $mother->infants->count() }})</button>
+                <button type="button" onclick="document.getElementById('casefile-children-dialog').showModal()" aria-haspopup="dialog" aria-controls="casefile-children-dialog">{!! $iconUser !!} View Children ({{ $mother->infants->count() }})</button>
                 <button type="button" data-mother-edit aria-haspopup="dialog" aria-controls="mother-information-dialog" aria-expanded="{{ $errors->motherInformation->any() ? 'true' : 'false' }}">{!! $iconEdit !!} Edit Information</button>
                 <button type="button" data-casefile-record="print" data-record-url="{{ route('staff.mothers.print', $mother) }}">{!! $iconPrinter !!} Print Record</button>
                 <button type="button" class="is-dark" data-casefile-record="pdf" data-record-url="{{ route('staff.mothers.pdf', $mother) }}">{!! $iconDownload !!} Export PDF</button>
@@ -3505,6 +3507,36 @@
                 <p role="status">{{ session('status') }}</p>
             @endif
             @include('partials.mother-information-form')
+
+            <dialog id="casefile-children-dialog" class="casefile-children-dialog" aria-labelledby="casefile-children-title" onclick="if(event.target === this) this.close()">
+                <div class="casefile-children-content">
+                    <header><div><h2 id="casefile-children-title">Registered Children</h2><p>{{ $mother->full_name }}</p></div><button type="button" aria-label="Close children list" onclick="document.getElementById('casefile-children-dialog').close()">&times;</button></header>
+                    @if($mother->infants->isEmpty())
+                        <p>No children are registered for this mother yet.</p>
+                    @else
+                        <div class="casefile-children-scroll"><table><thead><tr><th>Child Name</th><th>Age</th><th>Sex</th><th>Birth Date</th><th>Action</th></tr></thead><tbody>
+                        @foreach($mother->infants->sortBy('full_name') as $child)
+                            <tr><td><strong>{{ $child->full_name }}</strong></td><td>{{ \App\Support\ChildProfileDisplay::age($child->getRawOriginal('birth_date')) }}</td><td>{{ ucfirst($child->sex) }}</td><td>{{ $child->birth_date?->format('M j, Y') ?? 'Not recorded' }}</td><td><a class="casefile-child-view" href="{{ route('staff.neonatal', ['child' => $child->id, 'from' => 'mother']) }}">View Child Record</a></td></tr>
+                        @endforeach
+                        </tbody></table></div>
+                    @endif
+                </div>
+            </dialog>
+
+            <dialog id="casefile-children-dialog" class="casefile-children-dialog" aria-labelledby="casefile-children-title" onclick="if(event.target === this) this.close()">
+                <div class="casefile-children-content">
+                    <header><div><h2 id="casefile-children-title">Registered Children</h2><p>{{ $mother->full_name }}</p></div><button type="button" aria-label="Close children list" onclick="document.getElementById('casefile-children-dialog').close()">&times;</button></header>
+                    @if($mother->infants->isEmpty())
+                        <p>No children are registered for this mother yet.</p>
+                    @else
+                        <div class="casefile-children-scroll"><table><thead><tr><th>Child Name</th><th>Age</th><th>Sex</th><th>Birth Date</th><th>Action</th></tr></thead><tbody>
+                        @foreach($mother->infants->sortBy('full_name') as $child)
+                            <tr><td><strong>{{ $child->full_name }}</strong></td><td>{{ \App\Support\ChildProfileDisplay::age($child->getRawOriginal('birth_date')) }}</td><td>{{ ucfirst($child->sex) }}</td><td>{{ $child->birth_date?->format('M j, Y') ?? 'Not recorded' }}</td><td><a class="casefile-child-view" href="{{ route('staff.neonatal', ['child' => $child->id, 'from' => 'mother']) }}">View Child Record</a></td></tr>
+                        @endforeach
+                        </tbody></table></div>
+                    @endif
+                </div>
+            </dialog>
 
         </section>
 

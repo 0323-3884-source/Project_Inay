@@ -1,8 +1,8 @@
-/* Use the same neutral silhouette wherever a person has no uploaded photo. */
+/* Use the same pink silhouette wherever a person has no uploaded photo. */
 :is(.portal-avatar, .account-avatar, .casefile-avatar, .ch-avatar,
-    .neo-avatar, .consultation-avatar, .newborn-avatar):not(img):not(:has(img)) {
-    background-color: #e4e6eb !important;
-    background-image: url('../images/default-profile.svg') !important;
+    .neo-avatar, .consultation-avatar, .newborn-avatar, .f1kd-photo-placeholder):not(img):not(:has(img)) {
+    background-color: #fce7f3 !important;
+    background-image: url('../images/default-profile.svg?v=2') !important;
     background-position: center !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
@@ -10,4 +10,8 @@
     font-size: 0 !important;
     text-shadow: none !important;
     border-radius: 50%;
+}
+.f1kd-family-photos .f1kd-photo-placeholder {
+    border-color: #fbcfe8;
+    border-radius: 16px;
 }

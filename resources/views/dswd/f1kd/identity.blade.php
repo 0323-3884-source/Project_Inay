@@ -25,8 +25,44 @@
         <div><dt>DSWD verification</dt><dd>{{ $beneficiary->dswd_verified_at?->format('M j, Y H:i') ?? 'Not yet verified' }}</dd></div>
     </dl>
     <p class="dswd-note">Entry ID identifies this individual mother or child. Household No. identifies their 4Ps household. Last updated: {{ $beneficiary->updated_at?->format('M j, Y H:i') ?? 'Not yet recorded' }}.</p>
-    <form method="get" class="dswd-actions">
+    <form method="get" class="dswd-actions f1kd-period-actions">
         <label for="f1kd-period">Reporting period <input id="f1kd-period" type="month" name="month" value="{{ $beneficiary->month }}" required></label>
         <button class="dswd-button secondary">View Period</button>
     </form>
 </section>
+<style>
+.f1kd-period-actions {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.f1kd-period-actions > label {
+    display: grid;
+    gap: 8px;
+    width: min(100%, 340px);
+    min-width: 0;
+    margin: 0;
+}
+.f1kd-period-actions input[type="month"] {
+    box-sizing: border-box;
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+    margin: 0;
+}
+.f1kd-period-actions > .dswd-button {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    min-height: 48px;
+    margin: 0;
+    white-space: nowrap;
+}
+@media (max-width: 540px) {
+    .f1kd-period-actions > label,
+    .f1kd-period-actions > .dswd-button { width: 100%; }
+}
+</style>

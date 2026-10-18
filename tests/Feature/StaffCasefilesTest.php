@@ -548,6 +548,26 @@ class StaffCasefilesTest extends TestCase
             ->assertJsonPath('latest.pre_pregnancy_bmi', 23.44);
     }
 
+    public function test_mother_casefile_lists_only_that_mothers_children(): void
+    {
+        $staff = $this->createStaff();
+        $mother = $this->createMother('Nina', null, 'Cruz', 'children-casefile@example.test', '09175550001', 'Santa Cruz');
+        $child = \App\Models\Infant::create(['mother_id' => $mother->id, 'full_name' => 'Baby Nina Cruz', 'sex' => 'female', 'birth_date' => now()->subMonths(3)->toDateString()]);
+        $otherMother = $this->createMother('Other', null, 'Mother', 'other-children@example.test', '09175550002', 'Santa Cruz');
+        \App\Models\Infant::create(['mother_id' => $otherMother->id, 'full_name' => 'Unrelated Baby', 'sex' => 'male', 'birth_date' => now()->toDateString()]);
+        $this->withStaffSession($staff)->get(route('staff.mothers.show', $mother))
+            ->assertOk()->assertSee('View Children (1)')->assertSee('Baby Nina Cruz')
+            ->assertSee(route('staff.neonatal', ['child' => $child->id]), false)->assertDontSee('Unrelated Baby');
+        $this->get(route('staff.neonatal', ['child' => $child->id, 'from' => 'mother']))
+            ->assertOk()->assertSee('Back to Mother Case File')
+            ->assertSee(route('staff.mothers.show', $mother), false);
+        // Returning after an edit keeps the original navigation context.
+        $this->get(route('staff.neonatal', ['child' => $child->id]))
+            ->assertOk()->assertSee('Back to Mother Case File');
+        $this->get(route('staff.neonatal', ['child' => $child->id, 'from' => 'registry']))
+            ->assertOk()->assertSee('Back to Child Case Files')->assertDontSee('Back to Mother Case File');
+    }
+
     public function test_staff_can_open_registered_mother_casefile_without_manual_assignment(): void
     {
         $staff = $this->createStaff();

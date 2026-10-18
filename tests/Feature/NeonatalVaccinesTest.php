@@ -400,4 +400,27 @@ class NeonatalVaccinesTest extends TestCase
 
         return UploadedFile::fake()->createWithContent($name, $png);
     }
+
+    public function test_child_registry_lists_ages_zero_to_two_and_opens_monitoring_without_mother_search(): void
+    {
+        $staff = ProgramStaff::create(['first_name' => 'Registry', 'last_name' => 'Staff', 'email' => 'registry@example.test', 'password' => Hash::make('password123'), 'staff_id' => 'CH-REGISTRY', 'position' => 'Program Staff', 'contact_number' => '09990001111']);
+        $mother = Mother::create(['first_name' => 'Registry', 'last_name' => 'Mother', 'email' => 'registry-mother@example.test', 'password' => Hash::make('password123'), 'barangay' => 'Concepcion', 'contact_number' => '09990002222', 'age' => 25]);
+        StaffMotherCasefile::create(['staff_id' => $staff->id, 'mother_id' => $mother->id]);
+        $baby = Infant::create(['mother_id' => $mother->id, 'full_name' => 'Registry Baby', 'sex' => 'female', 'birth_date' => now()->subMonths(2)->toDateString()]);
+        Infant::create(['mother_id' => $mother->id, 'full_name' => 'Registry Toddler', 'sex' => 'male', 'birth_date' => now()->subYears(2)->toDateString()]);
+        Infant::create(['mother_id' => $mother->id, 'full_name' => 'Registry Older Child', 'sex' => 'male', 'birth_date' => now()->subYears(3)->toDateString()]);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id])
+            ->get(route('staff.neonatal'))->assertOk()->assertSee('Child Case Files')
+            ->assertSee('Registry Baby')->assertSee('Registry Toddler')->assertDontSee('Registry Older Child')
+            ->assertDontSee('Search mother or child')->assertSee(route('staff.neonatal', ['child' => $baby->id]), false);
+        $this->get(route('staff.neonatal', ['q' => 'Toddler']))->assertOk()->assertSee('Registry Toddler')->assertDontSee('Registry Baby');
+        $mother->update(['is_4ps_beneficiary' => true]);
+        $this->get(route('staff.neonatal', ['four_ps' => 'yes']))->assertOk()
+            ->assertSee('Registry Baby')->assertSee('4Ps Beneficiary')->assertDontSee('Add Child');
+        $this->get(route('staff.neonatal', ['four_ps' => 'no']))->assertOk()->assertDontSee('Registry Baby');
+        $this->get(route('staff.neonatal', ['child' => $baby->id]))->assertOk()
+            ->assertSee('Back to Child Case Files')->assertSee('Registry Baby')->assertDontSee('Search mother or child');
+        $this->get(route('staff.mothers'))->assertOk()->assertDontSee('Generate CSV (Excel)');
+
+    }
 }

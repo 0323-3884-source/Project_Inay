@@ -10,7 +10,20 @@
     const status = document.createElement('div');
     status.className = 'pwa-status';
     status.setAttribute('role', 'status');
-    status.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;z-index:10000;margin:auto;width:fit-content;max-width:calc(100% - 24px);padding:10px 16px;border-radius:8px;background:#10213f;color:white;font:13px/1.5 system-ui;box-shadow:0 3px 14px #0002';
+    status.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;z-index:10000;margin:auto;width:fit-content;max-width:calc(100% - 24px);padding:10px 12px;border-radius:8px;background:#10213f;color:white;font:13px/1.5 system-ui;box-shadow:0 3px 14px #0002';
+    const statusMessage = document.createElement('span');
+    const dismissButton = document.createElement('button');
+    dismissButton.type = 'button';
+    dismissButton.textContent = '\u00d7';
+    dismissButton.setAttribute('aria-label', 'Dismiss offline notice');
+    dismissButton.style.cssText = 'margin-left:12px;padding:0;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:white;font:24px/1 system-ui;cursor:pointer;vertical-align:middle';
+    status.append(statusMessage, dismissButton);
+    let statusTimer;
+    function dismissStatus() {
+        window.clearTimeout(statusTimer);
+        status.hidden = true;
+    }
+    dismissButton.addEventListener('click', dismissStatus);
     const consultation = document.querySelector('[data-consultation-root]');
     if (consultation) {
         consultation.prepend(status);
@@ -19,8 +32,10 @@
     }
     let onlineStatus = '';
     function showStatus() {
-        status.textContent = navigator.onLine ? onlineStatus : 'Offline — showing saved information. Changes, messages and online videos need internet.';
-        status.hidden = !status.textContent;
+        window.clearTimeout(statusTimer);
+        statusMessage.textContent = navigator.onLine ? onlineStatus : 'Offline — showing saved information. Changes, messages and online videos need internet.';
+        status.hidden = !statusMessage.textContent;
+        if (!status.hidden) statusTimer = window.setTimeout(dismissStatus, 5000);
     }
     showStatus();
     window.addEventListener('offline', showStatus);

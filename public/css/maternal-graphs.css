@@ -119,3 +119,44 @@
     .casefile-summary-page .casefile-chart-canvas > svg,
     .maternal-chart-area[data-mother-chart] > svg { min-width: 0; }
 }
+.casefile-children-dialog {
+    width: min(960px, calc(100vw - 32px));
+    max-height: 85vh;
+    padding: 0;
+    border: 1px solid #dbe5f1;
+    border-radius: 14px;
+    color: #071127;
+    background: #fff;
+    box-shadow: 0 24px 64px #07112740;
+}
+.casefile-children-dialog::backdrop { background: #07112799; }
+.casefile-children-content { padding: 24px; }
+.casefile-children-content header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.casefile-children-content h2 { margin: 0; font-size: 23px; }
+.casefile-children-content header p { margin: 6px 0 0; color: #52627d; }
+.casefile-children-scroll { overflow: auto; max-height: 55vh; }
+.casefile-children-scroll table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; }
+.casefile-children-scroll th { background: #f8f6f8; color: #536580; }
+.casefile-children-scroll th, .casefile-children-scroll td { padding: 16px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+.casefile-child-view { display: inline-block; padding: 10px 14px; border-radius: 8px; color: #fff; background: #ec008c; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.casefile-summary-page .document-status-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+}
+.casefile-summary-page .document-status-card {
+    min-width: 0;
+    padding: 12px;
+    gap: 6px;
+    justify-content: flex-start;
+}
+.casefile-summary-page .document-status-card strong { font-size: 14px; }
+.casefile-summary-page .document-status-card small { font-size: 12px; line-height: 1.4; }
+.casefile-summary-page .document-status-card .document-submission-status { font-size: 11px; padding: 4px 8px; }
+.casefile-summary-page [id^="month-documents-"] { scroll-margin-top: 110px; }
+@media (max-width: 1000px) {
+    .casefile-summary-page .document-status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .casefile-summary-page .document-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

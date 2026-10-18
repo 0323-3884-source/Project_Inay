@@ -1504,6 +1504,28 @@ class AuthController extends Controller
 
         $selectedChildId = (int) $request->query('child', 0);
         $selectedMotherId = (int) $request->query('mother', 0);
+        if ($selectedChildId === 0 && $selectedMotherId === 0) {
+            $registryChildren = $children->filter(fn (Infant $child): bool => $child->birth_date
+                && $child->birth_date->lessThanOrEqualTo(Carbon::today())
+                && $child->birth_date->greaterThan(Carbon::today()->subYears(3)));
+            $registeredCount = $registryChildren->count();
+            $fourPs = (string) $request->query('four_ps', '');
+            $fourPs = in_array($fourPs, ['yes', 'no'], true) ? $fourPs : '';
+            if ($fourPs !== '') {
+                $registryChildren = $registryChildren->filter(fn (Infant $child): bool => (bool) $child->mother?->is_4ps_beneficiary === ($fourPs === 'yes'));
+            }
+            $search = trim((string) $request->query('q', ''));
+            if ($search !== '') {
+                $registryChildren = $registryChildren->filter(fn (Infant $child): bool => Str::contains(Str::lower($child->full_name), Str::lower($search)));
+            }
+            $page = max(1, (int) $request->query('page', 1));
+            $registryChildren = new \Illuminate\Pagination\LengthAwarePaginator(
+                $registryChildren->values()->forPage($page, 10)->values(), $registryChildren->count(), 10, $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+
+            return view('modules.staff-child-registry', compact('staff', 'mothers', 'registryChildren', 'registeredCount', 'search', 'fourPs'));
+        }
         $selectedMother = null;
         $selectedInfant = null;
         $childAccessDenied = false;
@@ -1538,6 +1560,10 @@ class AuthController extends Controller
                     ->sortBy(fn (Infant $infant): string => ($infant->birth_date?->format('Ymd') ?? '99999999').$infant->full_name)
                     ->first();
             }
+        }
+
+        if ($selectedInfant && in_array($request->query('from'), ['mother', 'registry'], true)) {
+            $request->session()->put('child_record_origin.'.$selectedInfant->id, $request->query('from'));
         }
 
         // Older/imported child profiles may predate automatic vaccine scheduling.
