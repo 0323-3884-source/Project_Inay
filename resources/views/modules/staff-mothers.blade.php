@@ -64,7 +64,7 @@
         'planning' => 'Planning',
         'pending' => 'Status Pending',
     ];
-    $isFiltered = $search !== '' || $fourPs !== 'all' || $pregnancyFilter !== 'all';
+    $isFiltered = $search !== '' || $fourPs !== 'all' || $pregnancyFilter !== 'all' || $screeningFilter !== 'all';
 @endphp
 
 @push('styles')
@@ -115,7 +115,7 @@
 
         .casefiles-toolbar {
             display: grid;
-            grid-template-columns: minmax(260px, 1fr) repeat(2, minmax(210px, 260px)) auto;
+            grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(0, 260px));
             gap: 12px;
             align-items: center;
         }
@@ -140,6 +140,8 @@
         }
 
         .casefiles-filter-control select {
+            width: 100%;
+            min-width: 0;
             min-height: 46px;
             padding: 0;
             color: #172033;
@@ -151,6 +153,8 @@
         }
 
         .casefiles-clear-link {
+            justify-self: end;
+            grid-column: 1 / -1;
             display: inline-flex;
             min-height: 48px;
             align-items: center;
@@ -535,6 +539,16 @@
             text-decoration: none;
         }
 
+        @media (max-width: 1200px) {
+            .casefiles-toolbar {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .casefiles-toolbar .casefiles-search {
+                grid-column: 1 / -1;
+            }
+        }
+
         @media (max-width: 980px) {
             .casefiles-toolbar {
                 grid-template-columns: 1fr;
@@ -634,6 +648,14 @@
                 <select name="pregnancy" aria-label="Filter by pregnancy status" data-casefiles-auto-submit>
                     @foreach ($pregnancyFilterLabels as $value => $label)
                         <option value="{{ $value }}" @selected($pregnancyFilter === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="casefiles-filter-control">
+                {!! $iconFilter !!}
+                <select name="screening" aria-label="Filter by screening status" data-casefiles-auto-submit>
+                    @foreach ($screeningLabels as $value => $label)
+                        <option value="{{ $value }}" @selected($screeningFilter === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </label>

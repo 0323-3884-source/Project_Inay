@@ -113,6 +113,27 @@ class StaffCasefilesTest extends TestCase
             ->assertSee('Clear');
     }
 
+    public function test_screening_filter_uses_latest_result_and_supports_legacy_and_missing_results(): void
+    {
+        $staff = $this->createStaff();
+        $mother = $this->createMother('Screening', null, 'Patient', 'screening@example.test', '09170001115', 'Concepcion');
+        $unmonitored = $this->createMother('No', null, 'Records', 'unmonitored@example.test', '09170001116', 'Concepcion');
+        $record = ['mother_id' => $mother->id, 'pregnancy_week' => 20, 'risk_level' => 'high'];
+        MaternalMonitoringRecord::create($record + ['screening_summary_status' => 'Urgent Referral Recommended', 'recorded_at' => now()->subDay()]);
+        MaternalMonitoringRecord::create($record + ['recorded_at' => now()]);
+
+        $this->withStaffSession($staff)->get('/staff/mothers?screening=for_review')
+            ->assertOk()->assertSee($mother->email)->assertDontSee($unmonitored->email)->assertSee('Clear');
+        $this->withStaffSession($staff)->get('/staff/mothers?screening=urgent_referral_recommended')
+            ->assertOk()->assertDontSee($mother->email)->assertDontSee($unmonitored->email);
+        $this->withStaffSession($staff)->get('/staff/mothers?screening=logged')
+            ->assertOk()->assertDontSee($mother->email)->assertSee($unmonitored->email);
+        $this->withStaffSession($staff)->get('/staff/mothers?screening=for_review&q=No')
+            ->assertOk()->assertDontSee($mother->email)->assertDontSee($unmonitored->email);
+        $this->withStaffSession($staff)->get('/staff/mothers?screening=invalid')
+            ->assertOk()->assertSee($mother->email)->assertSee($unmonitored->email);
+    }
+
     public function test_staff_can_export_all_filtered_mothers_to_excel_compatible_csv(): void
     {
         $staff = $this->createStaff();

@@ -1976,6 +1976,7 @@
             text-decoration: none;
             background: #f8fafc;
         }
+        .document-status-card[aria-current="true"],
         .document-status-card:hover, .document-status-card:focus-visible {
             border-color: #ec008c;
             outline: 2px solid #fce7f3;
@@ -3788,7 +3789,7 @@
                         @php
                             $submittedFiles = $uploads->where('month', $documentMonth['month']);
                         @endphp
-                        <a class="document-status-card" href="#month-documents-{{ $documentMonth['month'] }}">
+                        <a class="document-status-card" data-learning-month-link="{{ $documentMonth['month'] }}" aria-controls="month-documents-{{ $documentMonth['month'] }}" href="#month-documents-{{ $documentMonth['month'] }}">
                             <strong>Month {{ $documentMonth['month'] }}</strong>
                             <span class="document-submission-status {{ $submittedFiles->isNotEmpty() ? 'is-submitted' : '' }}">{{ $submittedFiles->isNotEmpty() ? 'Submitted' : 'Not yet submitted' }}</span>
                             <small>{{ $submittedFiles->count() }} file{{ $submittedFiles->count() === 1 ? '' : 's' }} received</small>
@@ -3809,7 +3810,7 @@
                         $videoProgressLabel = $requiredVideoTotal > 0 ? "{$requiredVideoWatched}/{$requiredVideoTotal} watched" : 'No video posted';
                         $videoProgressNote = $requiredVideoTotal > 0 ? ($requiredVideoTotal - $requiredVideoWatched).' pending' : 'No video posted this month';
                     @endphp
-                    <article class="casefile-learning-month {{ $progressMonth['is_complete'] ? 'is-complete' : '' }}">
+                    <article id="month-documents-{{ $progressMonth['month'] }}" data-learning-month="{{ $progressMonth['month'] }}" tabindex="-1" style="scroll-margin-top: 110px;" class="casefile-learning-month {{ $progressMonth['is_complete'] ? 'is-complete' : '' }}">
                         <header>
                             <div>
                                 <h3>Month {{ $progressMonth['month'] }}: {{ $progressMonth['title'] }}</h3>
@@ -3835,7 +3836,7 @@
                             @endforeach
                         </ul>
 
-                        <h4 id="month-documents-{{ $progressMonth['month'] }}" style="scroll-margin-top: 100px;">Month {{ $progressMonth['month'] }} Document Checklist</h4>
+                        <h4>Month {{ $progressMonth['month'] }} Document Checklist</h4>
                         <ul class="casefile-learning-list">
                             @foreach ($progressMonth['documents'] as $document)
                                 <li>
@@ -4935,6 +4936,7 @@
             renderVitals(vitalsState);
         })();
     </script>
+    <script src="{{ asset('js/staff-learning-months.js') }}?v={{ filemtime(public_path('js/staff-learning-months.js')) }}" defer></script>
     <script src="{{ asset('js/document-preview.js') }}?v={{ filemtime(public_path('js/document-preview.js')) }}" defer></script>
     <script src="{{ asset('js/mother-information.js') }}?v={{ filemtime(public_path('js/mother-information.js')) }}" defer></script>
     <script src="{{ asset('js/mother-care-record.js') }}?v={{ filemtime(public_path('js/mother-care-record.js')) }}" defer></script>

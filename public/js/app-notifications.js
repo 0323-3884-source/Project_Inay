@@ -21,6 +21,7 @@
         const count = root.querySelector('[data-notification-count]');
         const enable = root.querySelector('[data-notification-enable]');
         const markAll = root.querySelector('[data-notification-mark-all]');
+        const registrationSummary = root.querySelector('[data-notification-registration-summary]');
 
         const stored = (() => {
             try {
@@ -130,6 +131,15 @@
         const loadNotifications = async () => {
             const data = await fetchJson(listUrl);
             updateCount(data.unread_count || 0);
+            if (registrationSummary) {
+                const summary = data.mother_registration_summary;
+                registrationSummary.hidden = !summary;
+                if (summary) {
+                    const total = Number(summary.total_registered || 0);
+                    const unread = Number(summary.unread_registrations || 0);
+                    registrationSummary.textContent = `${total.toLocaleString()} ${total === 1 ? 'mother' : 'mothers'} registered · ${unread.toLocaleString()} unread ${unread === 1 ? 'registration' : 'registrations'}`;
+                }
+            }
             renderList(data.notifications || []);
 
             (data.notifications || []).forEach((notification) => {

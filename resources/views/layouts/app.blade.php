@@ -501,6 +501,15 @@
             font-weight: 900;
         }
 
+        .app-notification-registration-summary {
+            padding: 10px 14px;
+            color: #53647c;
+            background: #fff5fa;
+            border-bottom: 1px solid #fce0ed;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
         .app-notification-actions {
             display: flex;
             align-items: center;
@@ -7130,6 +7139,7 @@
                                     <button type="button" data-notification-mark-all>Mark all read</button>
                                 </div>
                             </div>
+                            <div class="app-notification-registration-summary" data-notification-registration-summary aria-live="polite" hidden></div>
                             <div class="app-notification-list" data-notification-list>
                                 <div class="app-notification-empty">Loading notifications...</div>
                             </div>

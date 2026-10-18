@@ -28,6 +28,13 @@ class AppNotificationController extends Controller
         return response()->json([
             'recipient_role' => $recipient['role'],
             'recipient_id' => $recipient['id'],
+            'mother_registration_summary' => $recipient['role'] === Message::ROLE_PROGRAM_STAFF ? [
+                'total_registered' => Mother::count(),
+                'unread_registrations' => $this->queryForRecipient($recipient)
+                    ->where('type', 'mother_registered')
+                    ->whereNull('read_at')
+                    ->count(),
+            ] : null,
             'unread_count' => $this->queryForRecipient($recipient)
                 ->whereNull('read_at')
                 ->count(),

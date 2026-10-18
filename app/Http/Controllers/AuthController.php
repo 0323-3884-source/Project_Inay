@@ -965,11 +965,22 @@ class AuthController extends Controller
         $fourPs = in_array($fourPs, $allowedFourPsFilters, true) ? $fourPs : 'all';
         $pregnancyFilter = $request->query('pregnancy', 'all');
         $pregnancyFilter = in_array($pregnancyFilter, ['all', 'pregnant', 'not_pregnant', 'postpartum', 'planning', 'pending'], true) ? $pregnancyFilter : 'all';
+        $screeningLabels = [
+            'all' => 'All Screening Statuses',
+            'urgent_referral_recommended' => MaternalVitalScreening::STATUS_URGENT,
+            'for_review' => MaternalVitalScreening::STATUS_REVIEW,
+            'for_professional_interpretation' => MaternalVitalScreening::STATUS_INTERPRETATION,
+            'within_reference_range' => MaternalVitalScreening::STATUS_WITHIN,
+            'logged' => MaternalVitalScreening::STATUS_LOGGED,
+        ];
+        $screeningFilter = $request->query('screening', 'all');
+        $screeningFilter = is_string($screeningFilter) && array_key_exists($screeningFilter, $screeningLabels) ? $screeningFilter : 'all';
+
 
         $mothersQuery = Mother::query()
             ->with(['maternalMonitoringRecords' => fn ($query) => $query
                 ->orderByDesc('recorded_at')
-                ->orderByDesc('created_at')]);
+                ->orderByDesc('created_at')->orderByDesc('id')]);
 
         if ($search !== '') {
             $tokens = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -1004,6 +1015,24 @@ class AuthController extends Controller
             $mothersQuery->where(fn ($query) => $query->whereNull('pregnancy_status')->orWhere('pregnancy_status', ''));
         } elseif ($pregnancyFilter !== 'all') {
             $mothersQuery->where('pregnancy_status', $pregnancyFilter);
+        }
+
+        if ($screeningFilter !== 'all') {
+            // Match the displayed latest record, including legacy risk labels and missing records.
+            $latestStatus = MaternalMonitoringRecord::query()
+                ->selectRaw("LOWER(TRIM(COALESCE(screening_summary_status, risk_level, '')))")
+                ->whereColumn('mother_id', 'mothers.id')
+                ->orderByDesc('recorded_at')->orderByDesc('created_at')->orderByDesc('id')
+                ->limit(1);
+            $aliases = ['normal', 'low', 'review', 'needs review', 'medium', 'high', 'professional interpretation', 'urgent'];
+            $knownStatuses = array_merge(array_values(array_diff_key($screeningLabels, array_flip(['all', 'logged']))), $aliases);
+            $matchingStatuses = array_values(array_filter($knownStatuses, fn ($status) => MaternalVitalScreening::statusKey($status) === $screeningFilter));
+            $values = $screeningFilter === 'logged' ? $knownStatuses : $matchingStatuses;
+            $placeholders = implode(', ', array_fill(0, count($values), '?'));
+            $operator = $screeningFilter === 'logged' ? 'NOT IN' : 'IN';
+            $mothersQuery->whereRaw("COALESCE(({$latestStatus->toSql()}), '') {$operator} ({$placeholders})", array_merge(
+                $latestStatus->getBindings(), array_map('strtolower', $values),
+            ));
         }
 
         $mothersQuery->orderBy('last_name')->orderBy('first_name')->orderBy('id');
@@ -1051,6 +1080,8 @@ class AuthController extends Controller
             'search',
             'fourPs',
             'pregnancyFilter',
+            'screeningFilter',
+            'screeningLabels',
             'totalMothers',
             'withMonitoring',
         ));

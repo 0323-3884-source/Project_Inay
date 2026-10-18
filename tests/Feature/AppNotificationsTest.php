@@ -82,6 +82,29 @@ class AppNotificationsTest extends TestCase
             ->assertOk();
     }
 
+    public function test_staff_registration_summary_counts_all_mothers_and_only_own_unread_registrations(): void
+    {
+        $mother = $this->createMother('summary@example.test');
+        $this->createMother('summary.other@example.test');
+        $staff = $this->createStaff('Ana', 'Cruz', 'summary.staff@example.test', 'STAFF-SUMMARY');
+        foreach ([['mother_registered', null], ['mother_registered', now()], ['test', null]] as [$type, $readAt]) {
+            AppNotification::create([
+                'recipient_id' => $staff->id,
+                'recipient_role' => Message::ROLE_PROGRAM_STAFF,
+                'type' => $type, 'title' => 'Notice', 'body' => 'Details', 'read_at' => $readAt,
+            ]);
+        }
+        $this->withSession($this->staffSession($staff))->getJson(route('notifications.index'))
+            ->assertOk()->assertJsonPath('mother_registration_summary.total_registered', 2)
+            ->assertJsonPath('mother_registration_summary.unread_registrations', 1);
+        $this->postJson(route('notifications.read-all'))->assertOk();
+        $this->getJson(route('notifications.index'))
+            ->assertJsonPath('mother_registration_summary.total_registered', 2)
+            ->assertJsonPath('mother_registration_summary.unread_registrations', 0);
+        $this->withSession($this->motherSession($mother))->getJson(route('notifications.index'))
+            ->assertOk()->assertJsonPath('mother_registration_summary', null);
+    }
+
     public function test_message_flows_create_notifications_for_receivers(): void
     {
         $mother = $this->createMother('maria.message-notify@example.test');
