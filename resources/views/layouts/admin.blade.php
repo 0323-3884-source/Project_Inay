@@ -40,6 +40,8 @@
     <link rel="stylesheet" href="{{ asset('css/department-admin.css') }}?v={{ filemtime(public_path('css/department-admin.css')) }}">
     @stack('styles')
     <link rel="stylesheet" href="{{ asset('css/site-responsive.css') }}?v={{ filemtime(public_path('css/site-responsive.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/close-buttons.css') }}?v={{ filemtime(public_path('css/close-buttons.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-placeholders.css') }}?v={{ filemtime(public_path('css/profile-placeholders.css')) }}">
 </head>
 <body class="{{ $isAdminAuthScreen ? 'admin-auth-body' : 'admin-shell' }}">
     @if ($isAdminAuthScreen)

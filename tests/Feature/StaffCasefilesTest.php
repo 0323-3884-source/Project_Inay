@@ -497,6 +497,7 @@ class StaffCasefilesTest extends TestCase
             ->postJson('/api/program-staff/mothers/'.$mother->id.'/maternal-vitals', $payload)
             ->assertCreated()
             ->assertJsonPath('latest.height_cm', 160.02)
+            ->assertJsonPath('weight_history.0.bmi', 27.34)
             ->assertJsonPath('latest.pre_pregnancy_bmi', 23.43);
 
         $this->assertDatabaseHas('maternal_monitoring_records', [

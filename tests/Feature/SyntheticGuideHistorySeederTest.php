@@ -20,6 +20,10 @@ class SyntheticGuideHistorySeederTest extends TestCase
         $this->seed(SyntheticGuideHistorySeeder::class);
         foreach (Mother::all() as $mother) {
             $this->assertSame(3, $mother->maternalMonitoringRecords()->count());
+            $weeks = $mother->maternalMonitoringRecords()->orderBy('recorded_at')->pluck('pregnancy_week')->all();
+            $this->assertNotContains(null, $weeks);
+            $this->assertSame(4, $weeks[1] - $weeks[0]);
+            $this->assertSame(4, $weeks[2] - $weeks[1]);
             $this->assertSame(3, $mother->inayKaalamanCheckups()->count());
             $this->assertSame(3, $mother->inayKaalamanUploads()->count());
             $this->assertGreaterThan(0, $mother->inayKaalamanProgress()->whereNotNull('completed_at')->count());
@@ -29,10 +33,12 @@ class SyntheticGuideHistorySeederTest extends TestCase
         }
         $mother = Mother::first();
         $visit = $mother->maternalMonitoringRecords()->first();
-        $visit->update(['notes'=>'Edited sample visit']);
+        $expectedWeek = $visit->pregnancy_week;
+        $visit->update(['notes'=>'Edited sample visit', 'pregnancy_week' => null]);
         $count = $mother->inayKaalamanProgress()->count();
         $this->seed(SyntheticGuideHistorySeeder::class);
         $this->assertSame('Edited sample visit', $visit->fresh()->notes);
+        $this->assertSame($expectedWeek, $visit->fresh()->pregnancy_week);
         $this->assertSame(3, $mother->maternalMonitoringRecords()->count());
         $this->assertSame($count, $mother->inayKaalamanProgress()->count());
         $this->assertSame(3, $mother->inayKaalamanUploads()->count());

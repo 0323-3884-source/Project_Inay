@@ -1,0 +1,56 @@
+/* Shared icon-only dialog and panel close controls. */
+button:is(
+    [aria-label^="Close" i], .booking-close, .ch-close, .clinic-close,
+    .detail-close, .filter-close, .history-close, .kaalaman-video-close,
+    .maternal-vital-detail-close, .neo-close, .photo-crop-close,
+    .privacy-policy-close, .vital-detail-close
+) {
+    box-sizing: border-box !important;
+    position: relative;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border: 1px solid #dbe5f1 !important;
+    border-radius: 50% !important;
+    background: #f8fafc !important;
+    color: #52627d !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    cursor: pointer;
+    vertical-align: middle;
+}
+button:is([aria-label^="Close" i], .booking-close, .ch-close, .clinic-close, .detail-close, .filter-close, .history-close, .kaalaman-video-close, .maternal-vital-detail-close, .neo-close, .photo-crop-close, .privacy-policy-close, .vital-detail-close)::before,
+button:is([aria-label^="Close" i], .booking-close, .ch-close, .clinic-close, .detail-close, .filter-close, .history-close, .kaalaman-video-close, .maternal-vital-detail-close, .neo-close, .photo-crop-close, .privacy-policy-close, .vital-detail-close)::after {
+    content: "";
+    position: absolute;
+    top: calc(50% - 1px);
+    left: calc(50% - 8px);
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+button:is([aria-label^="Close" i], .booking-close, .ch-close, .clinic-close, .detail-close, .filter-close, .history-close, .kaalaman-video-close, .maternal-vital-detail-close, .neo-close, .photo-crop-close, .privacy-policy-close, .vital-detail-close)::after {
+    transform: rotate(-45deg);
+}
+button:is([aria-label^="Close" i], .booking-close, .ch-close, .clinic-close, .detail-close, .filter-close, .history-close, .kaalaman-video-close, .maternal-vital-detail-close, .neo-close, .photo-crop-close, .privacy-policy-close, .vital-detail-close) > :is(svg, i, span) {
+    display: none !important;
+}
+button[aria-label^="Close" i]:hover {
+    color: #be185d !important;
+    border-color: #f9a8d4 !important;
+    background: #fff1f7 !important;
+}
+button[aria-label^="Close" i]:focus-visible {
+    outline: 2px solid #ec008c;
+    outline-offset: 3px;
+}
+button[hidden][aria-label^="Close" i] { display: none !important; }

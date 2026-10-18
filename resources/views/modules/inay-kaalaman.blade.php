@@ -409,20 +409,6 @@
                 <h1>{!! $iconBook !!} <span {!! $i18n('INAY Kaalaman Learning Hub', 'INAY Kaalaman Learning Hub') !!}>INAY Kaalaman Learning Hub</span></h1>
                 <p {!! $i18n('Your month-by-month guide through pregnancy. Learn about body changes, baby development, proper nutrition, and important reminders to help keep you and your baby safe.', 'Ang iyong gabay sa bawat buwan ng pagbubuntis. Alamin ang mga pagbabago sa iyong katawan, pag-unlad ng sanggol, wastong nutrisyon, at mahahalagang paalala upang manatiling ligtas kayong mag-ina.') !!}>Your month-by-month guide through pregnancy. Learn about body changes, baby development, proper nutrition, and important reminders to help keep you and your baby safe.</p>
             </div>
-            <div class="kaalaman-hero-side">
-                <div class="kaalaman-focus-card">
-                    <span class="kaalaman-eyebrow" {!! $i18n('Current Learning Focus', 'Kasalukuyang Pokus sa Pag-aaral') !!}>Current Learning Focus</span>
-                    <strong data-kaalaman-focus data-focus-en="Month 1 (Weeks 1-4)" data-focus-tl="Buwan 1 (Linggo 1-4)">Month 1 (Weeks 1-4)</strong>
-                    <small data-overall-progress-copy data-completed-months="{{ $kaalamanOverallProgress['completed_months'] ?? 0 }}" data-total-months="{{ $kaalamanOverallProgress['total_months'] ?? 10 }}">{{ $kaalamanOverallProgress['completed_months'] ?? 0 }} of {{ $kaalamanOverallProgress['total_months'] ?? 10 }} months completed</small>
-                </div>
-                <div class="kaalaman-language-switch" role="group" aria-label="INAY Kaalaman language">
-                    <span {!! $i18n('Language', 'Wika') !!}>Language</span>
-                    <div class="kaalaman-language-options">
-                        <button class="kaalaman-language-option is-active" type="button" data-language-choice="en">English</button>
-                        <button class="kaalaman-language-option" type="button" data-language-choice="tl">Tagalog</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="kaalaman-timeline-shell">

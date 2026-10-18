@@ -126,3 +126,19 @@
     .child-health .ch-core-metrics,
     .child-health .ch-profile-extra { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 }
+/* Show a short growth preview, with the complete history available on demand. */
+.child-growth-history { margin-top: 16px; }
+.child-growth-history > summary {
+    width: fit-content;
+    padding: 10px 16px;
+    border: 1px solid #fbcfe8;
+    border-radius: 8px;
+    color: #be185d;
+    background: #fff7fb;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.child-growth-history > summary:focus-visible { outline: 2px solid #ec008c; outline-offset: 3px; }
+.child-growth-history > :is(.neo-table-wrap, .ch-table-wrap) { max-height: 360px; overflow: auto; margin-top: 12px; }
+.child-growth-history thead { position: sticky; top: 0; z-index: 1; }

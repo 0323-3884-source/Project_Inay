@@ -196,7 +196,13 @@
                 @if($selectedGrowth->isEmpty())
                     <div class="ch-empty">No growth history available yet.</div>
                 @else
-                    <div class="ch-table-wrap"><table class="ch-table"><thead><tr><th>Age</th><th>Weight</th><th>Height</th><th>Measurement Date</th><th>Recorded By</th></tr></thead><tbody>@foreach($selectedGrowth->sortByDesc('measured_at') as $record)<tr><td>{{ $record->age_months }} mo</td><td>{{ $formatNumber($record->weight, ' kg') }}</td><td>{{ $formatNumber($record->height, ' cm') }}</td><td>{{ $record->measured_at?->format('M j, Y') }}</td><td>{{ $record->recorder?->full_name ?? 'Program Staff' }}</td></tr>@endforeach</tbody></table></div>
+@include('partials.ch-growth-history-table', ['growthHistoryRows' => $selectedGrowth->sortByDesc('measured_at')->take(3)])
+                    @if($selectedGrowth->count() > 3)
+                        <details class="child-growth-history">
+                            <summary>View Full Growth History ({{ $selectedGrowth->count() }} records)</summary>
+                            @include('partials.ch-growth-history-table', ['growthHistoryRows' => $selectedGrowth->sortByDesc('measured_at')])
+                        </details>
+                    @endif
                 @endif
             </section>
 

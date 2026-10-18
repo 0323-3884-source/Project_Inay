@@ -34,14 +34,15 @@ class SyntheticGuideHistorySeeder extends Seeder
             foreach ($mothers as $index => $mother) {
                 foreach (range(1, 3) as $month) {
                     $at = Carbon::create(2026, 7 + $month - 1, 8 + $index % 15, 9, 0);
-                    $week = $mother->pregnancy_status === 'pregnant' ? 4 + $month * 4 + $index % 4 : null;
+                    // These are historical prenatal visits, regardless of the mother's current status.
+                    $week = 4 + $month * 4 + $index % 4;
                     $values = [
                         'recorded_at' => $at, 'pregnancy_week' => $week,
                         'bp_systolic' => 108 + $index % 14 + $month,
                         'bp_diastolic' => 66 + $index % 10 + $month,
                         'blood_sugar_test_type' => 'fasting_plasma_glucose',
                         'blood_sugar' => 78 + $index % 15 + $month,
-                        'weight' => 50 + $index % 17 + $month * ($week ? 0.8 : 0.2),
+                        'weight' => 50 + $index % 17 + $month * ($mother->pregnancy_status === 'pregnant' ? 0.8 : 0.2),
                         'height_cm' => 150 + $index % 16,
                         'hemoglobin' => 11.8 + ($index % 5) * 0.2,
                         'temperature' => 36.5 + ($index % 3) * 0.1,
@@ -61,7 +62,10 @@ class SyntheticGuideHistorySeeder extends Seeder
                     foreach (['bp'=>'blood_pressure', 'blood_sugar'=>'blood_sugar', 'hemoglobin'=>'hemoglobin', 'weight'=>'weight', 'temperature'=>'temperature', 'heart_rate'=>'heart_rate'] as $field => $key) {
                         $attributes[$field.'_status'] = $screen['statuses'][$key] ?? null;
                     }
-                    MaternalMonitoringRecord::firstOrCreate(['mother_id'=>$mother->id, 'recorded_at'=>$at], $attributes);
+                    $visit = MaternalMonitoringRecord::firstOrCreate(['mother_id'=>$mother->id, 'recorded_at'=>$at], $attributes);
+                    if ($visit->pregnancy_week === null) {
+                        $visit->update(['pregnancy_week' => $week, 'pregnancy_month' => (int) ceil($week / 4)]);
+                    }
                     InayKaalamanCheckup::firstOrCreate(['mother_id'=>$mother->id, 'month'=>$month], [
                         'checkup_date'=>$at->toDateString(), 'recorded_at'=>$at,
                         'healthcare_worker_name'=>'Sample Midwife',

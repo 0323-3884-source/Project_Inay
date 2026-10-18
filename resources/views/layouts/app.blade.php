@@ -6923,6 +6923,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/close-buttons.css') }}?v={{ filemtime(public_path('css/close-buttons.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-placeholders.css') }}?v={{ filemtime(public_path('css/profile-placeholders.css')) }}">
 </head>
 @php
     $portalRole = session('auth_role');

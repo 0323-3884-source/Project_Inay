@@ -904,7 +904,7 @@
                     description: 'Complete weight readings from recorded maternal vitals.',
                     empty: 'No weight history available yet.',
                     rows: payload.weight_history || [],
-                    headers: ['Date', 'Pregnancy Week', 'Weight', 'Status'],
+                    headers: ['Date', 'Pregnancy Week', 'Weight', 'BMI (kg/m²)', 'Status'],
                 }
                 : {
                     title: 'Blood Pressure History',
@@ -975,12 +975,17 @@
                                 <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
                                 <td>Week ${escapeHtml(item.pregnancy_week || 'N/A')}</td>
                                 <td class="is-main">${escapeHtml(valueText(item.weight, 'kg', 1))}</td>
+                                <td>${escapeHtml(number(item.bmi, 2) ?? 'Not recorded')}</td>
                                 <td><span class="history-status ${status.className}">${status.label}</span></td>
                             </tr>
                         `;
                     }
 
-                    const status = statusInfo(item.status);
+                    const rawStatus = String(item.raw_status || item.status || '').trim().toLowerCase();
+                    const key = rawStatus.replaceAll('&', 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                    const normal = ['within-reference-range', 'normal-stable', 'normal', 'stable'].includes(key);
+                    const highRisk = ['urgent-referral-recommended', 'high-risk', 'critical'].includes(key);
+                    const status = { label: normal ? 'Normal / Stable' : (highRisk ? 'High Risk' : 'Needs Monitoring'), className: normal ? 'is-within-reference-range' : (highRisk ? 'is-urgent-referral-recommended' : 'is-for-review') };
                     return `
                         <tr>
                             <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
@@ -1089,6 +1094,7 @@
                         ${points.length > 1 ? `<polyline points="${points.map((item) => `${item.x},${item.y}`).join(' ')}" class="weight-line"/>` : ''}
                         ${points.map((item) => `<circle cx="${item.x}" cy="${item.y}" r="5" class="weight-dot"><title>${escapeHtml(item.tooltip)}</title></circle>`).join('')}
                         ${points.filter((item, index) => index === points.length - 1 || index % Math.max(1, Math.ceil(points.length / 4)) === 0).map((item) => `<text x="${item.x}" y="322" text-anchor="${item.x === points[0].x ? 'start' : (item.x === points[points.length - 1].x ? 'end' : 'middle')}">${escapeHtml(item.label)}</text>`).join('')}
+                        <text x="334" y="347" text-anchor="middle">Pregnancy Week</text>
                     </svg>
                 `;
             };

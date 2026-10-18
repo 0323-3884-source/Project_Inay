@@ -3630,7 +3630,7 @@
                         <span>Weight Progress</span>
                         <h3>Weight Progression</h3>
                         <div class="casefile-chart-canvas" data-chart="weight"></div>
-                        <div class="casefile-legend"><span class="is-pink"></span> Weight (kg) by date or pregnancy week</div>
+                        <div class="casefile-legend"><span class="is-pink"></span> Weight (kg) by pregnancy week</div>
                         <button type="button" class="monitoring-history-trigger" data-history-open="weight">
                             <span class="monitoring-history-icon" aria-hidden="true">{!! $iconHistory !!}</span>
                             <span>View Weight History</span>
@@ -3966,15 +3966,10 @@
                         <input type="number" name="weight" step="0.1" min="25" max="250" value="{{ $weightNumber ?: '' }}">
                         <small data-field-error="weight"></small>
                     </label>
+                    <input type="hidden" name="pre_pregnancy_weight" value="{{ $prePregnancyWeightNumber ?? '' }}">
                     <label>
-                        <span>Pre-pregnancy Weight (kg)</span>
-                        <input type="number" name="pre_pregnancy_weight" step="0.1" min="25" max="250" value="{{ $prePregnancyWeightNumber ?: '' }}">
-                        <small data-field-error="pre_pregnancy_weight"></small>
-                    </label>
-                    <label>
-                        <span>Pre-pregnancy BMI</span>
-                        <input type="number" name="pre_pregnancy_bmi" data-pre-pregnancy-bmi step="0.01" min="10" max="70" value="{{ $prePregnancyBmiNumber === null ? '' : number_format($prePregnancyBmiNumber, 2, '.', '') }}" readonly aria-readonly="true" placeholder="Calculated automatically">
-                        <small data-field-error="pre_pregnancy_bmi"></small>
+                        <span>BMI (kg/m²)</span>
+                        <input type="number" data-pre-pregnancy-bmi step="0.01" readonly aria-readonly="true" placeholder="Calculated automatically">
                     </label>
                     <label>
                         <span>Systolic BP</span>
@@ -4184,7 +4179,7 @@
             const syncPrePregnancyBmi = () => {
                 if (!prePregnancyBmiInput) return;
                 const heightCm = readHeightCm();
-                const prePregnancyWeight = Number(prePregnancyWeightInput?.value);
+                const prePregnancyWeight = Number(form?.querySelector('[name="weight"]')?.value);
                 if (heightCm === null || !Number.isFinite(prePregnancyWeight) || prePregnancyWeight <= 0) {
                     prePregnancyBmiInput.value = '';
                     return;
@@ -4274,7 +4269,7 @@
                     description: 'Complete weight readings from recorded maternal vitals.',
                     empty: 'No weight history available yet.',
                     rows: vitalsState.weight_history || [],
-                    headers: ['Date', 'Pregnancy Week', 'Weight', 'Status'],
+                    headers: ['Date', 'Pregnancy Week', 'Weight', 'BMI (kg/m²)', 'Status'],
                 }
                 : {
                     title: 'Blood Pressure History',
@@ -4346,6 +4341,7 @@
                                 <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
                                 <td>Week ${escapeHtml(item.pregnancy_week || 'N/A')}</td>
                                 <td class="is-main">${escapeHtml(valueText(item.weight, 'kg', 1))}</td>
+                                <td>${escapeHtml(number(item.bmi, 2) ?? 'Not recorded')}</td>
                                 <td><span class="history-status ${status.className}">${status.label}</span></td>
                                 <td>
                                     <div class="history-row-actions">
@@ -4357,7 +4353,8 @@
                         `;
                     }
 
-                    const status = statusInfo(item.status);
+                    const profile = bloodPressureStatusProfile(item.raw_status || item.status, true);
+                    const status = { label: profile.label, className: profile.className === 'is-normal' ? 'is-within-reference-range' : (profile.className === 'is-high-risk' ? 'is-urgent-referral-recommended' : 'is-for-review') };
                     return `
                         <tr>
                             <td class="is-main">${escapeHtml(item.recorded_label || 'Date not recorded')}</td>
@@ -4501,7 +4498,7 @@
                         <path d="M76 40v256h516" class="axis"/>
                         <path d="M76 40h516M76 168h516M76 296h516" class="grid"/>
                         <text x="18" y="24" class="axis-label">Weight</text>
-                        <text x="334" y="347" text-anchor="middle" class="axis-label">Date / Pregnancy Week</text>
+                        <text x="334" y="347" text-anchor="middle" class="axis-label">Pregnancy Week</text>
                         ${labels.map((label, index) => `<text x="66" y="${44 + index * 128}" text-anchor="end">${label} kg</text>`).join('')}
                         ${points.length > 1 ? `<polyline points="${polyline}" class="weight-line"/>` : ''}
                         ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" class="weight-dot"><title>${escapeHtml(point.tooltip)}</title></circle>`).join('')}
@@ -4729,7 +4726,7 @@
                 touched.add('height_cm');
                 validateClient(false);
             });
-            [heightCmInput, heightFeetInput, heightInchesInput, prePregnancyWeightInput].forEach((input) => {
+            [heightCmInput, heightFeetInput, heightInchesInput, form?.querySelector('[name="weight"]')].forEach((input) => {
                 input?.addEventListener('input', () => {
                     syncPrePregnancyBmi();
                     if (input.name) {

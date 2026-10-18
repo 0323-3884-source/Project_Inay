@@ -42,3 +42,6 @@ body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video
 body.kaalaman-page :is(.kaalaman-shell, .kaalaman-library-shell, .kaalaman-video-modal, .inay-infographic-viewer) :is(strong, b, label, .kaalaman-eyebrow, .kaalaman-stage-kicker, .kaalaman-pill, .kaalaman-library-kicker, .inay-infographic-category, .inay-infographic-badge) {
     font-weight: 700;
 }
+.kaalaman-shell .kaalaman-hero {
+    grid-template-columns: minmax(0, 1fr);
+}

@@ -1,0 +1,13 @@
+/* Use the same neutral silhouette wherever a person has no uploaded photo. */
+:is(.portal-avatar, .account-avatar, .casefile-avatar, .ch-avatar,
+    .neo-avatar, .consultation-avatar, .newborn-avatar):not(img):not(:has(img)) {
+    background-color: #e4e6eb !important;
+    background-image: url('../images/default-profile.svg') !important;
+    background-position: center !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    text-shadow: none !important;
+    border-radius: 50%;
+}
