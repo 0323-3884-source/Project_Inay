@@ -129,6 +129,9 @@ Route::post('/inay-kaalaman/progress', [AuthController::class, 'saveInayKaalaman
 Route::post('/inay-kaalaman/uploads', [AuthController::class, 'uploadInayKaalamanRecord'])->name('inay-kaalaman.upload');
 Route::delete('/inay-kaalaman/uploads/{upload}', [AuthController::class, 'deleteInayKaalamanRecord'])->name('inay-kaalaman.upload.delete');
 Route::get('/staff/dashboard', [AuthController::class, 'staffDashboard'])->name('staff.dashboard');
+Route::get('/staff/offline-records', [\App\Http\Controllers\OfflineRecordController::class, 'index'])->name('staff.offline-records');
+Route::get('/staff/offline-records/context', [\App\Http\Controllers\OfflineRecordController::class, 'context']);
+Route::post('/staff/offline-records/sync', [\App\Http\Controllers\OfflineRecordController::class, 'sync'])->middleware('throttle:60,1');
 Route::get('/staff/mothers', [AuthController::class, 'staffMothers'])->name('staff.mothers');
 Route::get('/staff/neonatal-vaccines', [AuthController::class, 'staffNeonatalVaccines'])->name('staff.neonatal');
 Route::get('/staff/dynamic-reports', [AuthController::class, 'staffDynamicReports'])->name('staff.dynamic-reports');

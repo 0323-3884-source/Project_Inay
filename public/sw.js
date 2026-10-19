@@ -18,7 +18,7 @@ async function clearPrivate() {
 }
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(STATIC).then(cache => cache.addAll([
-        local('offline.html'), local('js/pwa.js'), local('manifest.webmanifest')
+        local('offline.html'), local('js/pwa.js'), local('js/offline-resources.js'), local('manifest.webmanifest')
     ])).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
@@ -31,6 +31,8 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
     if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
     const path = pathOf(url);
+    // Patient lists and fresh CSRF tokens for synchronization must come from the server.
+    if (path === 'staff/offline-records/context') return;
     const cacheUrl = new URL(url);
     if (cacheUrl.searchParams.get('source') === 'pwa') cacheUrl.searchParams.delete('source');
     const cacheKey = cacheUrl.href;
@@ -40,7 +42,7 @@ self.addEventListener('fetch', event => {
     }
     if (request.method !== 'GET') return;
     const navigation = request.mode === 'navigate';
-    const asset = /^(css|js|build|pwa)\//.test(path) || path === 'manifest.webmanifest';
+    const asset = /^(css|js|build|pwa|fonts)\//.test(path) || path === 'manifest.webmanifest';
     const privateAsset = /^(storage|images)\//.test(path);
     if (!navigation && !asset && !privateAsset && !readable(path)) return;
     event.respondWith((async () => {

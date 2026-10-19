@@ -105,3 +105,12 @@ test('a request started before logout cannot restore private information', async
     app.network(offline);
     assert.equal(await (await app.request('child-health')).text(), 'offline fallback');
 });
+
+test('mother child profiles, learning files and document previews remain accessible offline', async () => {
+    const app = worker();
+    await app.install();
+    const paths = ['child-health?child=2', 'mother/documents/7/preview', 'mother/documents/7/download', 'inay-kaalaman/videos/10', 'inay-kaalaman/infographics/10/pdf', 'storage/infographic.png'];
+    for (const path of paths) await app.request(path);
+    app.network(offline);
+    for (const path of paths) assert.equal(await (await app.request(path)).text(), 'account A page');
+});

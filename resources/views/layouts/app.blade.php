@@ -7331,6 +7331,13 @@
     @if ($isMotherPortal || request()->routeIs('login', 'mother.register', 'password.*'))
         <script src="{{ asset('js/inay-language.js') }}?v={{ filemtime(public_path('js/inay-language.js')) }}" defer></script>
     @endif
+    @if(session('auth_role') === 'staff')
+        <a href="{{ route('staff.offline-records') }}" style="position:fixed;bottom:20px;right:20px;z-index:999;padding:10px 16px;background:#10213f;color:white;border-radius:8px">Offline records</a>
+    @endif
+    @if(session('auth_role') === 'mother')
+        <button type="button" data-offline-prepare style="position:fixed;bottom:20px;right:20px;z-index:999;padding:10px 16px;background:#10213f;color:white;border:0;border-radius:8px">Save for offline</button>
+    @endif
+    <script src="{{ asset('js/offline-resources.js') }}?v={{ filemtime(public_path('js/offline-resources.js')) }}" defer></script>
     <script src="{{ asset('js/pwa.js') }}?v={{ filemtime(public_path('js/pwa.js')) }}" data-base="{{ asset('/') }}" data-role="{{ session('auth_role') }}" defer></script>
     @if ($hasPortalShell)
         <div class="photo-crop-modal" data-photo-crop-modal hidden>

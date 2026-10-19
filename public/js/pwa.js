@@ -7,6 +7,7 @@
     const base = new URL(config.dataset.base, location.href);
     const role = config.dataset.role;
     const authenticated = ['mother', 'staff'].includes(role);
+    const prepareButton = document.querySelector('[data-offline-prepare]');
     const status = document.createElement('div');
     status.className = 'pwa-status';
     status.setAttribute('role', 'status');
@@ -33,7 +34,9 @@
     let onlineStatus = '';
     function showStatus() {
         window.clearTimeout(statusTimer);
-        statusMessage.textContent = navigator.onLine ? onlineStatus : 'Offline — showing saved information. Changes, messages and online videos need internet.';
+        statusMessage.textContent = navigator.onLine ? onlineStatus : (role === 'staff'
+            ? 'Offline — showing saved information. Use Offline records to save maternal vitals and child growth entries for later synchronization.'
+            : 'Offline — showing saved information. Changes, messages and online videos need internet.');
         status.hidden = !statusMessage.textContent;
         if (!status.hidden) statusTimer = window.setTimeout(dismissStatus, 5000);
     }
@@ -41,7 +44,7 @@
     window.addEventListener('offline', showStatus);
     // Block writes before individual module handlers can display a false success.
     document.addEventListener('submit', event => {
-        if (!navigator.onLine && event.target.method.toLowerCase() !== 'get') {
+        if (!navigator.onLine && event.target.method.toLowerCase() !== 'get' && !event.target.matches('[data-offline-entry]')) {
             event.preventDefault();
             event.stopImmediatePropagation();
             showStatus();
@@ -61,29 +64,25 @@
     async function savePages() {
         if (!authenticated || !navigator.onLine || syncing || !navigator.serviceWorker.controller) return;
         syncing = true;
+        if (prepareButton) { prepareButton.disabled = true; prepareButton.textContent = 'Saving for offline…'; }
         onlineStatus = 'Saving pages for offline viewing… Keep this page open.';
         showStatus();
         const seeds = role === 'mother'
             ? ['mother/dashboard', 'mother/documents', 'mother/profile', 'mother/settings', 'mother/consultation', 'maternal-monitoring', 'child-health', 'inay-kaalaman', 'health-services', 'mother/clinic-schedule', 'api/mother/maternal-vitals', 'consultation/conversations', 'notifications']
-            : ['staff/dashboard', 'staff/profile', 'staff/mothers', 'staff/neonatal-vaccines', 'staff/dynamic-reports', 'staff/clinic-schedule'];
+            : ['staff/dashboard', 'staff/profile', 'staff/mothers', 'staff/neonatal-vaccines', 'staff/dynamic-reports', 'staff/clinic-schedule', 'staff/offline-records'];
         const queue = [...new Set([location.href.split('#')[0], ...seeds.map(path => new URL(path, base).href)])];
         if (role === 'mother') {
             for (let month = 1; month <= 10; month++) {
                 queue.push(new URL(`inay-kaalaman/infographics/${month}/pdf`, base).href);
+                queue.push(new URL(`inay-kaalaman/videos/${month}`, base).href);
             }
         }
         const seen = new Set();
         let failed = 0;
         function enqueue(value, page, isAsset = false) {
             if (!value) return;
-            const url = new URL(value, page);
-            if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return;
-            url.hash = '';
-            const path = url.pathname.slice(base.pathname.length);
-            const allowed = isAsset
-                ? /^(css|js|build|pwa|images|storage)\//.test(path)
-                : /^(inay-kaalaman(?:\/|$)|mother\/(dashboard|profile)$|maternal-monitoring$|child-health$|health-services$|staff\/(dashboard|profile|mothers(?:\/\d+)?|neonatal-vaccines|dynamic-reports|clinic-schedule)$)/.test(path);
-            if (allowed && !seen.has(url.href) && !queue.includes(url.href)) queue.push(url.href);
+            const url = window.InayOfflineResources.normalize(value, page, base, isAsset);
+            if (url && !seen.has(url) && !queue.includes(url)) queue.push(url);
         }
         try {
             while (queue.length && navigator.onLine) {
@@ -93,15 +92,16 @@
                 try {
                     const response = await fetch(url, { credentials: 'same-origin' });
                     if (!response.ok || response.redirected) { failed++; continue; }
-                    const saved = await (await caches.open('project-inay-private-v2')).match(url)
-                        || await (await caches.open('project-inay-static-v2')).match(url);
+                    const cacheUrl = new URL(url);
+                    if (cacheUrl.searchParams.get('source') === 'pwa') cacheUrl.searchParams.delete('source');
+                    const saved = await (await caches.open('project-inay-private-v2')).match(cacheUrl.href)
+                        || await (await caches.open('project-inay-static-v2')).match(cacheUrl.href);
                     if (!saved) failed++;
                     if (response.headers.get('content-type')?.includes('text/html')) {
                         const page = new DOMParser().parseFromString(await response.text(), 'text/html');
-                        page.querySelectorAll('a[href]').forEach(link => enqueue(link.getAttribute('href'), url));
-                        page.querySelectorAll('script[src], img[src], link[rel="stylesheet"][href], link[rel="icon"][href]').forEach(asset => {
-                            enqueue(asset.getAttribute('src') || asset.getAttribute('href'), url, true);
-                        });
+                        window.InayOfflineResources.discover(page, (value, asset) => enqueue(value, url, asset));
+                    } else if (response.headers.get('content-type')?.includes('text/css')) {
+                        window.InayOfflineResources.css(await response.text(), value => enqueue(value, url, true));
                     }
                 } catch (error) { failed++; }
             }
@@ -110,9 +110,18 @@
                 : `Pages saved for offline viewing at ${new Date().toLocaleString()}. Online videos need internet.`;
         } finally {
             syncing = false;
+            if (prepareButton) {
+                prepareButton.disabled = false;
+                prepareButton.textContent = failed || queue.length ? 'Retry offline save' : 'Offline info ready';
+                prepareButton.title = onlineStatus;
+            }
             showStatus();
         }
     }
+    prepareButton?.addEventListener('click', () => {
+        if (!navigator.onLine) { showStatus(); return; }
+        savePages();
+    });
     window.addEventListener('online', () => { showStatus(); savePages(); });
     window.addEventListener('load', async () => {
         try {
