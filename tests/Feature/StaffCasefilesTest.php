@@ -461,6 +461,32 @@ class StaffCasefilesTest extends TestCase
         ]);
     }
 
+    public function test_staff_can_save_maternal_vitals_without_blood_sugar_test_type(): void
+    {
+        $staff = $this->createStaff();
+        $mother = $this->createMother('Vitals', null, 'Patient', 'no-test-type@example.test', '09175551111', 'San Pablo');
+        $this->assignMother($staff, $mother);
+
+        $this->withStaffSession($staff)
+            ->postJson('/api/program-staff/mothers/'.$mother->id.'/maternal-vitals', [
+                'recorded_at' => '2026-07-10',
+                'pregnancy_week' => 32,
+                'weight' => 74.5,
+                'bp_systolic' => 118,
+                'bp_diastolic' => 78,
+                'blood_sugar' => 88,
+                'temperature' => 36.8,
+                'heart_rate' => 82,
+                'confirmed_unusual' => 1,
+            ])->assertCreated();
+
+        $this->assertDatabaseHas('maternal_monitoring_records', [
+            'mother_id' => $mother->id,
+            'blood_sugar_test_type' => null,
+            'blood_sugar' => 88,
+        ]);
+    }
+
     public function test_staff_maternal_vitals_validation_returns_readable_errors(): void
     {
         $staff = $this->createStaff();

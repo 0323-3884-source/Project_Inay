@@ -2550,6 +2550,58 @@
         }
 
         /* ===== VITALS FORM ===== */
+        .casefile-summary-page .vitals-dialog input[type="hidden"],
+        .casefile-summary-page .vitals-warning[hidden] {
+            display: none !important;
+        }
+
+        .casefile-summary-page .vitals-dialog {
+            box-sizing: border-box;
+            max-height: min(80dvh, 760px);
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        body.has-casefile-modal {
+            overflow: hidden;
+        }
+
+        .casefile-summary-page .vitals-dialog-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 20px 24px;
+            overscroll-behavior: contain;
+        }
+
+        .casefile-summary-page .vitals-dialog > .vitals-dialog-header {
+            margin: 0;
+            padding: 20px 24px;
+            align-items: center;
+        }
+
+        .casefile-summary-page .vitals-dialog > .vitals-dialog-header::before {
+            content: '';
+            flex: 0 0 44px;
+        }
+
+        .casefile-summary-page .vitals-dialog > .vitals-dialog-header h2 {
+            flex: 1;
+            text-align: center;
+        }
+
+        .casefile-summary-page .vitals-dialog > .vitals-dialog-footer {
+            margin: 0;
+            padding: 16px 24px;
+            background: #fff;
+        }
+
+        .casefile-summary-page .vitals-dialog-header,
+        .casefile-summary-page .vitals-dialog-footer {
+            position: static;
+        }
+
         .casefile-summary-page .vitals-warning {
             display: flex;
             gap: 12px;
@@ -2588,15 +2640,18 @@
 
         .casefile-summary-page .vitals-field-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
-            flex: 1 1 auto;
+            flex: 0 0 auto;
+            align-items: start;
+            padding: 0;
         }
 
         .casefile-summary-page .vitals-field-grid label {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
         }
 
         .casefile-summary-page .vitals-field-grid label.is-wide {
@@ -2664,6 +2719,10 @@
             font-size: 11px;
             font-weight: 700;
             min-height: 16px;
+        }
+
+        .casefile-summary-page .vitals-field-grid small:empty {
+            display: none;
         }
 
         .casefile-summary-page .vitals-field-grid label.has-error input,
@@ -3956,6 +4015,7 @@
                     <button type="button" data-vitals-close aria-label="Close update vitals modal">&times;</button>
                 </header>
 
+                <div class="vitals-dialog-body">
                 <div class="vitals-warning" data-vitals-warning hidden>
                     {!! $iconAlert !!}
                     <div>
@@ -4013,16 +4073,7 @@
                         <input type="number" name="bp_diastolic" min="30" max="160" value="{{ $latestRecord?->bp_diastolic ?: '' }}">
                         <small data-field-error="bp_diastolic"></small>
                     </label>
-                    <label>
-                        <span>Blood Sugar Test Type</span>
-                        <select name="blood_sugar_test_type" required>
-                            <option value="">Select test type</option>
-                            @foreach($bloodSugarTestTypes as $value => $label)
-                                <option value="{{ $value }}" @selected($latestRecord?->blood_sugar_test_type === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <small data-field-error="blood_sugar_test_type"></small>
-                    </label>
+                    <input type="hidden" name="blood_sugar_test_type" value="{{ $latestRecord?->blood_sugar_test_type ?? '' }}">
                     <label>
                         <span>Blood Sugar (mg/dL)</span>
                         <input type="number" name="blood_sugar" step="0.1" min="20" max="700" value="{{ $latestRecord?->blood_sugar ?: '' }}">
@@ -4045,6 +4096,7 @@
                     </label>
                 </div>
 
+                </div>
                 <footer class="vitals-dialog-footer">
                     <button type="button" class="vitals-cancel" data-vitals-close>Cancel</button>
                     <button type="submit" class="vitals-save" data-vitals-save>
@@ -4630,7 +4682,6 @@
                     if (Number(value) >= Number(values.bp_systolic)) return 'Diastolic BP should be lower than systolic BP.';
                     return '';
                 },
-                blood_sugar_test_type: (value) => bloodSugarTestTypes[value] ? '' : 'Blood Sugar Test Type is required.',
                 blood_sugar: (value) => Number(value) >= 20 && Number(value) <= 700 ? '' : 'Blood sugar must be from 20 to 700 mg/dL.',
                 temperature: (value) => Number(value) >= 30 && Number(value) <= 45 ? '' : 'Body temperature must be entered in Celsius from 30 to 45 C.',
                 heart_rate: (value) => Number(value) >= 30 && Number(value) <= 220 ? '' : 'Heart rate must be from 30 to 220 bpm.',

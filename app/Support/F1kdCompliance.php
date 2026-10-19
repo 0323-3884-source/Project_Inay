@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class F1kdCompliance
 {
-    public const STATUSES = ['compliant' => 'Compliant', 'non_compliant' => 'Non-Compliant', 'verification' => 'For Verification / Not Yet Recorded'];
+    public const STATUSES = ['compliant' => 'Compliant', 'non_compliant' => 'Did Not Attend', 'verification' => 'For Verification / Not Yet Recorded'];
     public const ATTENDANCE = ['attended' => 'Attended', 'did_not_attend' => 'Did Not Attend'];
     // Reuse the existing checklist outcome keys; these are application labels,
     // not a claim to implement official external DSWD numeric remark codes.

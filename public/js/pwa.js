@@ -34,6 +34,11 @@
     let onlineStatus = '';
     function showStatus() {
         window.clearTimeout(statusTimer);
+        // Prepare staff pages quietly without a floating progress notice.
+        if (role === 'staff' && navigator.onLine) {
+            status.hidden = true;
+            return;
+        }
         statusMessage.textContent = navigator.onLine ? onlineStatus : (role === 'staff'
             ? 'Offline — showing saved information. Use Offline records to save maternal vitals and child growth entries for later synchronization.'
             : 'Offline — showing saved information. Changes, messages and online videos need internet.');

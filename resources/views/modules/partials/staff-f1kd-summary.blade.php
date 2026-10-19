@@ -35,7 +35,7 @@
         </tbody>
     </table>
 </div>
-<p class="casefile-panel-note">○ Attended = Compliant. ● Did Not Attend = Non-Compliant. Missing attendance = For Verification. Open a beneficiary to select another reporting period and review history.</p>
+<p class="casefile-panel-note">○ Attended = Compliant. ● Did Not Attend. Missing attendance = For Verification. Open a beneficiary to select another reporting period and review history.</p>
 <style>
 .f1kd-casefile-table { width:100%; border-collapse:collapse; font-size:13px; }
 .f1kd-casefile-table th,.f1kd-casefile-table td { padding:12px; text-align:left; border-bottom:1px solid #e2e8f0; vertical-align:top; }

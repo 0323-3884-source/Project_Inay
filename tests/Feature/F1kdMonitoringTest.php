@@ -239,10 +239,17 @@ class F1kdMonitoringTest extends TestCase
         $this->assertStringContainsString("'=2+2",$csv);
         $this->assertStringNotContainsString('Ana',$csv);
         $this->assertStringNotContainsString('SECRET',$csv);
+        $this->assertStringNotContainsString('Non-Compliant', $csv);
+        $csvRows = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
+        $headerIndex = array_search('Municipality / Barangay', array_column($csvRows, 0), true);
+        $this->assertNotFalse($headerIndex);
+        foreach (array_slice($csvRows, $headerIndex) as $csvRow) {
+            $this->assertCount(6, $csvRow);
+        }
         for ($i=0;$i<16;$i++) $this->mother();
         $this->get('/dswd/f1kd')->assertOk()->assertViewHas('beneficiaries', fn ($p) => $p->count()===15 && $p->total()===17)->assertSee('Next');
         $this->get('/dswd/f1kd/reports')->assertOk()->assertSee('Print report')
-            ->assertSee('Monthly 4Ps Reports')->assertSee('Monthly beneficiary attendance')
+            ->assertSee('Monthly 4Ps Reports')->assertSee('Monthly beneficiary attendance')->assertDontSee('Non-Compliant')->assertDontSee('Non-compliant')
             ->assertSee('View / Verify')->assertViewHas('beneficiaries', fn ($p) => $p->count()===15 && $p->total()===17);
         $this->get('/dswd/dashboard')->assertOk()->assertSee('Monthly 4Ps Overview')
             ->assertSee('name="month"', false)->assertSee('Maternal Monitoring')->assertSee('Monthly 4Ps Reports');

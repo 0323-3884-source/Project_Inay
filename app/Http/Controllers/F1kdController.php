@@ -88,8 +88,8 @@ class F1kdController extends Controller
     {
         $filters = $this->compliance->filters($request);
         $rows = $this->compliance->rows($filters);
-        $summary = $this->compliance->summary($rows);
-        $breakdown = $rows->groupBy(fn ($r) => $r->municipality_city.' / '.$r->barangay)->map(fn ($group) => $this->compliance->summary($group));
+        $summary = array_diff_key($this->compliance->summary($rows), ['non_compliant' => true]);
+        $breakdown = $rows->groupBy(fn ($r) => $r->municipality_city.' / '.$r->barangay)->map(fn ($group) => array_diff_key($this->compliance->summary($group), ['non_compliant' => true]));
         if ($request->routeIs('dswd.f1kd.reports.download')) {
             return response()->streamDownload(function () use ($filters, $summary, $breakdown) {
                 $out = fopen('php://output', 'w');
@@ -100,7 +100,7 @@ class F1kdController extends Controller
                         $write([$key, $value]);
                     }
                 }
-                $write(['Municipality / Barangay', 'Total', '4Ps Mothers', 'Children 0–24 months', 'Compliant', 'For Verification', 'Non-Compliant']);
+                $write(['Municipality / Barangay', 'Total', '4Ps Mothers', 'Children 0–24 months', 'Compliant', 'For Verification']);
                 $write(['All selected areas', ...array_values($summary)]);
                 foreach ($breakdown as $area => $counts) {
                     $write([$area, ...array_values($counts)]);
