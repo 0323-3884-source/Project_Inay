@@ -41,6 +41,30 @@
     .dswd-shell .dswd-chart-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px; gap:8px; font-size:12px; }
     .dswd-shell .account-heading h1 { overflow-wrap:anywhere; }
 }
+@media print {
+.dswd-shell .dswd-monthly-report,
+.dswd-shell .dswd-monthly-report * { font-family:Arial, Helvetica, sans-serif !important; }
+.dswd-shell .dswd-monthly-report { color:#222; font-size:11pt; line-height:1.45; }
+.dswd-shell .dswd-monthly-report .dswd-report-action,
+.dswd-shell .dswd-monthly-report nav[role="navigation"] { display:none !important; }
+.dswd-shell .dswd-monthly-report .dswd-table-wrap { overflow:visible; }
+.dswd-shell .dswd-monthly-report .dswd-table { width:100%; font-size:9pt; }
+.dswd-shell .dswd-monthly-report .dswd-table th,
+.dswd-shell .dswd-monthly-report .dswd-table td { padding:8px 6px; color:#222; overflow-wrap:anywhere; }
+.dswd-shell .dswd-monthly-report .dswd-table th { background:#f2f2f2; font-weight:700; }
+.dswd-shell .dswd-monthly-report .dswd-table thead { display:table-header-group; }
+.dswd-shell .dswd-monthly-report .dswd-table tr { break-inside:avoid; }
+.dswd-shell .dswd-monthly-report .admin-card { break-inside:auto; }
+.dswd-shell .dswd-monthly-report h2 { break-after:avoid; }
+.dswd-shell .dswd-monthly-report a { color:inherit; text-decoration:none; }
+.dswd-shell .dswd-monthly-report .admin-card,
+.dswd-shell .dswd-monthly-report .admin-summary-card { border:0; border-radius:0; box-shadow:none; background:transparent; }
+.dswd-shell .dswd-monthly-report .admin-card { padding:16px 0; }
+.dswd-shell .dswd-monthly-report .admin-summary-card { padding:16px 0; }
+.dswd-shell .dswd-monthly-report .admin-summary-icon { display:none; }
+.dswd-shell .dswd-monthly-report .account-heading h1 { color:var(--inay-navy); }
+.dswd-shell .dswd-monthly-report .dswd-note { color:#52627d; }
+}
 @media print { .dswd-shell .dswd-table { min-width:0; } }
 @media print { .dswd-shell .portal-sidebar,.dswd-shell .portal-header { display:none; } .dswd-shell .portal-main { padding:0; } }
 </style>

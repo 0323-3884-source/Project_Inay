@@ -1,4 +1,4 @@
-<div class="dswd-table-wrap"><table class="dswd-table"><thead><tr><th>Beneficiary / ID</th><th>Entry ID</th><th>Classification</th><th>Attendance</th><th>Remarks</th><th>Recorded / verified by</th><th>Action</th></tr></thead><tbody>
+<div class="dswd-table-wrap"><table class="dswd-table"><thead><tr><th>Beneficiary / ID</th><th>Entry ID</th><th>Classification</th><th>Attendance</th><th>Remarks</th><th>Recorded / verified by</th><th class="dswd-report-action">Action</th></tr></thead><tbody>
 @forelse($beneficiaries as $beneficiary)<tr>
 <td>{{ $beneficiary->name }}<br>{{ $beneficiary->beneficiary_id }}@include('dswd.f1kd.profile-summary')@if(($showMother ?? false) && $beneficiary->classification === 'child')<br><small>Mother: {{ $beneficiary->mother_name }}</small>@endif</td>
 <td>{{ $beneficiary->dswd_entry_number ?: 'Not recorded' }}</td>
@@ -17,6 +17,6 @@
         Not recorded
     @endif
 </td>
-<td><a href="{{ route('dswd.f1kd.show', ['subject'=>$beneficiary->key, 'month'=>$beneficiary->month]) }}">View / Verify</a></td>
+<td class="dswd-report-action"><a href="{{ route('dswd.f1kd.show', ['subject'=>$beneficiary->key, 'month'=>$beneficiary->month]) }}">View / Verify</a></td>
 </tr>@empty<tr><td colspan="7">No beneficiaries for this period and filters.</td></tr>@endforelse
 </tbody></table></div>
