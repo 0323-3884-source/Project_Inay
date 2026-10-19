@@ -3496,7 +3496,6 @@
 
             <div class="casefile-profile-actions">
                 <button type="button" onclick="document.getElementById('casefile-children-dialog').showModal()" aria-haspopup="dialog" aria-controls="casefile-children-dialog">{!! $iconUser !!} View Children ({{ $mother->infants->count() }})</button>
-                <button type="button" onclick="document.getElementById('casefile-children-dialog').showModal()" aria-haspopup="dialog" aria-controls="casefile-children-dialog">{!! $iconUser !!} View Children ({{ $mother->infants->count() }})</button>
                 <button type="button" data-mother-edit aria-haspopup="dialog" aria-controls="mother-information-dialog" aria-expanded="{{ $errors->motherInformation->any() ? 'true' : 'false' }}">{!! $iconEdit !!} Edit Information</button>
                 <button type="button" data-casefile-record="print" data-record-url="{{ route('staff.mothers.print', $mother) }}">{!! $iconPrinter !!} Print Record</button>
                 <button type="button" class="is-dark" data-casefile-record="pdf" data-record-url="{{ route('staff.mothers.pdf', $mother) }}">{!! $iconDownload !!} Export PDF</button>
