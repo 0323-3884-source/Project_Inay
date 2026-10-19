@@ -368,7 +368,9 @@ class NeonatalVaccinesTest extends TestCase
         $this->assertSame(16, $child->vaccineRecords()->count());
         $dose = $child->vaccineRecords()->where('vaccine_name', 'BCG')->firstOrFail();
         $this->assertSame('2026-06-01', $dose->due_date->toDateString());
-        $this->assertSame('upcoming', $dose->status);
+        $this->assertSame('pending', $dose->status);
+        $this->assertSame(16, $child->vaccineRecords()->where('status', 'pending')->count());
+        $this->get($url)->assertOk()->assertSee('16 pending scheduling')->assertSee('0 upcoming');
         $dose->update(['status' => 'completed', 'administered_at' => '2026-06-02']);
         $this->get($url)->assertOk();
         $this->assertSame(16, $child->vaccineRecords()->count());

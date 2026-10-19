@@ -41,6 +41,7 @@
     $vaccineState = function ($record) use ($today) {
         if ($record->status === 'completed') return ['Completed', 'is-complete', 5];
         if ($record->status === 'cancelled') return ['Cancelled', 'is-cancelled', 4];
+        if ($record->status === 'pending') return ['Pending Scheduling', 'is-overdue', 1];
         if (in_array($record->status, ['missed', 'overdue'], true)) return [$record->status === 'missed' ? 'Missed' : 'Pending Scheduling', 'is-overdue', 1];
         if ($record->due_date && $record->due_date->isSameDay($today)) return ['Due Today', 'is-due', 2];
         if ($record->due_date && $record->due_date->isBefore($today)) return ['Pending Scheduling', 'is-overdue', 1];

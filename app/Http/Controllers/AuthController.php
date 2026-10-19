@@ -2139,7 +2139,7 @@ class AuthController extends Controller
             'vaccine_name' => ['required', 'string', 'max:255'],
             'dose_label' => ['required', 'string', 'max:120'],
             'due_date' => ['nullable', 'date'],
-            'status' => ['required', Rule::in(['upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
+            'status' => ['required', Rule::in(['pending', 'upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
             'administered_at' => ['nullable', 'date', 'before_or_equal:today'],
             'facility' => ['nullable', 'string', 'max:255'],
             'lot_number' => ['nullable', 'string', 'max:120'],
@@ -2195,7 +2195,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'due_date' => ['sometimes', 'nullable', 'date'],
-            'status' => ['required', Rule::in(['upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
+            'status' => ['required', Rule::in(['pending', 'upcoming', 'completed', 'overdue', 'missed', 'cancelled'])],
             'administered_at' => ['nullable', 'date', 'before_or_equal:today'],
             'facility' => ['nullable', 'string', 'max:255'],
             'lot_number' => ['nullable', 'string', 'max:120'],
@@ -2900,7 +2900,7 @@ class AuthController extends Controller
                     'recorded_by_staff_id' => $staff?->id,
                     'vaccine_group' => $item['group'],
                     'due_date' => $item['due_date'],
-                    'status' => 'upcoming',
+                    'status' => 'pending',
                 ]
             );
         }

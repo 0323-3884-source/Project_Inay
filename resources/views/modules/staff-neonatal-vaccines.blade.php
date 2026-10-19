@@ -56,6 +56,7 @@
     $vaccineState = function ($record) use ($today) {
         if ($record->status === 'completed') return ['Completed', 'is-complete', 5];
         if ($record->status === 'cancelled') return ['Cancelled', 'is-cancelled', 4];
+        if ($record->status === 'pending') return ['Pending Scheduling', 'is-overdue', 1];
         if (in_array($record->status, ['missed', 'overdue'], true)) return [$record->status === 'missed' ? 'Missed' : 'Pending Scheduling', 'is-overdue', 1];
         if ($record->due_date && $record->due_date->isSameDay($today)) return ['Due Today', 'is-due', 2];
         if ($record->due_date && $record->due_date->isBefore($today)) return ['Pending Scheduling', 'is-overdue', 1];
@@ -1204,7 +1205,7 @@
                     @csrf
                     <header><h2 data-vaccine-title>Update Vaccine</h2><button type="button" class="neo-close" data-neo-close aria-label="Close vaccine modal">{!! $iconClose !!}</button></header>
                     <div class="neo-form">
-                        <label>Status<select name="status" data-vaccine-status><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
+                        <label>Status<select name="status" data-vaccine-status><option value="pending">Pending Scheduling</option><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
                         @include('partials.vaccine-date-field', ['dateName' => 'due_date', 'dateLabel' => 'Scheduled Date'])
                         @include('partials.vaccine-date-field', ['dateName' => 'administered_at', 'dateLabel' => 'Date Given'])
                         <details class="neo-vaccine-optional"><summary>More details (optional)</summary><div class="neo-vaccine-optional-fields">
@@ -1228,7 +1229,7 @@
                         <label>Vaccine Name<input name="vaccine_name" required maxlength="255"></label>
                         <label>Dose Label<input name="dose_label" required maxlength="120"></label>
                         @include('partials.vaccine-date-field', ['dateName' => 'due_date', 'dateLabel' => 'Scheduled Date'])
-                        <label>Status<select name="status" required><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
+                        <label>Status<select name="status" required><option value="pending">Pending Scheduling</option><option value="upcoming">Scheduled</option><option value="completed">Given</option><option value="cancelled">Cancelled</option></select></label>
                         @include('partials.vaccine-date-field', ['dateName' => 'administered_at', 'dateLabel' => 'Date Given'])
                         <details class="neo-vaccine-optional"><summary>More details (optional)</summary><div class="neo-vaccine-optional-fields">
                         <label>Facility<input name="facility"></label>
@@ -1436,7 +1437,7 @@
                     if (!vaccineForm) return;
                     vaccineForm.action = button.dataset.action || '';
                     document.querySelector('[data-vaccine-title]').textContent = `${button.dataset.name || 'Vaccine'} - ${button.dataset.dose || ''}`;
-                    vaccineForm.querySelector('[data-vaccine-status]').value = ['completed', 'cancelled'].includes(button.dataset.status) ? button.dataset.status : 'upcoming';
+                    vaccineForm.querySelector('[data-vaccine-status]').value = ['pending', 'completed', 'cancelled'].includes(button.dataset.status) ? button.dataset.status : 'upcoming';
                     vaccineForm.querySelector('.neo-vaccine-optional').open = false;
                     vaccineForm.querySelector('[data-vaccine-date]').value = button.dataset.date || '';
                     vaccineForm.querySelector('[data-vaccine-due-date]').value = button.dataset.dueDate || '';
