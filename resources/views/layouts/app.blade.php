@@ -7040,7 +7040,7 @@
     $staffNavItems = [
         ['label' => 'Monitor Desk', 'icon' => 'dashboard', 'href' => route('staff.dashboard'), 'active' => request()->routeIs('staff.dashboard')],
         ['label' => 'Mothers Casefiles', 'icon' => 'users', 'href' => route('staff.mothers'), 'active' => request()->routeIs('staff.mothers*')],
-        ['label' => 'Neonatal & Vaccines', 'icon' => 'baby', 'href' => route('staff.neonatal'), 'active' => request()->routeIs('staff.neonatal*')],
+        ['label' => '0–2 Children & Vaccines', 'icon' => 'baby', 'href' => route('staff.neonatal'), 'active' => request()->routeIs('staff.neonatal*')],
         ['label' => 'Appointments', 'icon' => 'calendar', 'href' => route('staff.clinic-schedule.index'), 'active' => request()->routeIs('staff.clinic-schedule.*')],
         [
             'label' => 'Messages',

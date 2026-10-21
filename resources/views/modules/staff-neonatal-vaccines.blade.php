@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Neonatal & Vaccines - Project INAY')
-@section('portal_title', 'Neonatal & Vaccines')
+@section('title', '0–2 Children & Vaccines - Project INAY')
+@section('portal_title', '0–2 Children & Vaccines')
 
 @php
     $iconSearch = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
@@ -953,14 +953,14 @@
     <link rel="stylesheet" href="{{ asset('css/child-profile.css') }}?v={{ filemtime(public_path('css/child-profile.css')) }}">
     <script src="{{ asset('js/child-profile.js') }}?v={{ filemtime(public_path('js/child-profile.js')) }}" defer></script>
 
-    <section class="neonatal-shell" aria-label="Staff Neonatal and Vaccine Workspace">
+    <section class="neonatal-shell" aria-label="Staff 0–2 Children and Vaccine Workspace">
         <header class="neo-heading">
             <div>
-                <p class="neo-kicker">Program Staff / Neonatal Care</p>
-                <h1>Neonatal & Vaccine Monitoring</h1>
+                <p class="neo-kicker">Program Staff / 0–2 Children</p>
+                <h1>0–2 Children & Vaccine Monitoring</h1>
                 <p>Mother-linked child profiles, growth history, vaccine status, and follow-up alerts.</p>
             </div>
-            <div class="neo-stats" aria-label="Neonatal monitoring summary">
+            <div class="neo-stats" aria-label="0–2 Children monitoring summary">
                 @foreach($neonatalSummaryCards as $summary)
                     <article class="neo-stat {{ $summary['tone'] }}">
                         <span class="neo-stat-icon" aria-hidden="true">{!! $summary['icon'] !!}</span>

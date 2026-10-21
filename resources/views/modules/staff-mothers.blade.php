@@ -83,8 +83,46 @@
 
         .casefiles-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) auto;
             gap: 12px;
+        }
+
+        .casefiles-summary-export {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            align-self: center;
+            padding: 16px 20px;
+            border: 1px solid #ec0a78;
+            border-radius: 8px;
+            background: #ec0a78;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .casefiles-summary-export:hover {
+            background: #c90865;
+            border-color: #c90865;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .casefiles-summary-export:focus-visible {
+            outline: 3px solid #f9a8d4;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 760px) {
+            .casefiles-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .casefiles-summary-export {
+                grid-column: 1 / -1;
+            }
         }
 
         .casefiles-summary article {
@@ -628,6 +666,7 @@
                 <span>With Monitoring Records</span>
                 <strong>{{ number_format($withMonitoring) }}</strong>
             </article>
+            <a class="casefiles-summary-export" href="{{ route('staff.mothers', ['export' => 'all_csv']) }}">Export All Beneficiaries (CSV)</a>
         </div>
 
         <form class="casefiles-toolbar" method="GET" action="{{ route('staff.mothers') }}" data-casefiles-filter-form>

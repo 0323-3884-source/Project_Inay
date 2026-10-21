@@ -1,17 +1,18 @@
 @extends('layouts.app')
 @section('title', 'Child Case Files - Project INAY')
-@section('portal_title', 'Neonatal & Vaccines')
+@section('portal_title', '0–2 Children & Vaccines')
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/child-registry.css') }}?v={{ filemtime(public_path('css/child-registry.css')) }}">
 @endpush
 @section('content')
 <section class="child-registry">
-    <header class="child-registry-heading"><p>Patient Registry · Neonatal & Vaccines</p><h1>Child Case Files</h1><p>Growth and vaccination monitoring for children ages 0–2 years.</p></header>
+    <header class="child-registry-heading"><p>Patient Registry · 0–2 Children & Vaccines</p><h1>Child Case Files</h1><p>Growth and vaccination monitoring for children ages 0–2 years.</p></header>
     @if(session('status'))<p role="status">{{ session('status') }}</p>@endif
     @if($errors->any())<div role="alert">{{ $errors->first() }}</div>@endif
     <div class="child-registry-stats">
         <article><span>Registered Children · Ages 0–2</span><strong>{{ $registeredCount }}</strong></article>
         <article><span>Matching Records</span><strong>{{ $registryChildren->total() }}</strong></article>
+        <a class="child-registry-export" href="{{ route('staff.mothers', ['export' => 'all_csv']) }}">Export All Beneficiaries (CSV)</a>
     </div>
     <form class="child-registry-filters" method="GET" action="{{ route('staff.neonatal') }}">
         <label class="child-registry-search">Child Name<input type="search" name="q" value="{{ $search }}" placeholder="Search child name"></label>

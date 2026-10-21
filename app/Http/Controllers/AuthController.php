@@ -959,6 +959,10 @@ class AuthController extends Controller
             return redirect()->route('login')->with('status', 'Please login again.');
         }
 
+        if ($request->query('export') === 'all_csv') {
+            return \App\Support\BeneficiaryCsvExport::download();
+        }
+
         $search = trim((string) $request->query('q', ''));
         $fourPs = (string) $request->query('four_ps', 'all');
         $allowedFourPsFilters = ['all', 'beneficiary', 'non_4ps'];
