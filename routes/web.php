@@ -82,6 +82,7 @@ Route::post('/register/staff', [AuthController::class, 'registerStaff'])->name('
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/staff/activity', [\App\Http\Controllers\StaffPresenceController::class, 'update'])->middleware('throttle:60,1')->name('staff.activity');
+Route::post('/mother/activity', [\App\Http\Controllers\StaffPresenceController::class, 'update'])->middleware('throttle:60,1')->name('mother.activity');
 Route::post('/dswd/activity', [\App\Http\Controllers\StaffPresenceController::class, 'update'])->middleware(['dswd.auth', 'throttle:60,1'])->name('dswd.activity');
 
 Route::prefix('notifications')->name('notifications.')->group(function () {

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{AdminUser, DswdStaff, ProgramStaff};
+use App\Models\{AdminUser, DswdStaff, Mother, ProgramStaff};
 use App\Support\{ChatPresence, StaffActivity};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Hash, Log};
@@ -11,6 +11,28 @@ use Tests\TestCase;
 class StaffActivityTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_mother_login_activity_is_separate_from_staff_and_visible_only_to_clinical_admins(): void
+    {
+        $mother = Mother::create(['first_name' => 'Fictional', 'last_name' => 'Mother', 'email' => 'activity-mother@example.test', 'password' => Hash::make('synthetic-password'), 'barangay' => 'San Roque', 'contact_number' => '09000000000']);
+        $staff = $this->staff();
+        $this->post('/login', ['role' => 'mother', 'email' => $mother->email, 'password' => 'synthetic-password'])->assertRedirect('/mother/dashboard');
+        $this->assertTrue(StaffActivity::summary($mother)['active']);
+        $this->assertNotNull(StaffActivity::summary($mother)['last_login']);
+        $this->assertFalse(StaffActivity::summary($staff)['active']);
+        $this->get('/mother/dashboard')->assertOk()->assertSee('data-presence-url="'.route('mother.activity').'"', false);
+        $this->postJson('/mother/activity')->assertOk()->assertJsonPath('active', true);
+        $this->postJson('/staff/activity')->assertForbidden();
+        $this->post('/logout')->assertRedirect();
+        $this->assertFalse(StaffActivity::summary($mother)['active']);
+
+        $this->admin('admin_cho');
+        $this->get('/admin/staff-activity?mother_q=Fictional')->assertOk()->assertSee('Fictional Mother')->assertSee('data-last-login', false);
+        $this->getJson('/admin/staff-activity?mother_ids[]='.$mother->id)->assertOk()->assertJsonCount(1, 'mother')->assertJsonPath('mother.0.active', false);
+        $this->admin('admin_dswd');
+        $this->get('/admin/staff-activity')->assertOk()->assertDontSee('Fictional Mother');
+        $this->getJson('/admin/staff-activity?mother_ids[]='.$mother->id)->assertOk()->assertJsonPath('mother', null);
+    }
 
     private function staff(): ProgramStaff
     {

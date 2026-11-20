@@ -50,17 +50,26 @@ test('expired authentication stops further heartbeats', async () => {
 
 test('admin status refreshes immediately then every ten seconds without reloading', async () => {
     const timers = [];
-    const badge = {dataset: {staffActivity: 'program_staff', staffId: '7'}, classList: {contains: () => false}};
+    const lastLogin = {textContent: 'Not recorded'};
+    const lastSeen = {textContent: 'Not recorded'};
+    const connection = {textContent: ''};
+    const badge = {dataset: {staffActivity: 'program_staff', staffId: '7'}, classList: {contains: () => false}, closest: () => ({querySelector: selector => selector === '[data-last-login]' ? lastLogin : lastSeen})};
+    const motherBadge = {dataset: {staffActivity: 'mother', staffId: '9'}, classList: {contains: () => false}};
     let calls = 0;
     vm.runInNewContext(readFileSync('public/js/staff-activity.js', 'utf8'), {
-        document: {currentScript: {dataset: {activityUrl: '/admin/staff-activity'}}, querySelectorAll: () => [badge], hidden: false, addEventListener() {}},
+        document: {currentScript: {dataset: {activityUrl: '/admin/staff-activity'}}, querySelectorAll: () => [badge, motherBadge], querySelector: () => connection, hidden: false, addEventListener() {}},
         window: {location: {origin: 'https://example.test'}}, URL, Date,
-        fetch: async url => { calls++; assert.equal(url.searchParams.get('program_ids[]'), '7'); return {ok: true, headers: {get: () => 'application/json'}, json: async () => ({program_staff: [{id: 7, active: calls === 1}]})}; },
+        fetch: async url => { calls++; assert.equal(url.searchParams.get('program_ids[]'), '7'); assert.equal(url.searchParams.get('mother_ids[]'), '9'); return {ok: true, headers: {get: () => 'application/json'}, json: async () => ({program_staff: [{id: 7, active: calls === 1, last_login: 'Recorded login', last_seen: 'Activity '+calls}], mother: [{id: 9, active: true}]})}; },
         setInterval: (fn, ms) => {timers.push({fn, ms});},
     });
     await settle();
     assert.equal(badge.textContent, 'Active');
+    assert.equal(motherBadge.textContent, 'Active');
+    assert.equal(lastLogin.textContent, 'Recorded login');
+    assert.equal(lastSeen.textContent, 'Activity 1');
+    assert.match(connection.textContent, /Live updates connected/);
     assert.equal(timers[0].ms, 10000);
     await timers[0].fn();
     assert.equal(badge.textContent, 'Inactive');
+    assert.equal(lastSeen.textContent, 'Activity 2');
 });

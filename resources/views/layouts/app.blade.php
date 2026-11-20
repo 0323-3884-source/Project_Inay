@@ -7382,8 +7382,8 @@
         </div>
     @endif
     @stack('scripts')
-    @if(in_array(session('auth_role'), ['staff', 'dswd_staff'], true))
-        <script src="{{ asset('js/staff-presence.js') }}?v={{ filemtime(public_path('js/staff-presence.js')) }}" data-presence-url="{{ route(session('auth_role') === 'dswd_staff' ? 'dswd.activity' : 'staff.activity') }}" data-csrf="{{ csrf_token() }}" defer></script>
+    @if(in_array(session('auth_role'), ['staff', 'dswd_staff', 'mother'], true))
+        <script src="{{ asset('js/staff-presence.js') }}?v={{ filemtime(public_path('js/staff-presence.js')) }}" data-presence-url="{{ route(match(session('auth_role')) { 'mother' => 'mother.activity', 'dswd_staff' => 'dswd.activity', default => 'staff.activity' }) }}" data-csrf="{{ csrf_token() }}" defer></script>
     @endif
     @if ($hasPortalShell)
         <script>
