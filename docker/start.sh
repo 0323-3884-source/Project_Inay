@@ -95,6 +95,11 @@ case "${RUN_MIGRATIONS:-true}" in
         ;;
 esac
 
+# Migrations create tables, but do not create the CHO/DSWD login accounts.
+# This targeted seeder creates missing department admins and preserves existing
+# passwords, roles and the general administrator on every deployment.
+php artisan db:seed --class=DepartmentAdminSeeder --force --no-interaction
+
 php artisan config:cache
 php artisan view:cache
 
