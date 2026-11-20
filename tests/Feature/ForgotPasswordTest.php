@@ -79,10 +79,10 @@ class ForgotPasswordTest extends TestCase
         Mail::fake();
         [$mother] = $this->accounts();
         $this->post('/forgot-password', ['role' => 'mother', 'email' => 'missing@example.test'])
-            ->assertSessionHasErrors(['email' => 'No account found with this email and selected role.']);
+            ->assertSessionHas('status', 'If an eligible account exists, a password reset link will be sent.');
         Mail::assertNothingSent();
         $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])
-            ->assertSessionHas('status', 'Password reset link sent. Check your inbox or spam folder.');
+            ->assertSessionHas('status', 'If an eligible account exists, a password reset link will be sent.');
         $this->post('/forgot-password', ['role' => 'mother', 'email' => $mother->email])->assertSessionHasErrors('email');
         Mail::assertSentCount(1);
         $this->post('/forgot-password', ['role' => 'admin', 'email' => $mother->email])->assertSessionHasErrors('role');

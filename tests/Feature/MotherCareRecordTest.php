@@ -24,7 +24,7 @@ class MotherCareRecordTest extends TestCase
             $this->flushSession();
             $this->getJson($url)->assertUnauthorized();
             $this->withSession(['auth_role' => 'mother', 'auth_id' => $staff->id])->getJson($url)->assertUnauthorized();
-            $this->withSession(['auth_role' => 'staff', 'auth_id' => 999999, 'auth_email' => $staff->email])->getJson($url)->assertUnauthorized();
+            $this->withSession(['auth_role' => 'staff', 'auth_id' => 999999, 'auth_email' => $staff->email])->getJson($url)->assertForbidden();
             $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id])->getJson($url)->assertForbidden();
         }
 
@@ -33,6 +33,7 @@ class MotherCareRecordTest extends TestCase
         $staff->update(['approval_status' => 'rejected']);
         $this->getJson(route('staff.mothers.pdf', $mother))->assertForbidden();
         $staff->update(['approval_status' => 'approved']);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id]);
         $otherMother = $this->mother('other@example.test');
         $this->getJson(route('staff.mothers.pdf', $otherMother))->assertForbidden();
         $this->getJson('/staff/mothers/999999/pdf')->assertNotFound();
@@ -185,6 +186,7 @@ class MotherCareRecordTest extends TestCase
         $staff->update(['approval_status' => 'rejected']);
         $this->getJson(route('staff.neonatal.pdf', $child))->assertForbidden();
         $staff->update(['approval_status' => 'approved']);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id]);
         $pdf = $this->get(route('staff.neonatal.pdf', $child))->assertOk()->getContent();
         $this->assertStringStartsWith('%PDF-', $pdf);
         $this->assertMatchesRegularExpression('/\/MediaBox\s*\[0\.000 0\.000 595\.\d+ 841\.\d+\]/', $pdf);
@@ -210,6 +212,7 @@ class MotherCareRecordTest extends TestCase
         $staff->update(['approval_status' => 'rejected']);
         $this->patchJson($url, $data)->assertForbidden();
         $staff->update(['approval_status' => 'approved']);
+        $this->withSession(['auth_role' => 'staff', 'auth_id' => $staff->id]);
 
         $this->get(route('staff.mothers.show', $mother))->assertOk()->assertSee('data-mother-edit', false)->assertSee('mother-information-form')->assertSee($mother->contact_number);
         $this->from(route('staff.mothers.show', $mother))->patch($url, array_replace($data, ['first_name' => '', 'blood_type' => 'invalid']))

@@ -46,7 +46,7 @@ class ForgotPasswordController extends Controller
         RateLimiter::hit('password-reset:'.$key, 60);
         $account = $this->account($data['role'], $data['email']);
         if (! $account) {
-            return $response->withErrors(['email' => 'No account found with this email and selected role.']);
+            return $response->with('status', 'If an eligible account exists, a password reset link will be sent.');
         }
         $token = Str::random(64);
         DB::table('password_reset_tokens')->updateOrInsert(['email' => $key], [
@@ -59,11 +59,11 @@ class ForgotPasswordController extends Controller
             Mail::to($account->email)->send(new AccountPasswordReset($url, $data['role']));
         } catch (\Throwable $exception) {
             DB::table('password_reset_tokens')->where('email', $key)->where('token', hash('sha256', $token))->delete();
-            report($exception);
-            return $response->withErrors(['email' => 'Could not send the reset email. Please try again later.']);
+            \Illuminate\Support\Facades\Log::warning('Password reset delivery failed.', ['exception_type' => get_class($exception)]);
+            return $response->with('status', 'If an eligible account exists, a password reset link will be sent.');
         }
 
-        return $response->with('status', 'Password reset link sent. Check your inbox or spam folder.');
+        return $response->with('status', 'If an eligible account exists, a password reset link will be sent.');
     }
 
     public function resetForm(Request $request, string $token): View

@@ -20,16 +20,23 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.store');
 Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'requestForm'])->name('password.request');
 Route::post('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
 Route::get('/reset-password/{token}', [\App\Http\Controllers\ForgotPasswordController::class, 'resetForm'])->name('password.reset');
 Route::post('/reset-password', [\App\Http\Controllers\ForgotPasswordController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.store');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])->middleware('throttle:login')->name('admin.login.store');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 Route::middleware('admin.auth')->group(function () {
+    Route::get('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('admin.backups.index');
+    Route::post('/admin/backups/schedule', [\App\Http\Controllers\Admin\BackupController::class, 'schedule'])->middleware('throttle:5,1')->name('admin.backups.schedule');
+    Route::post('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'create'])->middleware('throttle:3,1')->name('admin.backups.create');
+    Route::post('/admin/backups/preview', [\App\Http\Controllers\Admin\BackupController::class, 'preview'])->middleware('throttle:5,1')->name('admin.backups.preview');
+    Route::post('/admin/backups/restore', [\App\Http\Controllers\Admin\BackupController::class, 'restore'])->middleware('throttle:3,1')->name('admin.backups.restore');
+    Route::post('/admin/backups/{file}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->middleware('throttle:5,1')->name('admin.backups.download');
+    Route::get('/admin/staff-activity', [\App\Http\Controllers\Admin\StaffActivityController::class, 'index'])->name('admin.staff-activity');
     foreach (['dswd', 'cho'] as $department) {
         Route::prefix('admin/'.$department)->name('admin.'.$department.'.')->group(function () use ($department) {
             Route::get('/dashboard', [\App\Http\Controllers\Admin\DepartmentAdminController::class, 'dashboard'])->name('dashboard');
@@ -57,6 +64,8 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/admin/staff-messages', [AdminStaffMessageController::class, 'adminIndex'])->name('admin.staff-messages.index');
     Route::get('/admin/program-staff', [ProgramStaffController::class, 'index'])->name('admin.program-staff.index');
     Route::get('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'show'])->name('admin.program-staff.show');
+    Route::post('/admin/program-staff/{programStaff}/casefiles', [ProgramStaffController::class, 'assignCasefiles'])->name('admin.program-staff.casefiles.store');
+    Route::get('/admin/program-staff/{programStaff}/identity-photo', [ProgramStaffController::class, 'identityPhoto'])->name('admin.program-staff.identity-photo');
     Route::patch('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'update'])->name('admin.program-staff.update');
     Route::delete('/admin/program-staff/{programStaff}', [ProgramStaffController::class, 'destroy'])->name('admin.program-staff.destroy');
     Route::patch('/admin/program-staff/{programStaff}/verify', [ProgramStaffController::class, 'verify'])->name('admin.program-staff.verify');
@@ -72,6 +81,8 @@ Route::get('/register/staff', [AuthController::class, 'showStaffRegister'])->nam
 Route::post('/register/staff', [AuthController::class, 'registerStaff'])->name('staff.register.store');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/staff/activity', [\App\Http\Controllers\StaffPresenceController::class, 'update'])->middleware('throttle:60,1')->name('staff.activity');
+Route::post('/dswd/activity', [\App\Http\Controllers\StaffPresenceController::class, 'update'])->middleware(['dswd.auth', 'throttle:60,1'])->name('dswd.activity');
 
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [AppNotificationController::class, 'index'])->name('index');

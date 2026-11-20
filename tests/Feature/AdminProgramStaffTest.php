@@ -19,6 +19,7 @@ class AdminProgramStaffTest extends TestCase
     public function test_staff_registration_saves_contact_role_and_id_photo(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $this->get(route('staff.register'))
             ->assertOk()
@@ -49,10 +50,10 @@ class AdminProgramStaffTest extends TestCase
         $this->assertStringStartsWith('healthcare-worker-ids/', $staff->healthcare_worker_id_photo_path);
         $this->assertStringNotContainsString('\\', $staff->healthcare_worker_id_photo_path);
         $this->assertStringNotContainsString(storage_path(), $staff->healthcare_worker_id_photo_path);
-        $this->assertSame('/storage/'.$staff->healthcare_worker_id_photo_path, $staff->healthcare_worker_id_photo_url);
+        $this->assertSame(route('admin.program-staff.identity-photo', $staff), $staff->healthcare_worker_id_photo_url);
         $this->assertNull($staff->healthcare_worker_id_verified_at);
         $this->assertSame('pending', $staff->approval_status);
-        Storage::disk('public')->assertExists($staff->healthcare_worker_id_photo_path);
+        Storage::disk('local')->assertExists($staff->healthcare_worker_id_photo_path);
 
         $this->assertFalse(session()->has('auth_role'));
     }
@@ -170,6 +171,7 @@ class AdminProgramStaffTest extends TestCase
     public function test_admin_can_view_update_verify_and_unverify_program_staff_identity(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->createAdmin('staff-admin', 'secret-pass');
         $staff = $this->createStaff();
@@ -209,7 +211,7 @@ class AdminProgramStaffTest extends TestCase
         $this->assertSame('09175556666', $staff->contact_number);
         $this->assertNotNull($staff->healthcare_worker_id_photo_path);
         $this->assertNull($staff->healthcare_worker_id_verified_at);
-        Storage::disk('public')->assertExists($staff->healthcare_worker_id_photo_path);
+        Storage::disk('local')->assertExists($staff->healthcare_worker_id_photo_path);
 
         $this->withSession($adminSession)
             ->patch(route('admin.program-staff.verify', $staff))
@@ -240,6 +242,7 @@ class AdminProgramStaffTest extends TestCase
     public function test_admin_id_preview_uses_public_storage_url_and_missing_file_placeholder(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->createAdmin('image-admin', 'secret-pass');
         $photoPath = 'healthcare-worker-ids/existing-id.png';
@@ -261,7 +264,7 @@ class AdminProgramStaffTest extends TestCase
         $this->withSession($adminSession)
             ->get(route('admin.program-staff.show', $staff))
             ->assertOk()
-            ->assertSee('src="/storage/'.$photoPath.'"', false)
+            ->assertSee('src="'.route('admin.program-staff.identity-photo', $staff).'"', false)
             ->assertDontSee('ID image unavailable');
 
         Storage::disk('public')->delete($photoPath);
@@ -270,12 +273,13 @@ class AdminProgramStaffTest extends TestCase
             ->get(route('admin.program-staff.show', $staff))
             ->assertOk()
             ->assertSee('ID image unavailable')
-            ->assertDontSee('src="/storage/'.$photoPath.'"', false);
+            ->assertDontSee('src="'.route('admin.program-staff.identity-photo', $staff).'"', false);
     }
 
     public function test_program_staff_id_photo_path_rejects_temporary_upload_paths(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $staff = $this->createStaff([
             'email' => 'temp-path@example.test',
@@ -307,6 +311,7 @@ class AdminProgramStaffTest extends TestCase
     public function test_admin_can_delete_program_staff_and_stored_id_photo(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $photoPath = 'healthcare-worker-ids/delete-me.png';
         Storage::disk('public')->put($photoPath, 'fake-image');

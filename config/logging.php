@@ -51,6 +51,18 @@ return [
     */
 
     'channels' => [
+        'security' => [
+            'driver' => 'stack',
+            'channels' => ['security_daily', 'stderr'],
+            'ignore_exceptions' => true,
+        ],
+        'security_daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'days' => 14,
+            'level' => 'info',
+            'replace_placeholders' => true,
+        ],
 
         'stack' => [
             'driver' => 'stack',

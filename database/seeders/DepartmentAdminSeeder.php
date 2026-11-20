@@ -20,9 +20,8 @@ class DepartmentAdminSeeder extends Seeder
                 }
                 AdminUser::create(['username' => $username, 'role' => $role, 'password' => Hash::make('ProjectInay2026')]);
             }
-            // Retain the old account's ID and history, but remove its login access.
-            AdminUser::where('username', config('admin.default_username', 'admin'))
-                ->where('role', 'admin')->update(['role' => 'admin_retired']);
+            // Department consoles coexist with the general administrator.
+            // Never disable the general account when seeding department users.
         });
     }
 }

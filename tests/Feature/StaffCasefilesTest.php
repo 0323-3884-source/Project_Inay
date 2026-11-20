@@ -16,11 +16,12 @@ class StaffCasefilesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_staff_can_view_all_registered_mothers_without_manual_add(): void
+    public function test_staff_can_view_assigned_registered_mothers(): void
     {
         $staff = $this->createStaff();
         $miguel = $this->createMother('Miguel', 'Ponce', 'Isles', 'miguel@example.test', '09923245009', 'Concepcion');
         $testUser = $this->createMother('Test', null, 'User', 'test-user@example.test', '09170001111', 'San Gabriel');
+        $staff->casefileMothers()->attach([$miguel->id, $testUser->id]);
 
         $this->withStaffSession($staff)
             ->get('/staff/mothers')
@@ -38,6 +39,7 @@ class StaffCasefilesTest extends TestCase
         $staff = $this->createStaff();
         $miguel = $this->createMother('Miguel', 'Ponce', 'Isles', 'miguel@example.test', '09923245009', 'Concepcion');
         $testUser = $this->createMother('Test', null, 'User', 'test-user@example.test', '09170001111', 'San Gabriel');
+        $staff->casefileMothers()->attach([$miguel->id, $testUser->id]);
 
         $this->withStaffSession($staff)
             ->get('/staff/mothers?q=Miguel Isles')
@@ -67,6 +69,7 @@ class StaffCasefilesTest extends TestCase
         $beneficiary = $this->createMother('Clarissa', null, 'Aquino', 'clarissa@example.test', '09170001112', 'Concepcion');
         $nonBeneficiary = $this->createMother('Angelica', null, 'Bautista', 'angelica@example.test', '09170001113', 'San Rafael');
         $beneficiary->forceFill(['is_4ps_beneficiary' => true])->save();
+        $staff->casefileMothers()->attach([$beneficiary->id, $nonBeneficiary->id]);
 
         $beneficiaryResponse = $this->withStaffSession($staff)
             ->get('/staff/mothers?four_ps=beneficiary')
@@ -91,6 +94,7 @@ class StaffCasefilesTest extends TestCase
             $mother = $this->createMother('Patient'.$index, null, 'Santos', "pregnancy.$index@example.test", '09170001114', 'Concepcion');
             $mother->forceFill(['pregnancy_status' => $status])->save();
             $patients[] = $mother;
+            $this->assignMother($staff, $mother);
         }
 
         foreach (['all' => [0, 1, 2, 3, 4], 'pregnant' => [0], 'not_pregnant' => [1], 'postpartum' => [2], 'planning' => [3], 'pending' => [4], 'invalid' => [0, 1, 2, 3, 4]] as $filter => $expected) {
@@ -118,6 +122,7 @@ class StaffCasefilesTest extends TestCase
         $staff = $this->createStaff();
         $mother = $this->createMother('Screening', null, 'Patient', 'screening@example.test', '09170001115', 'Concepcion');
         $unmonitored = $this->createMother('No', null, 'Records', 'unmonitored@example.test', '09170001116', 'Concepcion');
+        $staff->casefileMothers()->attach([$mother->id, $unmonitored->id]);
         $record = ['mother_id' => $mother->id, 'pregnancy_week' => 20, 'risk_level' => 'high'];
         MaternalMonitoringRecord::create($record + ['screening_summary_status' => 'Urgent Referral Recommended', 'recorded_at' => now()->subDay()]);
         MaternalMonitoringRecord::create($record + ['recorded_at' => now()]);
@@ -142,9 +147,11 @@ class StaffCasefilesTest extends TestCase
             $mother = $this->createMother('Export'.$index, null, 'Santos', "export.$index@example.test", '09170001114', 'Concepcion');
             $mother->forceFill(['pregnancy_status' => 'postpartum', 'is_4ps_beneficiary' => true])->save();
             $expected[] = $mother->email;
+            $this->assignMother($staff, $mother);
         }
         $excluded = $this->createMother('Excluded', null, 'Santos', 'excluded@example.test', '09170001115', 'Concepcion');
         $excluded->forceFill(['first_name' => '=HYPERLINK("example")'])->save();
+        $this->assignMother($staff, $excluded);
 
         $response = $this->withStaffSession($staff)
             ->get('/staff/mothers?export=csv&pregnancy=postpartum&four_ps=beneficiary&q=Export&page=2')
@@ -186,7 +193,7 @@ class StaffCasefilesTest extends TestCase
             ->assertSee('>2<', false);
     }
 
-    public function test_staff_can_add_registered_mother_to_casefiles(): void
+    public function test_staff_cannot_add_registered_mother_to_casefiles(): void
     {
         $staff = $this->createStaff();
         $mother = $this->createMother('Ana', 'Mendoza', 'Lopez', 'ana@example.test', '09178889999', 'San Marcos');
@@ -195,9 +202,9 @@ class StaffCasefilesTest extends TestCase
             ->post('/staff/mothers', [
                 'mother_ids' => [$mother->id],
             ])
-            ->assertRedirect('/staff/mothers');
+            ->assertForbidden();
 
-        $this->assertDatabaseHas('staff_mother_casefiles', [
+        $this->assertDatabaseMissing('staff_mother_casefiles', [
             'staff_id' => $staff->id,
             'mother_id' => $mother->id,
         ]);
@@ -205,7 +212,7 @@ class StaffCasefilesTest extends TestCase
         $this->withStaffSession($staff)
             ->get('/staff/mothers')
             ->assertOk()
-            ->assertSee($mother->full_name);
+            ->assertDontSee($mother->full_name);
     }
 
     public function test_monitoring_desk_scopes_work_lists_to_the_staff_and_assigned_mothers(): void
@@ -599,6 +606,7 @@ class StaffCasefilesTest extends TestCase
     {
         $staff = $this->createStaff();
         $mother = $this->createMother('Nina', null, 'Cruz', 'children-casefile@example.test', '09175550001', 'Santa Cruz');
+        $this->assignMother($staff, $mother);
         $child = \App\Models\Infant::create(['mother_id' => $mother->id, 'full_name' => 'Baby Nina Cruz', 'sex' => 'female', 'birth_date' => now()->subMonths(3)->toDateString()]);
         $otherMother = $this->createMother('Other', null, 'Mother', 'other-children@example.test', '09175550002', 'Santa Cruz');
         \App\Models\Infant::create(['mother_id' => $otherMother->id, 'full_name' => 'Unrelated Baby', 'sex' => 'male', 'birth_date' => now()->toDateString()]);
@@ -615,25 +623,16 @@ class StaffCasefilesTest extends TestCase
             ->assertOk()->assertSee('Back to Child Case Files')->assertDontSee('Back to Mother Case File');
     }
 
-    public function test_staff_can_open_registered_mother_casefile_without_manual_assignment(): void
+    public function test_staff_cannot_open_registered_mother_casefile_without_assignment(): void
     {
         $staff = $this->createStaff();
         $mother = $this->createMother('Nina', null, 'Cruz', 'nina@example.test', '09175550000', 'Santa Cruz');
 
         $this->withStaffSession($staff)
             ->get('/staff/mothers/'.$mother->id)
-            ->assertOk()
-            ->assertSee($mother->full_name)
-            ->assertSee('Weight Progression')
-            ->assertSee('No blood pressure record available yet.')
-            ->assertSee('Update Vitals')
-            ->assertSee('View Blood Pressure History')
-            ->assertSee('Height (cm / ft-in)')
-            ->assertSee('name="height_unit"', false)
-            ->assertSee('name="pre_pregnancy_bmi"', false)
-            ->assertSee('readonly', false);
+            ->assertForbidden();
 
-        $this->assertDatabaseHas('staff_mother_casefiles', [
+        $this->assertDatabaseMissing('staff_mother_casefiles', [
             'staff_id' => $staff->id,
             'mother_id' => $mother->id,
         ]);
@@ -655,6 +654,7 @@ class StaffCasefilesTest extends TestCase
     {
         $staff = $this->createStaff();
         $mother = $this->createMother('Ana', null, 'Cruz', 'summary@example.test', '09170002222', 'San Jose');
+        $this->assignMother($staff, $mother);
         $this->withStaffSession($staff)->get('/staff/mothers/'.$mother->id)->assertOk()
             ->assertDontSee('data-f1kd-monitoring-url=', false)->assertDontSee('F1KD 4Ps Beneficiary Summary');
         $mother->update(['is_4ps_beneficiary'=>true]);

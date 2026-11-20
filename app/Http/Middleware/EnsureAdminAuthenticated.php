@@ -10,6 +10,9 @@ class EnsureAdminAuthenticated
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->session()->has('auth_role') && $request->session()->get('admin_authenticated') !== true) {
+            abort(403);
+        }
         if ($request->session()->get('admin_authenticated') !== true || ! \App\Models\AdminUser::whereKey($request->session()->get('admin_id'))->exists()) {
             return redirect()->route('admin.login');
         }

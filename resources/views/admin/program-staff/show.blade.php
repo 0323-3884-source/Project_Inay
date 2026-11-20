@@ -257,6 +257,24 @@
                 <button class="staff-save" type="submit">Save Staff Information</button>
             </form>
 
+            @if($staff->is_approved)
+                <form method="POST" action="{{ route('admin.program-staff.casefiles.store', $staff) }}">
+                    @csrf
+                    <div class="staff-edit-grid">
+                        <label class="is-wide">
+                            Approve Casefile Assignments
+                            <select name="mother_ids[]" multiple required aria-label="Select mothers to assign">
+                                @foreach($assignmentMothers as $assignmentMother)
+                                    <option value="{{ $assignmentMother->id }}">INAY-{{ str_pad($assignmentMother->id, 5, '0', STR_PAD_LEFT) }} — {{ $assignmentMother->full_name }}</option>
+                                @endforeach
+                            </select>
+                            @error('mother_ids')<span class="admin-field-error">{{ $message }}</span>@enderror
+                        </label>
+                    </div>
+                    <button class="staff-save" type="submit">Approve Assignments</button>
+                </form>
+            @endif
+
             <section class="staff-danger-zone" aria-label="Delete Program Staff account">
                 <strong>Delete Program Staff Account</strong>
                 <p>This permanently removes the staff account from the admin console and Program Staff portal.</p>

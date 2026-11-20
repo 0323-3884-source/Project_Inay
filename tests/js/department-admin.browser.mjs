@@ -50,7 +50,7 @@ try {
         await send('Page.navigate', { url: pathToFileURL(page).href });
         await sleep(400);
         for (const width of [1440, 390]) {
-            await send('Emulation.setDeviceMetricsOverride', { width, height: 950, deviceScaleFactor: 1, mobile: width < 640 });
+            await send('Emulation.setDeviceMetricsOverride', { width, height: width < 640 ? 568 : 950, deviceScaleFactor: 1, mobile: width < 640 });
             await sleep(150);
             assert.equal(await evaluate("document.querySelector('.admin-brand-subtitle').textContent"), `${scope.toUpperCase()} ADMIN CONSOLE`);
             assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), `${scope} fits ${width}px`);
@@ -64,9 +64,25 @@ try {
                 assert.equal(await evaluate("document.querySelector('[data-admin-menu-toggle]').getAttribute('aria-expanded')"), 'false');
                 await evaluate("document.querySelector('[data-admin-menu-toggle]').click()");
                 assert.equal(await evaluate("document.querySelector('[data-admin-menu-toggle]').getAttribute('aria-expanded')"), 'true');
+                await sleep(250);
+                assert.ok(await evaluate("document.querySelector('.admin-sidebar').getBoundingClientRect().left >= -1"));
+                assert.equal(await evaluate("document.querySelector('.admin-main').inert"), true);
+                assert.equal(await evaluate("document.querySelector('.admin-sidebar-backdrop').hidden"), false);
+                assert.ok(await evaluate("document.querySelector('.admin-sidebar-backdrop').getBoundingClientRect().width >= innerWidth"));
                 assert.ok(await evaluate("document.querySelector('.admin-nav').getBoundingClientRect().height > 0"));
+                assert.ok(await evaluate("(() => { const b = document.querySelector('.admin-logout').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; })()"), 'Logout remains visible on short mobile screens');
+                assert.ok(await evaluate("(() => { const n = document.querySelector('.admin-nav'); n.scrollTop = n.scrollHeight; return n.scrollTop >= n.scrollHeight - n.clientHeight - 1; })()"), 'Navigation can reach its final item');
+                if (scope === 'cho') assert.ok(await evaluate("document.querySelector('.admin-nav').scrollTop > 0"), 'Long CHO navigation scrolls independently');
+                assert.ok(await evaluate("(() => { const b = document.querySelector('.admin-logout').getBoundingClientRect(); return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest('.admin-logout') !== null; })()"), 'Logout is reachable after scrolling');
+                const opened = await send('Page.captureScreenshot', { format: 'png' });
+                writeFileSync(resolve(directory, `${scope}-${width}-open.png`), Buffer.from(opened.data, 'base64'));
+                await evaluate("document.querySelector('.admin-sidebar-backdrop').click()");
+                assert.equal(await evaluate("document.querySelector('[data-admin-menu-toggle]').getAttribute('aria-expanded')"), 'false');
+                assert.equal(await evaluate("document.querySelector('.admin-main').inert"), false);
+                await evaluate("document.querySelector('[data-admin-menu-toggle]').click()");
                 await evaluate("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
                 assert.equal(await evaluate("document.querySelector('[data-admin-menu-toggle]').getAttribute('aria-expanded')"), 'false');
+                assert.equal(await evaluate("document.activeElement.matches('[data-admin-menu-toggle]')"), true);
             }
             console.log(`PASS ${scope} dashboard at ${width}px`);
         }

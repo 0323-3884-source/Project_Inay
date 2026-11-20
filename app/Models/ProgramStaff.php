@@ -117,8 +117,8 @@ class ProgramStaff extends Model
     {
         $path = $this->healthcareWorkerIdPhotoStoragePath();
 
-        return $path && Storage::disk('public')->exists($path)
-            ? Storage::disk('public')->url($path)
+        return $path && \App\Support\PrivateUploads::disk($path)->exists($path)
+            ? route('admin.program-staff.identity-photo', $this)
             : null;
     }
 
@@ -126,7 +126,7 @@ class ProgramStaff extends Model
     {
         $path = $this->healthcareWorkerIdPhotoStoragePath();
 
-        return $path !== null && Storage::disk('public')->exists($path);
+        return $path !== null && \App\Support\PrivateUploads::disk($path)->exists($path);
     }
 
     public function healthcareWorkerIdPhotoStoragePath(): ?string

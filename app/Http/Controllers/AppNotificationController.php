@@ -123,12 +123,20 @@ class AppNotificationController extends Controller
     private function payload(AppNotification $notification): array
     {
         $data = $notification->data ?? [];
+        $body = $notification->body;
+        $motherId = $notification->mother_id ?? (is_array($data) ? ($data['mother_id'] ?? null) : null);
+        if ($notification->recipient_role === Message::ROLE_PROGRAM_STAFF && $motherId
+            && ! \App\Models\StaffMotherCasefile::where('staff_id', $notification->recipient_id)->where('mother_id', $motherId)->exists()) {
+            // Existing registration notices must not leak unassigned patient details.
+            $body = 'A patient update is available. Casefile access requires an approved assignment.';
+            $data = ['url' => route('staff.mothers')];
+        }
 
         return [
             'id' => $notification->id,
             'type' => $notification->type,
             'title' => $notification->title,
-            'body' => $notification->body,
+            'body' => $body,
             'url' => is_array($data) ? ($data['url'] ?? null) : null,
             'data' => $data,
             'is_read' => $notification->read_at !== null,

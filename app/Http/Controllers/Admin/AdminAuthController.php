@@ -38,6 +38,8 @@ class AdminAuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('database_security_epoch', \Illuminate\Support\Facades\Cache::get('database-security-epoch', 'initial'));
+        $request->attributes->set('login_authenticated', true);
         $request->session()->forget(['auth_role', 'auth_id', 'auth_name', 'auth_email']);
         $request->session()->put([
             'admin_authenticated' => true,

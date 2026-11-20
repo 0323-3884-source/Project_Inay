@@ -124,4 +124,8 @@ echo "Starting Apache on port ${PORT}..."
 
 
 # Start official PHP Apache entrypoint
+# Run as the same user as web requests so private schedules and SQL remain writable.
+if [ "${1:-}" = "apache2-foreground" ]; then
+    runuser -u www-data -- php artisan schedule:work --no-interaction &
+fi
 exec docker-php-entrypoint "$@"

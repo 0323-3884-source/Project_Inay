@@ -311,7 +311,7 @@
             width: auto;
             overflow-x: hidden;
             margin: 0;
-            padding: 108px 34px 42px calc(var(--portal-sidebar-width) + 34px);
+            padding: calc(var(--portal-header-height) + 32px) 34px 42px calc(var(--portal-sidebar-width) + 34px);
         }
 
         .portal-brand {
@@ -7382,6 +7382,9 @@
         </div>
     @endif
     @stack('scripts')
+    @if(in_array(session('auth_role'), ['staff', 'dswd_staff'], true))
+        <script src="{{ asset('js/staff-presence.js') }}?v={{ filemtime(public_path('js/staff-presence.js')) }}" data-presence-url="{{ route(session('auth_role') === 'dswd_staff' ? 'dswd.activity' : 'staff.activity') }}" data-csrf="{{ csrf_token() }}" defer></script>
+    @endif
     @if ($hasPortalShell)
         <script>
             (() => {

@@ -238,8 +238,10 @@ class AppNotificationsTest extends TestCase
             ->getJson(route('notifications.index'))
             ->assertOk()
             ->assertJsonPath('unread_count', 1)
-            ->assertJsonPath('notifications.0.body', 'A new mother, Maria Santos, has registered.')
-            ->assertJsonPath('notifications.0.url', route('staff.mothers.show', $mother));
+            ->assertJsonPath('notifications.0.body', 'A patient update is available. Casefile access requires an approved assignment.')
+            ->assertJsonPath('notifications.0.url', route('staff.mothers'))
+            ->assertJsonMissing(['mother_id' => $mother->id])
+            ->assertDontSee('Maria Santos');
 
         $this->withSession($this->staffSession($staff))
             ->postJson(route('notifications.read', $notification))
@@ -248,8 +250,7 @@ class AppNotificationsTest extends TestCase
 
         $this->withSession($this->staffSession($staff))
             ->get(route('staff.mothers.show', $mother))
-            ->assertOk()
-            ->assertSee('Maria Santos');
+            ->assertForbidden();
     }
 
     public function test_message_links_render_as_sidebar_dropdown_and_admin_has_notifications(): void

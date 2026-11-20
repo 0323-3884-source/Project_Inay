@@ -1,0 +1,4262 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mo="http://schemas.microsoft.com/office/mac/office/2008/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mv="urn:schemas-microsoft-com:mac:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 wp14">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Republic of the Philippines</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>LAGUNA STATE POLYTECHNIC UNIVERSITY</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>San Pablo City Campus</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>COLLEGE OF COMPUTER STUDIES</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>ITEP 413 â€“ Information Assurance and Security 2</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:br />
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Title" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>CYBERSECURITY PLAN</w:t>
+        <w:br />
+        <w:t>FOR PROJECT INAY</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Innovative Nanay: Maternal, Neonatal, and Child Health Information and Monitoring Platform</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:br />
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Final Project â€¢ Performance-Based Assessment</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Prepared by:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Miguel Ponce C. Isles</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Joseph R. Bondad</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>Ma. Jenyl Allyson C. Siosan</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>BSIT â€“ Web and Mobile Application Development | 4WMAD3</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>November 2026</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Document status: Updated academic cybersecurity plan based on a source-code audit completed 6 November 2026. Confirmed controls, unresolved risks, and operational items requiring Railway or institutional verification are distinguished.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:br w:type="page" />
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>Executive Summary</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project INAY is a web-based platform designed to support maternal and child health information, service coordination, healthcare-worker monitoring, and approved 4Ps/F1KD compliance reporting in San Pablo City, Laguna. The system processes potentially sensitive information about mothers, pregnancies, children aged 0â€“2 years, checkups, appointments, and related communications. This plan identifies risks in the actual Laravelâ€“MySQLâ€“Railway design and proposes a prioritized and testable protection program.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>The source-code audit confirmed high-priority risks in public storage of medical and staff identity uploads, staff casefile self-assignment, missing login throttling, account-enumerating password recovery, long-lived sessions, and dependency exposure. Remediation has begun: new sensitive uploads now use private storage, sensitive legacy static paths are denied, login throttling and session invalidation were added, revoked staff sessions fail closed, recovery responses are non-enumerating, and dependencies were updated. Record-level scope, offline-device exposure, Railway controls, backups, monitoring, MFA, and privacy governance still require verification.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>Basis, assumptions and status</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project-specific facts now come from the Laravel source review, local synthetic tests, dependency scans, deployment files, and the earlier capstone material. This remains a source assessment and remediation record, not a penetration-test certificate or legal compliance determination. Railway variables, live TLS, database permissions, backup and restore evidence, WAF, monitoring, MFA, and institutional privacy approvals were not available for independent verification. Controls below are labeled implemented, partially implemented, or proposed accordingly.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>The academic brief requires six sections, an OWASP risk assessment, ISO/IEC 27002 mapping, Fortinet linkage, and an 8â€“15 page written report excluding cover and references. [Assignment: FINAL PROJECT 413, pp. 1â€“2]</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>1. System Overview &amp; Asset Inventory</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.1 System purpose and technical context</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project INAY is a maternal, neonatal and child-health information and monitoring platform for mothers and healthcare personnel, with a limited DSWD/4Ps reporting function. It was discussed as a Laravel 12 application using PHP, Blade templates, Tailwind CSS, Vite, MySQL, and Railway cloud deployment. Previous troubleshooting also described a Docker/Apache runtime and environment-based service credentials; these are deployment details to confirm against the final source code and Railway project.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.2 Core functional modules</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Module</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Data / purpose</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Mother portal</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Profile, maternal monitoring views, child information, appointments, documents, messages, notices</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Healthcare worker portal</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Maternal case files, vital-sign entries, health screening, child growth/immunization monitoring, appointment management, reports</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>DSWD / 4Ps portal</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Authorized monthly compliance and attendance indicators, approved 4Ps/F1KD aggregate summaries; not unrestricted clinical records</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Supporting services</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>INAY Kaalaman, health-service directory, role-specific notifications, access-controlled messaging</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.3 Asset inventory</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Asset / component</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Sensitivity</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Why protection matters</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Laravel application and source code</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Controls business logic, validation, routes and authorization</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>MySQL records and backups</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>May contain personal and sensitive maternal/child health information</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Account credentials, sessions, recovery tokens</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Compromise permits impersonation and access escalation</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Uploaded documents and images</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Could expose identity, staff verification or health documents</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Railway environment variables, deployment secrets</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Database, application key and mail credentials must remain private</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Reports, audit logs, communications</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>May expose activity, compliance details or private messages</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Public domain, HTTPS and network edge</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Primary external entry points for attacks</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.4 Roles and access boundaries</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Role</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Allowed access / actions</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Explicit restriction</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Mother</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Own profile; own maternal/child views; add permitted child data; appointment requests; own files/messages</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>No access to another familyâ€™s records or staff-only edits</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Healthcare Worker (BHW, midwife, nurse or authorized clinician)</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Assigned beneficiary cases; clinically approved updates; appointments; care monitoring; authorized clinical reports</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>No unassigned cases or unrestricted administrative functions</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>DSWD / 4Ps Staff</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Approved 4Ps compliance checks, monthly visit confirmation, agreed aggregate F1KD/4Ps statistics and messaging limited to authorized 4Ps matters</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>No default access to confidential diagnoses, full EMRs, unrelated non-4Ps users, or all medical attachments</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>System administrator / authorized approver, if enabled</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Approve staff access, configure privileges, review security events and operational settings</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>No automatic clinical-record access merely because of administrative status</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:r>
+        <w:t>Role labels changed during capstone revisions; this plan treats Mother, Healthcare Worker, and DSWD/4Ps as the three principal functional portals, while administrators are narrowly designated security or approval functions. Actual permissions must be determined by the final deployed route and policy definitions.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.5 Data flow and trust boundaries</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>A mother or authorized staff member connects over HTTPS to the public Railway-hosted service. A reverse proxy/WAF at the edge (proposed) applies request filtering and rate limits. Laravel authenticates the session, checks middleware and record policies, validates data, and accesses a private MySQL service. Uploaded health documents are served only through authenticated authorization checks. A separate, minimised reporting view or materialized summary is used for DSWD/4Ps data. Logs and alerting systems receive security events but never raw passwords or full clinical content.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Trust boundaries: (1) public browser to web edge; (2) web edge to Laravel app; (3) app to private database and object/file storage; (4) healthcare records to approved DSWD reporting dataset; (5) app to mail or notification providers. A failure at any boundary can expose confidential information.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>1.6 Data classification and minimization</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Restricted: health information, pregnancy details, child measurements, vaccination history, confidential attachments, identity records, authentication secrets. Internal: staff assignment, operational schedules, non-public audit events. Approved reporting: limited counts/attendance/compliance summaries shared under a documented purpose and agreement. Public: general INAY Kaalaman education and public health-service information. Test accounts must use synthetic or appropriately anonymized data, never copies of live records without authorization.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>2. Risk &amp; Threat Assessment</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>2.1 Method</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Likelihood and impact use High (likely or severe exposure), Medium (plausible or limited effect), and Low (less probable or limited effect). These are qualitative design-stage estimates, not observed incident frequencies. The OWASP Top 10:2025 identifiers follow the official 2025 classification.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>2.2 Risk register (OWASP Top 10:2025)</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="1930" />
+        <w:gridCol w:w="1930" />
+        <w:gridCol w:w="1930" />
+        <w:gridCol w:w="1930" />
+        <w:gridCol w:w="1930" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>ID / threat</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>INAY-specific attack scenario</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>L</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>I</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Priority</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A01 Broken Access Control</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Mother changes beneficiary ID to access another child; DSWD URL exposes medical records; staff sees unassigned cases</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A02 Security Misconfiguration</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Debug traces, exposed .env, open DB port, unsafe file permissions or permissive CORS on Railway</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A03 Software Supply Chain Failures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Compromised/outdated Composer or npm dependency, or unsafe CI artifact injected into deployment</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A04 Cryptographic Failures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Weak TLS, insecure backup, missing encryption and leaked keys expose maternal/child information</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A05 Injection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Malicious search, message, report filter, or file metadata triggers SQL injection or stored XSS</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A06 Insecure Design</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>DSWD receives clinical data by default; motherâ€™s child association can be self-asserted without validation</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A07 Authentication Failures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Credential stuffing, weak reset flow, reused passwords or unapproved staff access</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A08 Software or Data Integrity Failures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Tampered report or health value; unverified updates or unsafe deployment artifact</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A09 Logging &amp; Alerting Failures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Repeated login failures, bulk record exports, and unusual admin actions go unnoticed</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A10 Mishandling Exceptional Conditions</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Error page leaks SQL details or role-check failure defaults to allow during service/database outage</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>M</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>H</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="1930" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>2.3 Risk justification and concrete examples</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Access control is especially critical because INAY combines mother accounts, clinical users and DSWD reporting. A single missing Laravel policy on /mothers/{id}, /children/{id}, a document download, message thread, or API endpoint could disclose another familyâ€™s medical information. Authorization must verify both role and relationship to the specific record, not merely that a person is logged in.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Authentication is critical because a compromised healthcare-worker account could modify growth measurements, screening records or checkup confirmations, while a compromised mother account could disclose household records. Staff onboarding and approval need independent verification. Cloud configuration deserves attention because earlier Railway troubleshooting involved APP_DEBUG, application URLs and database migrations; diagnostic settings must never become permanent production exposure.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Injection risks arise in patient search, appointment notes, message bodies and report filters; Laravel query builder and Blade escaping help when correctly used, but raw SQL, unsafe HTML, unsafe file uploads and dynamic query construction require separate review. Logging is necessary to detect abnormal access to many beneficiary records, which may not be visible to a normal end user.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>2.4 Threat treatment order</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>First, close cross-role and cross-record access paths, enforce least privilege and protect staff onboarding. Second, harden production secrets, authentication and sessions. Third, secure queries, content output and uploads, add WAF/rate limiting, and implement backups and monitoring. Fourth, establish repeatable deployment checks, security testing, and staff training.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>3. Security Controls &amp; Architecture</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.1 Authentication, identity and onboarding</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Proposed: use Laravelâ€™s maintained authentication mechanisms; store passwords with an approved adaptive hash (Argon2id or bcrypt with appropriate parameters), never reversible encryption or plaintext; require strong unique passwords; verify email/reset ownership; rate-limit login and password reset; regenerate session IDs on login; revoke sessions after password change; and require multifactor authentication for privileged healthcare/DSWD accounts where feasible. Verify staff identity and workplace before account approval. Staff changes or departure must trigger prompt permission removal.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Password-reset or email verification codes, if used, should be unpredictable, short-lived, hashed in storage, single-use and attempt-limited. Previous discussions considered a five-minute email OTP; that was a proposal, not proof of deployment.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.2 Role-based and record-level authorization</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Proposed: assign clear role capabilities through middleware plus Laravel Policies/Gates on every read, edit, export, download and API route. Check beneficiary assignment/ownership and active account status at the controller/service layer. Deny by default for unknown roles, errors and missing relationships. Use separate DSWD queries/views containing only explicitly approved attributes; suppress unnecessary personal and medical fields. Add automated tests for forbidden ID swaps, cross-role route access, unauthorized attachment downloads and exports.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.3 Secure sessions, cookies and CSRF</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Use HTTPS-only Secure, HttpOnly, SameSite cookies, production session timeouts appropriate to sensitivity, CSRF validation on state-changing browser requests, session regeneration at authentication and privilege changes, logout invalidation, and rate-limits on sensitive actions. Do not place credentials, tokens or patient data in URLs or browser localStorage. If file-based sessions are used, restrict storage permissions and plan secure migration to a shared session store if the application scales horizontally.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.4 Input, output, query and upload controls</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Validate inputs server-side with Laravel request validators and strict field rules (dates, physiologically plausible values reviewed by clinicians, identifiers, attachments, message lengths). Use parameterized ORM/query-builder queries; prohibit untrusted raw SQL. Escape HTML output by default, sanitize only explicitly supported rich text, and prohibit untrusted HTML in messaging. For uploads, validate file type by content and size, assign random names, scan where feasible, keep files outside the public web root, and deliver files through authorized download endpoints. Log changes to measurements and compliance markers with actor/time and previous/new values, minimizing log exposure.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.5 HTTP headers, HTTPS and network protection</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Proposed header / control</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Purpose</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Strict-Transport-Security</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Force encrypted browser connections after HTTPS validation</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Content-Security-Policy</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Reduce script injection; tune policy to Blade/Vite assets</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>X-Content-Type-Options: nosniff</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Prevent MIME content sniffing</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Referrer-Policy: strict-origin-when-cross-origin</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Reduce unnecessary referral leakage</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Permissions-Policy</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Disable unnecessary browser capabilities</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>frame-ancestors in CSP</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Prevent unauthorized framing/clickjacking</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>TLS + private MySQL connectivity</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Protect traffic, avoid exposing MySQL to the public internet</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:r>
+        <w:t>Proposed placement: Internet â†’ WAF/CDN/reverse proxy (TLS, bot defense, request size and rate limits) â†’ Railway Laravel service â†’ private MySQL and protected file storage. WAF rules are supplemental and cannot replace authorization or secure application logic. Restrict database credentials and firewall/service reachability to the application runtime.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.6 Secrets, encryption, backups and secure deployment</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Keep APP_KEY, database passwords, mail credentials and third-party tokens in Railway-managed environment variables or a dedicated secret manager; exclude .env from GitHub, rotate any exposed secret immediately, and use least-privilege DB users. Set APP_ENV=production and APP_DEBUG=false for production. Use HTTPS, encrypted backup storage and access-controlled restore operations; evaluate application-level encryption for especially sensitive fields without undermining clinical workflows. Run dependency/security checks on Composer and npm packages; restrict GitHub and deployment access; pin and review dependencies; avoid automatic trust of pull requests.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Create a defined backup schedule and restoration procedure with a retained, separately protected backup copy. Test restoring sample records and ensure that backups and logs meet the projectâ€™s retention/deletion requirements. Migration scripts must be reviewed and backed up before production execution; deployment health checks must not reveal confidential stack traces.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.7 Architecture diagram: proposed security placement</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>[Mother / Healthcare Worker / DSWD browsers]</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">                   | HTTPS + secure cookies</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>[WAF / CDN / rate limits / TLS termination]  (proposed)</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">                   | restricted proxy traffic</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>[Railway Laravel app: authentication â†’ RBAC/policies â†’ validation â†’ audit]</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">          | private DB connection              | authorized file access</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>[MySQL: clinical and minimized reporting data]   [Protected document storage]</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">                   | sanitized security events</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="NoSpacing" />
+        <w:jc w:val="center" />
+      </w:pPr>
+      <w:r>
+        <w:t>[Central logs + alert rules + incident response owners]  (proposed)</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.8 Control-to-threat traceability</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Control group</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Primary OWASP threats</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Verification evidence</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Policies, ownership checks, limited DSWD views</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A01, A06</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Negative authorization tests; matrix of allowed fields</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>MFA, rate limits, resets, secure sessions</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A07, A02</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Login/reset abuse tests and cookie inspection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Validation, parameterized SQL, escaping, upload protection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A05, A08</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Injection/XSS/upload test cases</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>HTTPS, secure headers, secrets and encryption</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A04, A02</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>TLS/header scan; redacted config review</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Dependency checks, build signing/review, releases</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A03, A08</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Dependency scan and deployment approval logs</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Alerts, deny-on-error, controlled exception pages</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>A09, A10</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Alert drills and error-mode tests</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>3.9 Acceptance criteria</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Before real sensitive records are entered, all tested cross-account record accesses should be denied; production debug output must be disabled; no secret should be public; HTTPS and security cookies must pass inspection; SQL/XSS/upload testing must show appropriate rejection or safe handling; backup restoration should succeed; alert scenarios should notify an assigned team member; and documented DSWD data outputs must match the agreed minimum dataset.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>4. Standards Alignment</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>4.1 ISO/IEC 27002:2022 control mapping</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>ISO/IEC 27002:2022 groups controls under Organizational, People, Physical and Technological themes. The mappings below are proposed application-specific implementations, not a claim of ISO certification.</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>ISO/IEC 27002 control</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Project INAY implementation / audit evidence</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>5.15 Access control; 5.18 Access rights</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>RBAC, beneficiary-assignment policies; documented access approval/revocation and access review</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>5.12 Classification of information; 5.34 Privacy and protection of PII</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Restricted health-data classification; minimised DSWD reporting; privacy assessment</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>5.16 Identity management; 5.17 Authentication information</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Unique identities, staff verification, password/OTP protection, reset procedures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>8.5 Secure authentication; 8.3 Information access restriction</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>MFA where feasible, rate limits, session protection, per-record authorization tests</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>8.24 Use of cryptography; 8.20 Networks security</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>TLS, encrypted backups, protected keys, private database communication</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>8.15 Logging; 8.16 Monitoring activities</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Tamper-resistant audit events, abnormal-download alerts, incident triage</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>8.8 Management of technical vulnerabilities; 8.9 Configuration management</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Composer/npm scans, patch tracking, Railway hardening checks</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>5.24â€“5.28 Information security incident management</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Named response roles, reporting, containment, evidence retention</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>8.13 Information backup; 8.14 Redundancy of information processing facilities</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Scheduled backups, restoration test and recovery objectives</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>4.2 PCI DSS applicability</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project INAY was described as a health monitoring and compliance service, not a payment-card processing system. No cardholder data environment or payment function was identified in the current scope. PCI DSS is therefore not mapped as an applicable control standard for this project. If future versions accept, store, process or transmit payment-card data, applicability must be reassessed before launch.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>4.3 Relationship between OWASP and ISO controls</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>OWASP identifies application failure modes (for example, A01 broken access control); ISO/IEC 27002 gives a control-oriented management framework (for example, access rights review, logging and incident response). INAY should apply both: test the actual application against OWASP scenarios and retain evidence that identified controls are implemented and managed.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>5. Incident Response &amp; Monitoring</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.1 Events to capture and alert on</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Log account activation/denial, failed and successful privileged logins, password resets, role changes, forbidden record access, sensitive document downloads, bulk report exports, health-record updates, changes to compliance status, deployment changes and application failures. Alert on repeated failed logins, a single account accessing unusually many beneficiaries, unexpected staff-approval changes, large export spikes, unusual DSWD access to clinical routes, and repeated 5xx errors. Exclude passwords, tokens, raw message content and full clinical data from routine logs.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.2 Response classification and responsibilities</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+        <w:gridCol w:w="3216" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Severity</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Illustrative case</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Lead / escalation</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Critical</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Confirmed clinical or child information disclosure, admin takeover, active destructive attack</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Incident lead + system administrator + designated privacy officer / responsible institution</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>High</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Compromised staff account, unauthorized report export, vulnerable active endpoint</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Development/security lead + healthcare unit contact + privacy lead</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Medium</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Sustained login abuse, suspicious failed authorization, non-sensitive configuration issue</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Developer/operations on duty; review and escalation</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Low</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Blocked scan with no evidence of compromise</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="3216" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Operations log and trend review</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:r>
+        <w:t>Responsibility assignment (proposed): the capstone development lead triages technical evidence; the Railway/deployment custodian disables access and preserves logs; the authorized healthcare/DSWD liaison evaluates service and beneficiary impact; and the institutionâ€™s designated Personal Information Controller (PIC) and Data Protection Officer/privacy lead make lawful breach-reporting decisions. Student developers must not independently disclose private records or promise statutory notifications on behalf of an institution.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.3 Practical response playbook</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Stage</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Action</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>1. Detect and verify</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Receive alert/user report; record time, affected feature, observed accounts, and whether data was accessed; preserve relevant logs</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>2. Contain</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Disable suspect account/session/token; block malicious origin; suspend affected export or route; rotate compromised secrets; isolate exposure</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>3. Assess scope</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Determine affected record IDs, role boundary failure, start/end window, confidentiality/integrity/availability impact</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>4. Eradicate</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Fix policy/configuration or vulnerable dependency; remove unauthorized access; check persistence and deployment integrity</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>5. Recover</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Restore from tested backup if necessary; validate clinical record consistency; deploy fix under change control</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>6. Notify and document</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Escalate to PIC/DPO; assess notification threshold; document decisions, evidence, affected parties and timelines</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>7. Review</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Retest exploit path, update controls, train users, and record corrective action owners and deadlines</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.4 Notification and documentation</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>RA 10173 and its implementing rules govern sensitive personal information. Where a breach meets mandatory notification conditions, the PIC must notify the National Privacy Commission and affected data subjects within 72 hours of knowledge or reasonable belief of a notifiable breach, subject to applicable rules. Not every security alert automatically triggers that duty. Maintain a breach register: incident ID; discovery and notification timestamps; reporting person; asset; data category and count; evidence; incident severity; decision basis; containment; recovery; privacy assessment; communication approvals; preventive actions.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.5 Example INAY incident exercise</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Scenario: a DSWD account receives HTTP 200 when requesting a motherâ€™s confidential clinical-document URL. Immediate actions: freeze the route/download feature, invalidate affected sessions if appropriate, preserve access logs, and identify potentially exposed records. Patch Laravel authorization so both role and approved data scope are evaluated. Retest all related endpoints and notify institutional privacy officers. Do not infer disclosure solely from a successful status code; inspect actual response data and logs.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>5.6 Recovery goals and operational testing</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Proposed preliminary goals (to approve with stakeholders): critical incident acknowledgement within 1 hour, initial containment as rapidly as feasible, daily backup jobs, periodic restore exercises, and a post-incident review within five working days. These are target service levels for planning rather than documented existing commitments. Set measurable recovery time and recovery point objectives before production operation.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>6. Compliance / Governance &amp; Fortinet Tie-In</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>6.1 Philippine data privacy obligations</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>The Data Privacy Act of 2012 (RA 10173) and its implementing rules are especially relevant because health data and information about children can be sensitive personal information. The governing institution/controller should document a lawful and specific processing purpose, give clear privacy notices, apply proportionality and data minimization, restrict disclosure, secure processing agreements where appropriate, and respect applicable rights and retention rules. Before collecting identifiable information, verify institutional authorization and healthcare-sector requirements.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Earlier consultation context indicated that DSWD had not approved unrestricted placement or disclosure of confidential beneficiary medical records. Accordingly, this plan makes approved aggregate indicators and minimum compliance dataâ€”not full diagnoses or EMRsâ€”the DSWD default. Any expanded sharing requires documented authority, purpose, necessity and a privacy review. Students should test with synthetic/anonymized data until real processing has been approved.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>6.2 Governance structure</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Maintain a concise information-security policy, authorized user register, role/permission matrix, data inventory, written privacy notice, access approval record, release checklist, backup/restore evidence, security-test log, incident register and review schedule. Review permissions at least each academic term and whenever roles change. The capstone group should transfer technical documentation and access custody to authorized stakeholders before operational handover.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>6.3 Fortinet NSE 1â€“3 learning applications</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Fortinet learning concept</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Design choice for INAY</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Threat landscape and defense in depth</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Layer WAF, authentication, server-side authorization, secure database access and event monitoring</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Confidentiality, integrity and availability (CIA)</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Protect maternal/child privacy, preserve record correctness, keep appointments accessible</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phishing and social engineering awareness</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Train staff against fake password-reset messages and credential collection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Network segmentation and firewall principles</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Separate public web traffic from private database traffic; restrict administrative access</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Least privilege, secure credentials and endpoint hygiene</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Limit each portalâ€™s records, require strong staff account protection and timely updates</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Incident identification and response</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Use suspicious-event alerts, defined escalation and containment procedures</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>6.4 Verification and rollout roadmap</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="LightShading-Accent1" />
+        <w:tblW w:type="auto" w:w="0" />
+        <w:jc w:val="center" />
+        <w:tblLook w:firstColumn="1" w:firstRow="1" w:lastColumn="0" w:lastRow="0" w:noHBand="0" w:noVBand="1" w:val="04A0" />
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="4824" />
+        <w:gridCol w:w="4824" />
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Deliverable and acceptance checkpoint</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase 1: Access &amp; privacy</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Inventory fields; confirm PIC/approved purposes; test 3 portal boundaries; close IDOR/authorization gaps</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase 2: Hardening</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Staff verification, reset and cookie controls; safe APP_DEBUG, secrets, HTTPS and headers</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase 3: Data protection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Protected downloads, field minimization, backup encryption and restore test</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase 4: Detection</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Audit log coverage; alert thresholds; incident ownership and rehearsal</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Phase 5: Continuous assurance</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:type="dxa" w:w="4824" />
+            <w:vAlign w:val="center" />
+          </w:tcPr>
+          <w:p>
+            <w:r>
+              <w:rPr>
+                <w:sz w:val="16" />
+              </w:rPr>
+              <w:t>Dependency scans, regression tests, permission reviews and security training</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>6.5 Final recommendations</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project INAY should not use real sensitive records until authorization tests, privacy approvals and minimum production safeguards pass. Prioritize record-level access enforcement and the separation of clinical data from DSWD reporting, then secure authentication, cloud configuration, uploads, backups and alerts. The plan is designed to be achievable by the capstone group while offering a clear route for a health institution to review, strengthen and maintain the system.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>Appendix A. Suggested test checklist</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Mother A cannot view or download Mother Bâ€™s maternal/child record by changing an ID.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Healthcare worker cannot access unassigned beneficiary data; permitted case changes create an audit entry.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  DSWD sees only approved 4Ps/F1KD fields and cannot access direct EMR, diagnosis, non-4Ps documents or nonauthorized messages.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Unapproved or disabled staff accounts cannot reach healthcare-worker pages.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Login throttling, reset token expiry, secure session cookie flags and logout revocation work.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Input containing script tags or SQL meta-characters is rejected or safely handled without execution.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  Unauthorized upload extensions, oversize files and file path traversal are rejected.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  APP_DEBUG=false, deployment secrets are not committed, database has no unnecessary public listener.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  HTTPS, CSP, HSTS (where ready), nosniff and framing policy are present.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>â˜  An alert is emitted for repeated failures or bulk exports; a sample backup can be restored.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>Appendix B. Evidence to attach before defense</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Recommended screenshots or records: sanitized system architecture; Laravel routes/Policy examples; role-permission matrix; negative access-control tests; request validation and safe upload tests; security headers and TLS inspection; redacted Railway settings; dependency-check results; backup restore evidence; monitoring/alert sample and incident form. Avoid showing credentials, actual patient identities or private medical details in presentation slides.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>References</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>OWASP Foundation. (2025). OWASP Top 10:2025. https://top10.owasp.org/2025/</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>International Organization for Standardization. (2022). ISO/IEC 27002:2022 â€” Information security, cybersecurity and privacy protection â€” Information security controls. https://www.iso.org/standard/75652.html</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Republic of the Philippines. (2012). Republic Act No. 10173 (Data Privacy Act of 2012). https://privacy.gov.ph/data-privacy-act/</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>National Privacy Commission. Implementing Rules and Regulations of RA 10173, Rule IX, Section 38 (Breach Notification). https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Fortinet Training Institute. NSE training and cybersecurity fundamentals. https://training.fortinet.com/</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>PCI Security Standards Council. (2024). PCI DSS v4.0.1. https://www.pcisecuritystandards.org/</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Laguna State Polytechnic University, College of Computer Studies. (2026). ITEP 413 Final Project: Cybersecurity Plan for Your Capstone System [course assignment].</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Project INAY capstone team. (2026). Project INAY system descriptions, implementation discussions and deployment notes [unpublished project records].</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading1" />
+      </w:pPr>
+      <w:r>
+        <w:t>Updated Implementation Status</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>This section records the position of the project after the 6 November 2026 source audit. It supersedes generic wording that described every safeguard as only a proposal.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>Confirmed improvements</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>New maternal documents and healthcare-worker identity images are stored on the private local disk and served through authorization-aware controller endpoints. Apache denies direct static requests to legacy sensitive upload folders. Login and administrator login routes now use named throttling; password recovery no longer confirms whether an account exists; logout invalidates the session; revoked or unapproved program-staff sessions fail closed; security response headers are applied to authenticated responses; and request-time database migrations were removed.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>Verification results</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>PHP syntax checks passed for the changed security files. Composer audit reports no advisories after the locked dependency update, and the npm production dependency audit reports zero vulnerabilities. The pre-change Laravel suite contained 210 tests with four existing failures. A focused post-change run contained 44 tests with two failures caused by redirect-versus-forbidden expectations; the staff middleware was corrected afterward, but a complete post-fix suite must still be run before claiming full regression success.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Heading2" />
+      </w:pPr>
+      <w:r>
+        <w:t>Unresolved risks and required decisions</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>The current implementation still needs an explicit staff assignment and geographic-scope policy because a GET casefile workflow can create a staff assignment and global beneficiary export remains available. The PWA caches sensitive pages on the device, so shared-device and device-loss controls need a documented decision. Railway production settings, TLS, database network exposure, backups and restore tests, WAF, monitoring, MFA, retention, and breach-response ownership remain operational verification items. Health data and child information remain sensitive under RA 10173; this paper does not make a legal compliance determination.</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:pStyle w:val="Project INAY is materially safer after the implemented changes, but it is not yet sufficient for unrestricted production use with real maternal and child records. The minimum release gate is a clean full regression suite, documented staff scope, protected offline-device handling, and evidence for Railway secrets, HTTPS, database access, backups, monitoring, and privacy approval." />
+      </w:pPr>
+      <w:r>
+        <w:t>Updated conclusion</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr w:rsidR="00FC693F" w:rsidRPr="0006063C" w:rsidSect="00034616">
+      <w:headerReference w:type="default" r:id="rId9" />
+      <w:footerReference w:type="default" r:id="rId10" />
+      <w:pgSz w:w="12240" w:h="15840" />
+      <w:pgMar w:top="1123" w:right="1296" w:bottom="979" w:left="1296" w:header="720" w:footer="720" w:gutter="0" />
+      <w:cols w:space="720" />
+      <w:docGrid w:linePitch="360" />
+    </w:sectPr>
+  </w:body>
+</w:document>

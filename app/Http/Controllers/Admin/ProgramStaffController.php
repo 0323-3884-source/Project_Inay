@@ -15,6 +15,34 @@ use Throwable;
 
 class ProgramStaffController extends Controller
 {
+    public function assignCasefiles(Request $request, ProgramStaff $programStaff): RedirectResponse
+    {
+        $admin = $request->attributes->get('department_admin');
+        abort_unless($admin, 403);
+        \Illuminate\Support\Facades\Gate::forUser($admin)->authorize('assign', \App\Models\Mother::class);
+        abort_unless($programStaff->is_approved, 403);
+        $data = $request->validate([
+            'mother_ids' => ['required', 'array', 'min:1', 'max:100'],
+            'mother_ids.*' => ['required', 'integer', 'distinct', 'exists:mothers,id'],
+        ]);
+        $programStaff->casefileMothers()->syncWithoutDetaching($data['mother_ids']);
+
+        return redirect()->route('admin.program-staff.show', $programStaff)
+            ->with('status', 'Casefile assignments approved.');
+    }
+
+    public function identityPhoto(ProgramStaff $programStaff)
+    {
+        $path = $programStaff->healthcareWorkerIdPhotoStoragePath();
+        abort_unless($path, 404);
+        $disk = \App\Support\PrivateUploads::disk($path);
+        abort_unless($disk->exists($path), 404);
+        $mime = $disk->mimeType($path);
+        abort_unless(in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true), 415);
+
+        return $disk->response($path, 'identity-photo', ['Content-Type' => $mime, 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
@@ -97,6 +125,7 @@ class ProgramStaffController extends Controller
         return view('admin.program-staff.show', [
             'adminUsername' => session('admin_username', 'admin'),
             'staff' => $programStaff->load('verifiedByAdmin', 'approvedByAdmin'),
+            'assignmentMothers' => \App\Models\Mother::orderBy('last_name')->get(['id', 'first_name', 'middle_name', 'last_name']),
             'roleOptions' => $this->roleOptions(),
         ]);
     }
@@ -128,12 +157,12 @@ class ProgramStaffController extends Controller
         if ($request->hasFile('healthcare_worker_id_photo')) {
             $oldPhotoPath = $programStaff->healthcareWorkerIdPhotoStoragePath();
             $updates['healthcare_worker_id_photo_path'] = $request->file('healthcare_worker_id_photo')
-                ->store('healthcare-worker-ids', 'public');
+                ->store('healthcare-worker-ids', 'local');
             $updates['healthcare_worker_id_verified_at'] = null;
             $updates['healthcare_worker_id_verified_by_admin_id'] = null;
 
             if ($oldPhotoPath) {
-                Storage::disk('public')->delete($oldPhotoPath);
+                \App\Support\PrivateUploads::disk($oldPhotoPath)->delete($oldPhotoPath);
             }
         }
 
@@ -151,7 +180,7 @@ class ProgramStaffController extends Controller
         $programStaff->delete();
 
         if ($photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            \App\Support\PrivateUploads::disk($photoPath)->delete($photoPath);
         }
 
         return redirect()
@@ -248,7 +277,7 @@ class ProgramStaffController extends Controller
 
             return true;
         } catch (Throwable $exception) {
-            report($exception);
+            \Illuminate\Support\Facades\Log::warning('Staff approval mail delivery failed.', ['exception_type' => get_class($exception)]);
 
             return false;
         }

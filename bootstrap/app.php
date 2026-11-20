@@ -23,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityAudit::class,
+            \App\Http\Middleware\DatabaseRecoveryGuard::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\EnsureCurrentStaffApproved::class,
             \App\Http\Middleware\RestrictDepartmentAdmin::class,
             \App\Http\Middleware\OfflineResponse::class,
             \App\Http\Middleware\RestrictDswdPortal::class,

@@ -42,8 +42,33 @@
         .staff-pagination a, .staff-pagination span { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 12px; border-radius: 8px; text-decoration: none; }
         .staff-pagination a { color: #007f5f; background: #ecfdf5; border: 1px solid #c9f2df; }
         .staff-pagination span { background: #f8fafc; border: 1px solid #e2e8f0; }
-        @media (max-width: 1180px) { .staff-admin-row { grid-template-columns: 64px minmax(0, 1fr) minmax(160px, .8fr); } .staff-admin-row > :nth-child(n+4) { grid-column: 2 / -1; } }
-        @media (max-width: 760px) { .staff-admin-tools, .staff-admin-row { grid-template-columns: 1fr; } .staff-admin-row > * { grid-column: auto !important; } .staff-id-thumb { width: 100%; height: 160px; } .staff-admin-tools button, .staff-admin-tools a, .staff-action { width: 100%; } }
+        .staff-registry-card { padding: 24px; background: #fff; border: 1px solid var(--admin-line); border-radius: 24px; }
+        .staff-registry-scroll { width: 100%; overflow-x: auto; }
+        .staff-registry-table { width: 100%; min-width: 980px; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+        .staff-registry-table th, .staff-registry-table td { padding: 18px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+        .staff-registry-table th { background: #f8f6f8; color: #536580; font-size: 13px; font-weight: 700; text-transform: none; }
+        .staff-registry-table td { color: #183454; font-size: 13px; font-weight: 400; }
+        .staff-registry-table tbody tr:hover { background: #fff8fc; }
+        .staff-registry-table tbody tr:last-child td { border-bottom: 0; }
+        .staff-registry-table th:nth-child(1) { width: 18%; }
+        .staff-registry-table th:nth-child(2) { width: 22%; }
+        .staff-registry-table th:nth-child(3) { width: 16%; }
+        .staff-registry-table th:nth-child(4), .staff-registry-table th:nth-child(5) { width: 10%; }
+        .staff-registry-table th:nth-child(6) { width: 11%; }
+        .staff-registry-table th:last-child { width: 13%; }
+        .staff-registry-table .staff-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .staff-registry-table .staff-id-thumb { flex-shrink: 0; width: 42px; height: 48px; }
+        .staff-registry-table .staff-primary { min-width: 0; overflow-wrap: anywhere; }
+        .staff-registry-table .staff-status { font-size: 10px; padding: 6px 8px; min-height: 28px; height: auto; white-space: nowrap; overflow-wrap: normal; }
+        .staff-registry-table .staff-primary strong, .staff-registry-table .staff-meta strong { font-size: 13px; font-weight: 500; color: #183454; }
+        .staff-registry-table .staff-primary span, .staff-registry-table .staff-meta span { font-weight: 400; font-size: 12px; }
+        .staff-registry-table .staff-action-group { justify-content: flex-start; }
+        .staff-registry-table .staff-action { padding: 10px 12px; min-height: 40px; font-size: 12px; white-space: nowrap; }
+        .staff-registry-table .staff-action:not(.is-chat) { background: #ed0083; border-color: #ed0083; color: #fff; }
+        .staff-admin-tools { grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(120px, 1fr)) auto auto; }
+        .staff-admin-tools label, .staff-admin-tools input, .staff-admin-tools select { min-width: 0; width: 100%; box-sizing: border-box; }
+        @media (max-width: 1180px) { .staff-admin-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 600px) { .staff-admin-tools { grid-template-columns: 1fr; } .staff-registry-card { padding: 12px; border-radius: 16px; } .staff-admin-tools button, .staff-admin-tools a { width: 100%; } }
     </style>
 @endpush
 
@@ -111,7 +136,10 @@
     @if($staffMembers->isEmpty())
         <div class="admin-empty">No Program Staff records match this view.</div>
     @else
-        <section class="staff-admin-list" aria-label="Program staff list">
+        <section class="staff-registry-card" aria-label="Program staff list">
+            <div class="staff-registry-scroll"><table class="staff-registry-table">
+                <thead><tr><th>Staff ID</th><th>Full Name</th><th>Role / Contact</th><th>Login Activity</th><th>Account Status</th><th>ID Verification</th><th>Action</th></tr></thead>
+                <tbody>
             @foreach($staffMembers as $staff)
                 @php
                     $idPhotoUrl = $staff->healthcare_worker_id_photo_url;
@@ -124,7 +152,9 @@
                         default => 'is-pending',
                     };
                 @endphp
-                <article class="staff-admin-row">
+                <tr>
+                    <td>{{ $staff->staff_id }}</td>
+                    <td><div class="staff-identity">
                     <span class="staff-id-thumb">
                         @if($idPhotoUrl)
                             <img src="{{ $idPhotoUrl }}" alt="{{ $staff->full_name }} healthcare worker ID">
@@ -136,24 +166,27 @@
                         <strong>{{ $staff->full_name }}</strong>
                         <span>{{ $staff->email }}</span>
                     </div>
-                    <div class="staff-meta">
-                        <strong>{{ $staff->staff_id }}</strong>
-                        <span>Healthcare Worker ID</span>
-                    </div>
-                    <div class="staff-meta">
+                    </div></td>
+                    <td><div class="staff-meta">
                         <strong>{{ $staff->role_label }}</strong>
                         <span>{{ $staff->contact_number ?: 'No contact number' }}</span>
-                    </div>
-                    <div class="staff-status-stack">
+                    </div></td>
+                    <td>
+                        @php($activity = \App\Support\StaffActivity::summary($staff))
+                        <span data-staff-activity="program_staff" data-staff-id="{{ $staff->id }}" class="staff-status {{ $activity['active'] ? 'is-approved' : 'is-missing' }}" title="Authenticated activity within the last five minutes">{{ $activity['active'] ? 'Active' : 'Inactive' }}</span>
+                    </td><td>
                         <span class="staff-status {{ $approvalClass }}">{{ $staff->approval_status_label }}</span>
-                        <span class="staff-status {{ $statusClass }}">ID {{ $statusText }}</span>
-                    </div>
-                    <div class="staff-action-group">
+                    </td><td>
+                        <span class="staff-status {{ $statusClass }}">{{ $statusText === 'Image unavailable' ? 'Unavailable' : 'ID '.$statusText }}</span>
+                    </td>
+                    <td><div class="staff-action-group">
                         <a class="staff-action is-chat" href="{{ route('admin.staff-messages.index', ['staff' => $staff->id]) }}">{!! $staffAdminIcons['message'] !!} Chat</a>
                         <a class="staff-action" href="{{ route('admin.program-staff.show', $staff) }}">View / Edit</a>
-                    </div>
-                </article>
+                    </div></td>
+                </tr>
             @endforeach
+                </tbody>
+            </table></div>
         </section>
 
         @if($staffMembers->hasPages())
@@ -175,3 +208,4 @@
         @endif
     @endif
 @endsection
+@push('scripts')<script src="{{ asset('js/staff-activity.js') }}" data-activity-url="{{ route('admin.staff-activity') }}" defer></script>@endpush

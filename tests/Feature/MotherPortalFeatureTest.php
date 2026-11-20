@@ -161,7 +161,7 @@ class MotherPortalFeatureTest extends TestCase
         $this->assertSame($mother->id, $upload->mother_id);
         $this->assertSame(1, $upload->month);
         $this->assertSame('Checkup Records', $upload->record_type);
-        Storage::disk('public')->assertExists($upload->path);
+        Storage::disk('local')->assertExists($upload->path);
 
         $this->withMotherSession($mother)
             ->get('/inay-kaalaman')

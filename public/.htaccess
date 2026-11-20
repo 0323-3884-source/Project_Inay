@@ -7,6 +7,9 @@
 
     RewriteEngine On
 
+    # Legacy sensitive uploads must only be served by authorized controllers.
+    RewriteRule ^storage/(inay-kaalaman-records|healthcare-worker-ids)(/|$) - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

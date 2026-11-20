@@ -653,20 +653,20 @@
             <div>
                 <p>Patient Registry <strong>&middot;</strong> Registered Mothers</p>
                 <h1>Mother Case File</h1>
-                <span>All mothers registered in Project INAY appear here automatically.</span>
+                <span>View the mother and child casefiles assigned to your Program Staff account.</span>
             </div>
         </header>
 
         <div class="casefiles-summary" aria-label="Mother case file summary">
             <article>
-                <span>Registered Mothers</span>
+                <span>Assigned Mothers</span>
                 <strong>{{ number_format($totalMothers) }}</strong>
             </article>
             <article>
                 <span>With Monitoring Records</span>
                 <strong>{{ number_format($withMonitoring) }}</strong>
             </article>
-            <a class="casefiles-summary-export" href="{{ route('staff.mothers', ['export' => 'all_csv']) }}">Export All Beneficiaries (CSV)</a>
+            <a class="casefiles-summary-export" href="{{ route('staff.mothers', ['export' => 'all_csv']) }}">Export Assigned Beneficiaries (CSV)</a>
         </div>
 
         <form class="casefiles-toolbar" method="GET" action="{{ route('staff.mothers') }}" data-casefiles-filter-form>
@@ -762,8 +762,8 @@
                             <tr>
                                 <td colspan="10">
                                     <div class="casefiles-table-empty">
-                                        <strong>{{ $isFiltered ? 'No mothers match your search.' : 'No mother records found.' }}</strong>
-                                        <span>{{ $isFiltered ? 'Try another search term or clear the current filter.' : 'New mother registrations will appear here automatically.' }}</span>
+                                        <strong>{{ $isFiltered ? 'No mothers match your search.' : 'No mother casefiles assigned yet.' }}</strong>
+                                        <span>{{ $isFiltered ? 'Try another search term or clear the current filter.' : 'Ask your CHO or General administrator to assign mother casefiles to your account under Program Staff.' }}</span>
                                     </div>
                                 </td>
                             </tr>

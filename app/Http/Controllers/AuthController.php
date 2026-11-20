@@ -241,7 +241,7 @@ class AuthController extends Controller
             'privacy_policy' => ['accepted'],
         ]);
 
-        $idPhotoPath = $request->file('healthcare_worker_id_photo')?->store('healthcare-worker-ids', 'public');
+        $idPhotoPath = $request->file('healthcare_worker_id_photo')?->store('healthcare-worker-ids', 'local');
 
         ProgramStaff::create([
             'first_name' => $validated['first_name'],
@@ -282,11 +282,7 @@ class AuthController extends Controller
 
         if ($validated['role'] === 'dswd_staff') {
             if (! \Illuminate\Support\Facades\Schema::hasTable('dswd_staff')) {
-                try {
-                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                } catch (\Throwable $e) {
-                    report($e);
-                }
+                abort(503, 'Service unavailable. Database maintenance is required.');
             }
 
             if (! \Illuminate\Support\Facades\Schema::hasTable('dswd_staff')) {
@@ -731,7 +727,7 @@ class AuthController extends Controller
             abort(403);
         }
 
-        Storage::disk('public')->delete($upload->path);
+        \App\Support\PrivateUploads::disk($upload->path)->delete($upload->path);
         $upload->delete();
 
         return redirect()
@@ -774,7 +770,7 @@ class AuthController extends Controller
                 ->with('status', 'This document was already uploaded for the selected month.');
         }
 
-        $path = $document->store('inay-kaalaman-records', 'public');
+        $path = $document->store('inay-kaalaman-records', 'local');
 
         InayKaalamanUpload::create([
             'mother_id' => $mother->id,
@@ -960,7 +956,7 @@ class AuthController extends Controller
         }
 
         if ($request->query('export') === 'all_csv') {
-            return \App\Support\BeneficiaryCsvExport::download();
+            return \App\Support\BeneficiaryCsvExport::download($staff);
         }
 
         $search = trim((string) $request->query('q', ''));
@@ -982,6 +978,7 @@ class AuthController extends Controller
 
 
         $mothersQuery = Mother::query()
+            ->whereHas('casefileStaff', fn ($query) => $query->where('program_staff.id', $staff->id))
             ->with(['maternalMonitoringRecords' => fn ($query) => $query
                 ->orderByDesc('recorded_at')
                 ->orderByDesc('created_at')->orderByDesc('id')]);
@@ -1042,6 +1039,7 @@ class AuthController extends Controller
         $mothersQuery->orderBy('last_name')->orderBy('first_name')->orderBy('id');
 
         if ($request->query('export') === 'csv') {
+            \Illuminate\Support\Facades\Gate::forUser($staff)->authorize('export', Mother::class);
             return response()->streamDownload(function () use ($mothersQuery) {
                 $output = fopen('php://output', 'w');
                 // UTF-8 BOM lets Excel recognize names containing accented characters.
@@ -1075,8 +1073,9 @@ class AuthController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $totalMothers = Mother::count();
-        $withMonitoring = MaternalMonitoringRecord::query()->distinct('mother_id')->count('mother_id');
+        $assignedIds = StaffMotherCasefile::where('staff_id', $staff->id)->pluck('mother_id');
+        $totalMothers = $assignedIds->count();
+        $withMonitoring = MaternalMonitoringRecord::whereIn('mother_id', $assignedIds)->distinct('mother_id')->count('mother_id');
 
         return view('modules.staff-mothers', compact(
             'staff',
@@ -1093,39 +1092,9 @@ class AuthController extends Controller
 
     public function storeStaffMothers(Request $request): RedirectResponse
     {
-        if ($request->session()->get('auth_role') !== 'staff') {
-            return redirect()->route('login')->with('status', 'Please login as Program Staff first.');
-        }
-
-        $staff = ProgramStaff::find($request->session()->get('auth_id'));
-
-        if (! $staff) {
-            $this->clearLoginSession($request);
-
-            return redirect()->route('login')->with('status', 'Please login again.');
-        }
-
-        $validated = $request->validate([
-            'mother_ids' => ['required', 'array', 'min:1'],
-            'mother_ids.*' => ['integer', 'exists:mothers,id'],
-        ]);
-
-        $added = 0;
-
-        foreach (array_unique($validated['mother_ids']) as $motherId) {
-            $casefile = StaffMotherCasefile::firstOrCreate([
-                'staff_id' => $staff->id,
-                'mother_id' => $motherId,
-            ]);
-
-            if ($casefile->wasRecentlyCreated) {
-                $added++;
-            }
-        }
-
-        return redirect()
-            ->route('staff.mothers')
-            ->with('status', $added > 0 ? "{$added} patient casefile added." : 'Selected patient is already in your list.');
+        // Staff have no delegated assignment permission in the current role model.
+        // Keep the legacy endpoint, but reject attempts to grant oneself access.
+        abort(403, 'Casefile assignments require approval by an authorized clinical administrator.');
     }
 
     public function staffMotherCasefile(Request $request, Mother $mother): View|RedirectResponse
@@ -1142,10 +1111,8 @@ class AuthController extends Controller
             return redirect()->route('login')->with('status', 'Please login again.');
         }
 
-        $casefile = StaffMotherCasefile::firstOrCreate([
-            'staff_id' => $staff->id,
-            'mother_id' => $mother->id,
-        ]);
+        \Illuminate\Support\Facades\Gate::forUser($staff)->authorize('view', $mother);
+        $casefile = $this->casefileForStaffMother($staff, $mother);
 
         $records = MaternalMonitoringRecord::where('mother_id', $mother->id)
             ->orderByDesc('recorded_at')
@@ -1328,7 +1295,7 @@ class AuthController extends Controller
         $staff = $this->staffFromRequest($request);
         abort_unless($staff, 401);
         abort_unless($staff->is_approved && (int) $upload->mother_id === (int) $mother->id && $this->casefileForStaffMother($staff, $mother), 403);
-        $disk = Storage::disk('public');
+        $disk = \App\Support\PrivateUploads::disk($upload->path);
         abort_unless($disk->exists($upload->path), 404);
         $mime = $disk->mimeType($upload->path);
         abort_unless(in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true), 415);
@@ -1352,13 +1319,14 @@ class AuthController extends Controller
             abort(403);
         }
 
-        if (! Storage::disk('public')->exists($upload->path)) {
+        $disk = \App\Support\PrivateUploads::disk($upload->path);
+        if (! $disk->exists($upload->path)) {
             abort(404);
         }
 
         $fileName = str_replace(['\\', '/', '"'], '', $upload->original_name ?: 'prenatal-record');
 
-        return Storage::disk('public')->download($upload->path, $fileName);
+        return $disk->download($upload->path, $fileName, ['Cache-Control' => 'private, no-store']);
     }
 
     public function getStaffMaternalVitals(Request $request, Mother $mother): JsonResponse
@@ -2315,6 +2283,7 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         $this->clearLoginSession($request);
+        $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('status', 'You have been logged out.');
@@ -2322,6 +2291,8 @@ class AuthController extends Controller
 
     private function startLoginSession(Request $request, string $role, int $id, string $name, string $email): void
     {
+        $request->session()->put('database_security_epoch', \Illuminate\Support\Facades\Cache::get('database-security-epoch', 'initial'));
+        $request->attributes->set('login_authenticated', true);
         $request->session()->regenerate();
         $request->session()->forget([
             'admin_authenticated',
@@ -2379,6 +2350,8 @@ class AuthController extends Controller
 
     private function startAdminSession(Request $request, AdminUser $admin): void
     {
+        $request->session()->put('database_security_epoch', \Illuminate\Support\Facades\Cache::get('database-security-epoch', 'initial'));
+        $request->attributes->set('login_authenticated', true);
         $request->session()->regenerate();
         $request->session()->forget([
             'auth_role',
@@ -2446,6 +2419,9 @@ class AuthController extends Controller
 
     private function casefileForStaffMother(ProgramStaff $staff, Mother $mother): ?StaffMotherCasefile
     {
+        if (! \Illuminate\Support\Facades\Gate::forUser($staff)->allows('view', $mother)) {
+            return null;
+        }
         return StaffMotherCasefile::where('staff_id', $staff->id)
             ->where('mother_id', $mother->id)
             ->first();

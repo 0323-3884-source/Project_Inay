@@ -3,13 +3,16 @@
 namespace App\Support;
 
 use App\Models\Mother;
+use App\Models\ProgramStaff;
+use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BeneficiaryCsvExport
 {
-    public static function download(): StreamedResponse
+    public static function download(ProgramStaff $staff): StreamedResponse
     {
-        return response()->streamDownload(function () {
+        Gate::forUser($staff)->authorize('export', Mother::class);
+        return response()->streamDownload(function () use ($staff) {
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
             $motherFields = ['first_name', 'middle_name', 'last_name', 'email', 'age', 'barangay', 'municipality_city', 'contact_number', 'civil_status', 'gravidity', 'parity', 'blood_type', 'pregnancy_status', 'last_menstrual_period', 'is_4ps_beneficiary', 'four_ps_household_number', 'dswd_entry_number'];
@@ -42,7 +45,7 @@ class BeneficiaryCsvExport
                 }, $row);
                 fputcsv($output, $row, ',', '"', '');
             };
-            foreach (Mother::with(['infants.growthRecords', 'infants.vaccineRecords'])->lazyById(100) as $mother) {
+            foreach (Mother::whereHas('casefileStaff', fn ($query) => $query->where('program_staff.id', $staff->id))->with(['infants.growthRecords', 'infants.vaccineRecords'])->lazyById(100) as $mother) {
                 $write($mother);
                 foreach ($mother->infants as $child) {
                     $write($mother, $child);

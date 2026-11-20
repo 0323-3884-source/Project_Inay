@@ -164,8 +164,8 @@ class EducationalContentManagementTest extends TestCase
         ]);
 
         $this->get('/admin/educational-content')->assertRedirect('/admin/login');
-        $this->withMotherSession($mother)->get('/admin/educational-content')->assertRedirect('/admin/login');
-        $this->withStaffSession($staff)->get('/admin/educational-content')->assertRedirect('/admin/login');
+        $this->withMotherSession($mother)->get('/admin/educational-content')->assertForbidden();
+        $this->withStaffSession($staff)->get('/admin/educational-content')->assertForbidden();
 
         $this->withAdminSession($admin)
             ->from('/admin/educational-content')

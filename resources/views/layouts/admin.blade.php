@@ -47,16 +47,25 @@
     @if ($isAdminAuthScreen)
         @yield('content')
     @else
-        <aside class="admin-sidebar" aria-label="Admin navigation">
+        <header class="admin-mobile-header">
+            <span class="admin-brand-title">Project INAY <small>{{ $departmentConsole }}</small></span>
+            <button class="admin-mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="admin-sidebar" data-admin-menu-toggle><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        </header>
+        <button class="admin-sidebar-backdrop" type="button" aria-label="Dismiss navigation overlay" data-admin-menu-close hidden tabindex="-1"></button>
+        <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation" tabindex="-1">
             <div class="admin-brand">
                 <span class="admin-brand-mark">{!! $adminIcons['mark'] !!}</span>
                 <span>
                     <span class="admin-brand-title">Project INAY</span>
                     <span class="admin-brand-subtitle">{{ $departmentConsole }}</span>
                 </span>
-                <button class="admin-mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="admin-navigation" data-admin-menu-toggle>Menu</button>
+                <button class="admin-mobile-menu-close" type="button" aria-label="Close navigation menu" data-admin-menu-close><span aria-hidden="true">&times;</span></button>
             </div>
             <nav class="admin-nav" id="admin-navigation">
+                @if (request()->attributes->get('department_admin')?->canManageDatabaseBackups())
+                <a class="admin-nav-link {{ request()->routeIs('admin.backups.*') ? 'is-active' : '' }}" href="{{ route('admin.backups.index') }}">{!! $adminIcons['shield'] !!} Backup and Recovery</a>
+                @endif
+                <a class="admin-nav-link {{ request()->routeIs('admin.staff-activity') ? 'is-active' : '' }}" href="{{ route('admin.staff-activity') }}">{!! $adminIcons['id-card'] !!} Staff Login Activity</a>
                 <p class="admin-nav-label">System</p>
                 @if (in_array($departmentRole, ['admin_dswd', 'admin_cho'], true))
                     @include('admin.departments.navigation')

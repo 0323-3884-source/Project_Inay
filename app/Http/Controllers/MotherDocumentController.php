@@ -29,7 +29,7 @@ class MotherDocumentController extends Controller
     public function file(Request $request, InayKaalamanUpload $upload)
     {
         abort_unless((int) $upload->mother_id === (int) $this->mother($request)->id, 403);
-        $disk = Storage::disk('public');
+        $disk = \App\Support\PrivateUploads::disk($upload->path);
         abort_unless($disk->exists($upload->path), 404);
         if ($request->routeIs('mother.documents.download')) {
             return $disk->download($upload->path, basename(str_replace('\\', '/', $upload->original_name)), ['Cache-Control' => 'private, no-store']);

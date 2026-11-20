@@ -21,6 +21,7 @@ class BeneficiaryExportTest extends TestCase
     {
         $staff = ProgramStaff::create(['first_name' => 'Test', 'last_name' => 'Staff', 'email' => 'staff@example.test', 'password' => 'secret', 'contact_number' => '09990001111', 'staff_id' => 'EXPORT-1', 'position' => 'Program Staff']);
         $mother = Mother::create(['first_name' => '=FORMULA', 'last_name' => 'Export', 'email' => 'export@example.test', 'password' => 'never-export-this', 'barangay' => 'Test', 'contact_number' => '09123456789']);
+        $staff->casefileMothers()->attach($mother);
         $child = Infant::create(['mother_id' => $mother->id, 'full_name' => 'Export Child', 'sex' => 'female', 'birth_date' => now()->subMonths(6)]);
         $child->growthRecords()->create(['measured_at' => now(), 'weight' => 7.5, 'height' => 65]);
         $child->vaccineRecords()->create(['vaccine_group' => 'BCG', 'vaccine_name' => 'BCG Export', 'dose_label' => 'Birth dose', 'status' => 'completed', 'due_date' => now(), 'administered_at' => now()]);

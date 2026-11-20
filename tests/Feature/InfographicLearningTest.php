@@ -78,7 +78,7 @@ class InfographicLearningTest extends TestCase
         $mother = $this->mother();
         $other = $this->mother('other@example.test');
         $this->withSession(['auth_role' => 'staff', 'auth_id' => $mother->id])
-            ->postJson('/inay-kaalaman/progress', $this->payload())->assertUnauthorized();
+            ->postJson('/inay-kaalaman/progress', $this->payload())->assertForbidden();
         $this->withSession(['auth_role' => 'mother', 'auth_id' => $mother->id])
             ->postJson('/inay-kaalaman/progress', [...$this->payload(), 'mother_id' => $other->id])->assertOk();
         $this->assertDatabaseMissing('inay_kaalaman_progress', ['mother_id' => $other->id]);

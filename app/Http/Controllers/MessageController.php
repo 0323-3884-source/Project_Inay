@@ -150,7 +150,7 @@ class MessageController extends Controller
                 ]
             );
         } catch (\Throwable $exception) {
-            report($exception);
+            \Illuminate\Support\Facades\Log::error('Consultation message storage failed.', ['exception_type' => get_class($exception)]);
 
             return response()->json(['message' => 'Message could not be sent. Please try again.'], 500);
         }
@@ -230,6 +230,8 @@ class MessageController extends Controller
 
         return response()->file(Storage::disk('local')->path($message->attachment_path), [
             'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

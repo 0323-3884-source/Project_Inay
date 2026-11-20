@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\DswdStaff;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 
 class DswdStaffController extends Controller
@@ -14,11 +13,7 @@ class DswdStaffController extends Controller
     private function ensureTableExists(): void
     {
         if (! Schema::hasTable('dswd_staff')) {
-            try {
-                Artisan::call('migrate', ['--force' => true]);
-            } catch (\Throwable $e) {
-                report($e);
-            }
+            abort(503, 'Service unavailable. Database maintenance is required.');
         }
     }
 

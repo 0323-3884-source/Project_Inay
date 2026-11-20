@@ -17,6 +17,8 @@ RUN npm run build
 # ==============================
 FROM php:8.3-apache
 
+COPY docker/backup-limits.ini /usr/local/etc/php/conf.d/inay-backup-limits.ini
+
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -29,6 +31,8 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libpq-dev \
     ca-certificates \
+    util-linux \
+    util-linux \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \

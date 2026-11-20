@@ -27,7 +27,7 @@ class DepartmentAdminTest extends TestCase
         return Mother::create(['first_name' => $name, 'last_name' => 'Test', 'email' => strtolower($name).'@example.test', 'password' => Hash::make('secret'), 'contact_number' => '09170000000', 'barangay' => 'Barangay A', 'pregnancy_status' => 'pregnant', 'is_4ps_beneficiary' => $fourPs]);
     }
 
-    public function test_seeded_accounts_login_independently_and_retire_original_admin(): void
+    public function test_seeded_accounts_login_independently_and_preserve_original_admin(): void
     {
         $original = AdminUser::where('username', 'admin')->firstOrFail()->getRawOriginal();
         $this->seed(DepartmentAdminSeeder::class);
@@ -38,8 +38,8 @@ class DepartmentAdminTest extends TestCase
         $retired = AdminUser::where('username', 'admin')->firstOrFail();
         $this->assertSame($original['id'], $retired->id);
         $this->assertSame($original['password'], $retired->password);
-        $this->assertSame('admin_retired', $retired->role);
-        $this->assertFalse($retired->canAuthenticate());
+        $this->assertSame('admin', $retired->role);
+        $this->assertTrue($retired->canAuthenticate());
         foreach (['admindswd' => 'dswd', 'admincho' => 'cho'] as $username => $scope) {
             $admin = AdminUser::where('username', $username)->firstOrFail();
             $this->assertTrue(Hash::check('ProjectInay2026', $admin->password));

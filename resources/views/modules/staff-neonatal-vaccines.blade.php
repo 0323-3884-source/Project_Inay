@@ -20,32 +20,6 @@
     $formatNumber = fn ($value, $suffix = '') => $value === null ? 'N/A' : rtrim(rtrim(number_format((float) $value, 2), '0'), '.').$suffix;
     $bloodTypeOptions = ['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     $today = now()->startOfDay();
-    $linkedChildrenTotal = (int) ($neonatalStats['linked_infants'] ?? 0);
-    $completedVaccineTotal = (int) ($neonatalStats['vaccines_completed'] ?? 0);
-    $followUpTotal = (int) (($neonatalStats['active_alerts'] ?? 0) + ($neonatalStats['pending_followups'] ?? 0));
-    $neonatalSummaryCards = [
-        [
-            'label' => 'Linked Children',
-            'value' => $linkedChildrenTotal,
-            'description' => $linkedChildrenTotal === 1 ? 'Child profile from assigned mothers' : 'Child profiles from assigned mothers',
-            'icon' => $iconBaby,
-            'tone' => 'is-blue',
-        ],
-        [
-            'label' => 'Completed Doses',
-            'value' => $completedVaccineTotal,
-            'description' => 'Vaccines marked completed',
-            'icon' => $iconSyringe,
-            'tone' => 'is-green',
-        ],
-        [
-            'label' => 'Follow-ups',
-            'value' => $followUpTotal,
-            'description' => $followUpTotal > 0 ? 'Alerts and growth reviews pending' : 'No follow-up items pending',
-            'icon' => $iconAlert,
-            'tone' => $followUpTotal > 0 ? 'is-pink' : 'is-green',
-        ],
-    ];
     $selectedMother = $selectedMother ?? ($selectedInfant?->mother ?? $mothers->first());
     $selectedMotherInfants = collect($selectedMotherInfants ?? []);
     $selectedGrowth = $selectedInfant?->growthRecords ?? collect();
@@ -954,24 +928,6 @@
     <script src="{{ asset('js/child-profile.js') }}?v={{ filemtime(public_path('js/child-profile.js')) }}" defer></script>
 
     <section class="neonatal-shell" aria-label="Staff 0–2 Children and Vaccine Workspace">
-        <header class="neo-heading">
-            <div>
-                <p class="neo-kicker">Program Staff / 0–2 Children</p>
-                <h1>0–2 Children & Vaccine Monitoring</h1>
-                <p>Mother-linked child profiles, growth history, vaccine status, and follow-up alerts.</p>
-            </div>
-            <div class="neo-stats" aria-label="0–2 Children monitoring summary">
-                @foreach($neonatalSummaryCards as $summary)
-                    <article class="neo-stat {{ $summary['tone'] }}">
-                        <span class="neo-stat-icon" aria-hidden="true">{!! $summary['icon'] !!}</span>
-                        <span class="neo-stat-label">{{ $summary['label'] }}</span>
-                        <strong>{{ number_format($summary['value']) }}</strong>
-                        <small>{{ $summary['description'] }}</small>
-                    </article>
-                @endforeach
-            </div>
-        </header>
-
         @if ($errors->any())
             <div class="neo-error-box">{!! $iconAlert !!}<span>{{ $errors->first() }}</span></div>
         @endif
